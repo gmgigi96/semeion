@@ -1,14 +1,79 @@
 # Come aggiungere un capitolo
 
-Un capitolo è fatto di **due soli file nuovi**: nessun file esistente va modificato.
+Un capitolo è fatto **solo di file nuovi**: nessun file esistente va modificato.
 
 - `src/chapters/<id>.js` — testi, termini, quiz e comportamento di ogni doppia pagina.
   Entra nel libro da solo (la cartella è letta con `import.meta.glob`).
 - `src/models/<id>.js` — il modello 3D del capitolo, una classe che estende `AnatomyModel`.
+- `meshes/<id>.json` — il manifesto delle mesh anatomiche reali usate dal modello;
+  `tools/mesh.mjs` ne ricava `public/meshes/<id>.glb` e `public/meshes/<id>.json`.
 
-Esempi completi da leggere prima di cominciare: `src/chapters/cerebellum.js` con
-`src/cerebellum.js` (modello dedicato, corteccia in trasparenza, vie a passi) e
-`src/chapters/ventricles.js` con `src/brain.js`.
+Esempi completi da leggere prima di cominciare: `src/chapters/ventricles.js` con
+`src/brain.js` e `meshes/brain.json` (mesh reali, parti schematiche aggiunte, vie) e
+`src/chapters/cerebellum.js` con `src/cerebellum.js` (corteccia in trasparenza, vie a passi).
+
+## Realismo: prima le mesh reali, poi la letteratura
+
+I modelli devono essere **anatomicamente realistici**, non schemi.
+
+1. **Ogni struttura che esiste in BodyParts3D si prende da lì.** L'elenco è
+   `$BP3D/index.tsv` (nome inglese, file, vertici, ingombro in mm): contiene encefalo e
+   strutture profonde, giri corticali, tronco, cervelletto, ossa (cranio osso per osso,
+   vertebre, coste, bacino), muscoli, arterie e vene, bulbo oculare con muscoli e nervi
+   dell'orbita. Cercare sempre con `grep -i` prima di disegnare qualcosa a mano.
+2. **Ciò che manca** (midollo spinale, nervi periferici e plessi, gran parte dei nervi
+   cranici, orecchio, nuclei del tronco, fasci) si modella a mano **dentro l'anatomia
+   reale**: stessa terna di riferimento, agganciato a punti di repere veri (un forame del
+   cranio, un solco, il centro di un nucleo reale), con forma, calibro, decorso e rapporti
+   **verificati su fonti autorevoli**.
+3. **Fonti**: cercare in rete atlanti e articoli ad accesso aperto (per esempio Gray's
+   Anatomy 20ª ed. di pubblico dominio, StatPearls/NCBI Bookshelf, articoli di anatomia su
+   PMC, Radiopaedia, atlanti stereotassici) e usarli per misure, posizioni e rapporti.
+   Le figure si usano come **riferimento**, non si copiano: il modello è una ricostruzione
+   propria. Annotare nel file del modello, in un commento in testa, le fonti usate per
+   ogni struttura modellata a mano (titolo e indirizzo).
+4. Nel resoconto finale dire chiaramente **quali parti sono mesh reali e quali
+   ricostruite a mano**, e con quale fonte.
+
+### Dal manifesto al file di mesh
+
+```bash
+export BP3D=/home/gianmaria/Documents/Personal/meds/sources/bodyparts3d
+grep -i "sphenoid" $BP3D/index.tsv | cut -f1,2,3
+node tools/mesh.mjs meshes/<id>.json          # scrive public/meshes/<id>.glb e .json
+```
+
+`meshes/<id>.json` (vedi `meshes/brain.json` e i commenti in testa a `tools/mesh.mjs`):
+
+- `frame`: `{ "origin": [x, y, z] in mm, "scale": unità per mm }`. Le sorgenti hanno x verso
+  sinistra, y verso dietro, z verso l'alto (testa attorno a z = 1450-1650); il risultato ha
+  x destra, y alto, z avanti. Scegliere origine e scala in modo che il modello stia in
+  circa x ±0.45, y 0.05…0.8, z ±0.4.
+- `parts`: `{ idParte: ["English name", …] }` con i nomi di `index.tsv`.
+- `split`: divide una mesh in più parti secondo la posizione dei triangoli
+  (es. testa, corpo e coda del caudato).
+- `simplify`: frazione di triangoli da tenere. Il `.glb` di un capitolo deve restare
+  **sotto 3 MB**: semplificare o rinunciare a ciò che è solo contorno.
+
+`public/meshes/<id>.json` riporta centro e ingombro di ogni parte nelle coordinate del
+modello: serve per posizionare le parti ricostruite a mano e le vie.
+
+Nel modello:
+
+```js
+constructor() {
+  super({ tilt: -0.5 });
+  this.addStand({ radius: 0.2, z: 0, rod: [0, 0.02, 0.1, 0] });
+  this.ready = this.#build();           // il libro aspetta `ready` prima di mostrare la pagina
+}
+async #build() {
+  await this.loadMeshes('<id>.glb', {
+    sphenoid: ['osso sfenoide', 0xe9dfc8],
+    skull: ['cranio', 0xe9dfc8, { ghost: true, opacity: 0.12 }],
+  });
+  // poi le parti ricostruite a mano e le vie, usando this.parts.get(id).center
+}
+```
 
 ## La doppia pagina
 
@@ -148,6 +213,7 @@ Il browser integrato non ha WebGL: si verifica con Chrome headless.
 
 ```bash
 ln -s /home/gianmaria/Documents/Personal/meds/libro/node_modules node_modules   # in un worktree
+export BP3D=/home/gianmaria/Documents/Personal/meds/sources/bodyparts3d
 npx vite --port <PORTA> --strictPort &                                          # una porta propria
 node tools/shot.mjs "http://localhost:<PORTA>/#<id>/1" /tmp/<id>-1.png
 node tools/shot.mjs "http://localhost:<PORTA>/#<id>/3" /tmp/<id>-3.png click:"Etichetta del pulsante" wait:6000
