@@ -1,0 +1,37 @@
+{
+ "source": "zanatomy",
+ "frame": { "origin": [0, 35, 1545], "scale": 0.0075 },
+ "simplify": 0.5,
+ "parts": {
+  "lingula": ["Lingula of cerebellum"],
+  "central": ["Central lobule"],
+  "culmen": ["Culmen"],
+  "declive": ["Declive"],
+  "folium": ["Folium of vermis"],
+  "tuber": ["Tuber of vermis"],
+  "pyramis": ["Pyramis of vermis"],
+  "uvula": ["Uvula of vermis"],
+  "nodulus": ["Nodule of vermis"],
+  "wing": ["Wing of central lobule.r", "Wing of central lobule.l"],
+  "quadAnt": ["Anterior quadrangular lobule.r", "Anterior quadrangular lobule.l"],
+  "quadPost": ["Posterior quadrangular lobule.r", "Posterior quadrangular lobule.l"],
+  "semiSup": ["Superior semilunar lobule.r", "Superior semilunar lobule.l"],
+  "semiInf": ["Inferior semilunar lobule.r", "Inferior semilunar lobule.l"],
+  "gracile": ["Gracile lobule.r", "Gracile lobule.l"],
+  "biventer": ["Biventral lobule.r", "Biventral lobule.l"],
+  "tonsil": ["Tonsil of cerebellum.r", "Tonsil of cerebellum.l"],
+  "flocculus": ["Flocculus.r", "Flocculus.l"],
+  "floccPed": ["Peduncle of flocculus.r", "Peduncle of flocculus.l"],
+  "scp": ["Superior cerebellar peduncle.r", "Superior cerebellar peduncle.l"],
+  "midbrain": ["Midbrain.r", "Midbrain.l", "Base of peduncle.r", "Base of peduncle.l", "Superior colliculus.r", "Superior colliculus.l", "Inferior colliculus.r", "Inferior colliculus.l"],
+  "pons": ["Pons.r", "Pons.l"],
+  "medullaAll": ["Medulla oblongata.r", "Medulla oblongata.l"],
+  "olive": ["Olive.r", "Olive.l"],
+  "red": ["Red nucleus.r", "Red nucleus.l"],
+  "thalamus": ["Thalamus.r", "Thalamus.l"],
+  "v4": ["Fourth ventricle"]
+ },
+ "split": {
+  "medullaAll": [["medulla", "y > 0.06"]]
+ }
+}
