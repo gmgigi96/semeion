@@ -1,0 +1,188 @@
+{
+ "source": "zanatomy",
+ "frame": {
+  "origin": [
+   -70,
+   3,
+   1548
+  ],
+  "scale": 0.011
+ },
+ "parts": {
+  "helix": [
+   "Helix.r",
+   "Apex of auricle.r"
+  ],
+  "tubercle": [
+   "Auricular tubercle.r"
+  ],
+  "antihelix": [
+   "Antihelix.r",
+   "Crura of antihelix.r"
+  ],
+  "scapha": [
+   "Scapha.r"
+  ],
+  "fossa": [
+   "Triangular fossa.r"
+  ],
+  "concha": [
+   "Concha of auricle.r",
+   "Cymba conchae.r",
+   "Cavity of concha.r"
+  ],
+  "tragus": [
+   "Tragus.r"
+  ],
+  "antitragus": [
+   "Antitragus.r"
+  ],
+  "incisure": [
+   "Intertragic incisure.r"
+  ],
+  "notch": [
+   "Anterior notch of auricle.r"
+  ],
+  "lobule": [
+   "Lobule of auricle.r"
+  ],
+  "medial": [
+   "Eminentia conchae.r",
+   "Eminentia fossae triangularis.r",
+   "Eminentia scaphae.r",
+   "Fossa antihelica.r"
+  ],
+  "sulcus": [
+   "Posterior auricular groove.r"
+  ],
+  "skin": [
+   "Auricular region.r"
+  ],
+  "skinAll": [
+   "Temporal region.r",
+   "Mastoid region.r",
+   "Parotideomasseteric region.r",
+   "Sternocleidomastoid region.r"
+  ],
+  "temporalAll": [
+   "Temporal bone.r"
+  ],
+  "mandibleAll": [
+   "Mandible"
+  ],
+  "tmAll": [
+   "Tympanic membrane.r"
+  ],
+  "malleusAll": [
+   "Malleus.r"
+  ],
+  "staAll": [
+   "Superficial temporal artery.r"
+  ],
+  "ecaAll": [
+   "External carotid artery.r"
+  ],
+  "atnAll": [
+   "Meningeal branch of maxillary nerve.r"
+  ],
+  "facialAll": [
+   "Facial nerve (VII).r"
+  ],
+  "scmAll": [
+   "Sternocleidomastoid muscle.r"
+  ],
+  "parotid": [
+   "Parotid gland.r"
+  ]
+ },
+ "split": {
+  "skinAll": [
+   [
+    "skinFar",
+    "y > -0.3 && y < 1.05"
+   ]
+  ],
+  "temporalAll": [
+   [
+    "temporalMeatus",
+    "x > -0.33 && x < -0.088 && y > 0.176 && y < 0.462 && z > -0.143 && z < 0.121"
+   ],
+   [
+    "temporal",
+    "x > -0.40 && y > 0.05 && y < 0.60 && z > -0.33 && z < 0.33"
+   ],
+   [
+    "temporalFar",
+    "x > -0.46"
+   ]
+  ],
+  "mandibleAll": [
+   [
+    "mandible",
+    "x > -0.5 && y > -0.2"
+   ]
+  ],
+  "tmAll": [
+   [
+    "tmFlac",
+    "((u,v)=>u<0.7? v>3.3+(0.7-u)*0.1282 : v>3.3-(u-0.7)*0.0312)(((x-(-0.24408))*(0.07157)+(z-(-0.01114))*(-0.99744))/0.011,((x-(-0.24408))*(0.49254)+(y-(0.32867))*(0.86957)+(z-(-0.01114))*(0.03534))/0.011)"
+   ],
+   [
+    "tmAS",
+    "((u,v)=>((u-(-1.25))*0.4382+(v-(-0.2))*0.8989)>0&&((u-(-1.25))*0.8989+(v-(-0.2))*-0.4382)<0)(((x-(-0.24408))*(0.07157)+(z-(-0.01114))*(-0.99744))/0.011,((x-(-0.24408))*(0.49254)+(y-(0.32867))*(0.86957)+(z-(-0.01114))*(0.03534))/0.011)"
+   ],
+   [
+    "tmPS",
+    "((u,v)=>((u-(-1.25))*0.4382+(v-(-0.2))*0.8989)>0&&((u-(-1.25))*0.8989+(v-(-0.2))*-0.4382)>0)(((x-(-0.24408))*(0.07157)+(z-(-0.01114))*(-0.99744))/0.011,((x-(-0.24408))*(0.49254)+(y-(0.32867))*(0.86957)+(z-(-0.01114))*(0.03534))/0.011)"
+   ],
+   [
+    "tmPI",
+    "((u,v)=>((u-(-1.25))*0.4382+(v-(-0.2))*0.8989)<0&&((u-(-1.25))*0.8989+(v-(-0.2))*-0.4382)>0)(((x-(-0.24408))*(0.07157)+(z-(-0.01114))*(-0.99744))/0.011,((x-(-0.24408))*(0.49254)+(y-(0.32867))*(0.86957)+(z-(-0.01114))*(0.03534))/0.011)"
+   ],
+   [
+    "tmAI",
+    "true"
+   ]
+  ],
+  "malleusAll": [
+   [
+    "manubrium",
+    "y < 0.3729"
+   ],
+   [
+    "malleusHead",
+    "true"
+   ]
+  ],
+  "staAll": [
+   [
+    "sta",
+    "z > 0.022 && z < 0.4 && y < 0.85"
+   ]
+  ],
+  "ecaAll": [
+   [
+    "eca",
+    "y > -0.26"
+   ]
+  ],
+  "atnAll": [
+   [
+    "atn",
+    "x > -0.33 && y < 0.85"
+   ]
+  ],
+  "facialAll": [
+   [
+    "facial",
+    "x > -0.33 && y > -0.143 && z < 0.363"
+   ]
+  ],
+  "scmAll": [
+   [
+    "scm",
+    "y > -0.3"
+   ]
+  ]
+ }
+}
