@@ -1,0 +1,203 @@
+{
+ "frame": {
+  "origin": [
+   0,
+   -78,
+   1480
+  ],
+  "scale": 0.0045
+ },
+ "parts": {
+  "hemi": [
+   "Right angular gyrus",
+   "Left angular gyrus",
+   "Right fusiform gyrus",
+   "Left fusiform gyrus",
+   "Right inferior frontal gyrus",
+   "Left inferior frontal gyrus",
+   "Right inferior temporal gyrus",
+   "Left inferior temporal gyrus",
+   "Right middle frontal gyrus",
+   "Left middle frontal gyrus",
+   "Right middle temporal gyrus",
+   "Left middle temporal gyrus",
+   "Right postcentral gyrus",
+   "Left postcentral gyrus",
+   "Right superior frontal gyrus",
+   "Left superior frontal gyrus",
+   "Right superior parietal lobule",
+   "Left superior parietal lobule",
+   "Right supramarginal gyrus",
+   "Left supramarginal gyrus",
+   "Orbital gyrus",
+   "Anterior part of left superior temporal gyrus",
+   "Anterior part of right superior temporal gyrus",
+   "Posterior part of left superior temporal gyrus",
+   "Posterior part of right superior temporal gyrus",
+   "Right precentral gyrus",
+   "Left precentral gyrus",
+   "Right cingulate gyrus",
+   "Left cingulate gyrus",
+   "Right parahippocampal gyrus",
+   "Left parahippocampal gyrus"
+  ],
+  "occipital": [
+   "Right occipital lobe",
+   "Left occipital lobe"
+  ],
+  "stem": [
+   "Midbrain",
+   "Peduncle of midbrain",
+   "Pons"
+  ],
+  "thalamus": [
+   "Right thalamus",
+   "Left thalamus"
+  ],
+  "lv": [
+   "Right lateral ventricle",
+   "Left lateral ventricle"
+  ],
+  "lentiform": [
+   "Right putamen",
+   "Left putamen",
+   "Right globus pallidus",
+   "Left globus pallidus"
+  ],
+  "scleraR": [
+   "Right sclera"
+  ],
+  "scleraL": [
+   "Left sclera"
+  ],
+  "corneaR": [
+   "Right cornea"
+  ],
+  "corneaL": [
+   "Left cornea"
+  ],
+  "lens": [
+   "Right lens",
+   "Left lens"
+  ],
+  "iris": [
+   "Right iris",
+   "Left iris"
+  ],
+  "retinaR": [
+   "Optic part of right retina"
+  ],
+  "retinaL": [
+   "Optic part of left retina"
+  ],
+  "opticNerveR": [
+   "Right optic nerve"
+  ],
+  "opticNerveL": [
+   "Left optic nerve"
+  ],
+  "chiasm": [
+   "Optic chiasm"
+  ],
+  "tractR": [
+   "Right optic tract"
+  ],
+  "tractL": [
+   "Left optic tract"
+  ],
+  "lgbR": [
+   "Right lateral geniculate body"
+  ],
+  "lgbL": [
+   "Left lateral geniculate body"
+  ],
+  "colliculus": [
+   "Right superior colliculus",
+   "Left superior colliculus"
+  ],
+  "cn3inf": [
+   "Inferior branch of right oculomotor nerve",
+   "Inferior branch of left oculomotor nerve"
+  ],
+  "ciliaryGanglion": [
+   "Right ciliary ganglion",
+   "Left ciliary ganglion"
+  ],
+  "shortCiliary": [
+   "Short ciliary nerve"
+  ]
+ },
+ "split": {
+  "scleraR": [
+   [
+    "scleraR",
+    "x > 0"
+   ]
+  ],
+  "corneaR": [
+   [
+    "corneaR",
+    "x > 0"
+   ]
+  ],
+  "retinaR": [
+   [
+    "retRTS",
+    "x > 0.137 && y >= 0.1713"
+   ],
+   [
+    "retRTI",
+    "x > 0.137"
+   ],
+   [
+    "retRNS",
+    "y >= 0.1713"
+   ],
+   [
+    "retRNI",
+    "true"
+   ]
+  ],
+  "retinaL": [
+   [
+    "retLTS",
+    "x < -0.131 && y >= 0.1713"
+   ],
+   [
+    "retLTI",
+    "x < -0.131"
+   ],
+   [
+    "retLNS",
+    "y >= 0.1713"
+   ],
+   [
+    "retLNI",
+    "true"
+   ]
+  ],
+  "opticNerveR": [
+   [
+    "opticNerveR",
+    "z < 0.283"
+   ]
+  ],
+  "opticNerveL": [
+   [
+    "opticNerveL",
+    "z < 0.283"
+   ]
+  ],
+  "lv": [
+   [
+    "lvTemp",
+    "y < 0.306 && ax > 0.09 && z > -0.081"
+   ],
+   [
+    "lvRest",
+    "true"
+   ]
+  ]
+ },
+ "simplify": 0.5
+}
