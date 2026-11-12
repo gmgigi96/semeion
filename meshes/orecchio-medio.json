@@ -1,0 +1,26 @@
+{
+ "source": "zanatomy",
+ "frame": { "origin": [-24.5, -13, 1539], "scale": 0.014 },
+ "parts": {
+  "malleusAll": ["Malleus.r"],
+  "incusAll": ["Incus.r"],
+  "stapes": ["Stapes.r"],
+  "tm": ["Tympanic membrane.r"],
+  "cochlea": ["Cochlea.r"],
+  "vestibule": ["Vestibule.r"],
+  "facialAll": ["Facial nerve (VII).r"],
+  "temporalAll": ["Temporal bone.r"],
+  "sphenoidAll": ["Sphenoid bone"],
+  "nasopharynxAll": ["Nasopharynx"],
+  "palateAll": ["Soft palate"]
+ },
+ "split": {
+  "malleusAll": [["manubrium", "y < 0.6006"], ["malleusHead", "true"]],
+  "incusAll": [["incusLong", "y < 0.5978"], ["incusBody", "true"]],
+  "facialAll": [["facial", "x > 0.161 && y > 0.462 && z < -0.098"]],
+  "temporalAll": [["temporal", "x < 0.441 && y > 0.294 && y < 0.742 && z > -0.406 && z < 0.014"]],
+  "sphenoidAll": [["sphenoid", "x > -0.231 && x < 0.287 && y > 0.126 && y < 0.714 && z > -0.182 && z < 0.322"]],
+  "nasopharynxAll": [["nasopharynx", "x > -0.3431 && y < 0.644 && z < 0.378"]],
+  "palateAll": [["palate", "x > -0.3431 && z < 0.45"]]
+ }
+}
