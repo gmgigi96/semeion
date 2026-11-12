@@ -57,7 +57,9 @@ I modelli devono essere **anatomicamente realistici**, non schemi.
 - **Ci sono**: nuclei dei nervi cranici nel tronco (circa 386 vertici l'uno), ossicini,
   chiocciola, «Vestibule» con i canali semicircolari, ghiandole, muscoli mimici.
 - **Mancano**: gangli (genicolato, sfeno-palatino, sottomandibolare, trigeminale), muscoli
-  dell'orecchio medio, nervo intermedio, cute; il padiglione è solo in frammenti.
+  dell'orecchio medio, nervo intermedio, plesso cervicale e nervo frenico. Il padiglione è in
+  una ventina di frammenti che però combaciano (vedi `src/models/orecchio-esterno.js`); la
+  cute esiste come «… region».
 - **Reperi utili**: la carotide interna reale per canale carotico e foro lacero.
 - **Peso**: ossa e muscoli sono leggeri; un cranio intero con una sessantina di oggetti
   sta sotto 2 MB con `simplify` 0.5.
@@ -230,6 +232,8 @@ export class MioModello extends AnatomyModel {
   Etichette e scritte proprie vanno aggiunte a `this.overlay` (fuori dal ribaltamento), non a
   `this.inner`, altrimenti escono speculari. Una copia speculare di una geometria va creata
   prima di `addPart`, che la ricentra.
+- **Angoli di vista**: con il modello ribaltato `main.js` cambia segno a `yaw`; le viste
+  laterali vanno trovate per tentativi con uno scatto.
 - **Coordinate**: x laterale (destra del paziente +), y verso l'alto, z anteriore. Unità libere,
   ma il modello deve stare in circa **x ±0.45, y 0…0.8, z ±0.35**, appoggiato sulla base a y = 0.
 - **`addPart(id, nome, colore, geometrie, opzioni)`**: una parte ha un nome e una o più

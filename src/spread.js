@@ -155,36 +155,52 @@ export async function buildToc(chapters, parts, ctx) {
     for (const ch of list) rows.push({ ch, n: chapters.indexOf(ch) + 1 });
   }
   const colW = (W - 0.04) / 2;
-  const lineH = 0.046, headH = 0.062, top = -0.15, bottom = -1.2;
-  let col = 0;
-  let y = top;
-  const waits = [];
-  for (const [i, row] of rows.entries()) {
-    // una parte non resta mai orfana in fondo a una colonna
-    const need = row.part ? headH + lineH : lineH;
-    if (y - need < bottom && col === 0) {
-      col = 1;
-      y = top;
-    }
-    const x = M + col * (colW + 0.04);
+  const lineH = 0.046, headH = 0.046, gapH = 0.016, top = -0.15;
+  // prima si misurano le righe (un titolo lungo va a capo), poi si dividono
+  // in due colonne di altezza simile, senza spezzare una parte
+  const size = { fontSize: 0.0225, maxWidth: colW - 0.055, lineHeight: 1.25 };
+  for (const row of rows) {
     if (row.part) {
-      if (y !== top) y -= 0.016;
-      const t = makeText(row.part.toUpperCase(), { ...SMALL, fontSize: 0.0135, color: ACCENT });
-      t.position.set(x, y - 0.012, t.position.z);
-      right.add(t);
-      waits.push(ready(t));
-      y -= headH - 0.016;
+      row.h = headH;
       continue;
     }
-    const num = makeText(String(row.n), { font: FONT.bold, fontSize: 0.021, color: ACCENT, anchorX: 'right', anchorY: 'middle' });
-    num.position.set(x + 0.034, y - lineH / 2, num.position.z);
-    const name = makeText(row.ch.title, { font: FONT.semi, fontSize: 0.0235, anchorY: 'middle' });
-    name.position.set(x + 0.05, y - lineH / 2, name.position.z);
+    row.name = makeText(row.ch.title, { font: FONT.semi, ...size });
+    await ready(row.name);
+    row.h = Math.max(lineH, bounds(row.name).h + 0.018);
+  }
+  const total = rows.reduce((sum, r) => sum + r.h + (r.part ? gapH : 0), 0);
+  let col = 0;
+  let y = top;
+  let used = 0;
+  const waits = [];
+  for (const [i, row] of rows.entries()) {
+    if (row.part && col === 0) {
+      let partH = row.h;
+      for (let k = i + 1; k < rows.length && !rows[k].part; k++) partH += rows[k].h;
+      if (used + partH / 2 > total / 2) {
+        col = 1;
+        y = top;
+      }
+    }
+    const x = M + col * (colW + 0.04);
+    used += row.h + (row.part ? gapH : 0);
+    if (row.part) {
+      if (y !== top) y -= gapH;
+      const t = makeText(row.part.toUpperCase(), { ...SMALL, fontSize: 0.0135, color: ACCENT });
+      t.position.set(x, y - 0.014, t.position.z);
+      right.add(t);
+      waits.push(ready(t));
+      y -= row.h;
+      continue;
+    }
+    const num = makeText(String(row.n), { font: FONT.bold, fontSize: 0.021, color: ACCENT, anchorX: 'right' });
+    num.position.set(x + 0.034, y - 0.009, num.position.z);
+    row.name.position.set(x + 0.05, y - 0.008, row.name.position.z);
     const hit = new THREE.Mesh(
-      new THREE.PlaneGeometry(colW, lineH),
+      new THREE.PlaneGeometry(colW, row.h),
       new THREE.MeshBasicMaterial({ color: MARKER, transparent: true, opacity: 0, depthWrite: false })
     );
-    hit.position.set(x + colW / 2, y - lineH / 2, 0.0004);
+    hit.position.set(x + colW / 2, y - row.h / 2, 0.0004);
     hit.renderOrder = 1;
     hit.userData.ui = {
       hover: (on) => (hit.material.opacity = on ? 0.25 : 0),
@@ -192,9 +208,9 @@ export async function buildToc(chapters, parts, ctx) {
       cursor: 'pointer',
       tip: row.ch.blurb,
     };
-    right.add(hit, num, name);
-    waits.push(ready(name), ready(num));
-    y -= lineH;
+    right.add(hit, num, row.name);
+    waits.push(ready(num));
+    y -= row.h;
   }
   const head = makeText('INDICE', SMALL);
   head.position.set(M, -0.075, head.position.z);

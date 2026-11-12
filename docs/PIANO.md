@@ -5,19 +5,20 @@ il modello 3D da costruire e le doppie pagine previste, con ciò che si fa sul m
 Le doppie pagine sono una proposta: chi scrive il capitolo legge gli appunti e le adatta
 a ciò che gli appunti contengono davvero.
 
-Stato: ✅ fatto · ⬜ da fare. `order` fissa la posizione nel libro.
+Stato: ✅ fatto. Tutti i capitoli sono nel libro; le doppie pagine effettive di alcuni differiscono
+dalla proposta qui sotto, perché ogni capitolo è stato adattato a ciò che gli appunti contengono. `order` fissa la posizione nel libro.
 
 ## I. Midollo e nervi spinali
 
 | order | id | Appunti | Stato |
 |---|---|---|---|
-| 10 | `midollo-spinale` | Midollo spinale (X) | ⬜ |
-| 11 | `nervi-spinali` | 1.Nervi spinali (2X) | ⬜ |
-| 12 | `plesso-cervicale` | 2.Plesso cervicale (2X) | ⬜ |
+| 10 | `midollo-spinale` | Midollo spinale (X) | ✅ |
+| 11 | `nervi-spinali` | 1.Nervi spinali (2X) | ✅ |
+| 12 | `plesso-cervicale` | 2.Plesso cervicale (2X) | ✅ |
 | 13 | `plesso-brachiale` | 3.Plesso brachiale (6X) | ✅ |
-| 14 | `plesso-lombare` | 4.Plesso lombare (4X) | ⬜ |
-| 15 | `plesso-sacrale` | 5.Plesso sacrale e pudendo (5X) | ⬜ |
-| 16 | `riflessi` | Riflessi (2X) | ⬜ |
+| 14 | `plesso-lombare` | 4.Plesso lombare (4X) | ✅ |
+| 15 | `plesso-sacrale` | 5.Plesso sacrale e pudendo (5X) | ✅ |
+| 16 | `riflessi` | Riflessi (2X) | ✅ |
 
 **Midollo spinale.** Modello: il midollo intero dentro una colonna vertebrale trasparente
 (rigonfiamenti cervicale e lombare, cono midollare, filum, cauda equina) più una fetta
@@ -59,9 +60,9 @@ neuromuscolare, organo tendineo, fibre afferenti, interneuroni, motoneuroni.
 
 | order | id | Appunti | Stato |
 |---|---|---|---|
-| 20 | `sistemi-ascendenti` | Sistemi ascendenti (3X) | ⬜ |
-| 21 | `sistemi-discendenti` | Sistemi discendenti (4X) | ⬜ |
-| 22 | `formazione-reticolare` | Formazione reticolare (3X) | ⬜ |
+| 20 | `sistemi-ascendenti` | Sistemi ascendenti (3X) | ✅ |
+| 21 | `sistemi-discendenti` | Sistemi discendenti (4X) | ✅ |
+| 22 | `formazione-reticolare` | Formazione reticolare (3X) | ✅ |
 
 **Sistemi ascendenti.** Modello: nevrasse "a piani" — sezioni di midollo, bulbo, ponte,
 mesencefalo, talamo e corteccia impilate in trasparenza, con i fasci che le attraversano.
@@ -83,7 +84,7 @@ con la decussazione. 3. Sistema anterolaterale (spino-talamico). 4. Vie spino-ce
 
 | order | id | Appunti | Stato |
 |---|---|---|---|
-| 30 | `macroscopica` | Macroscopica (6X) | ⬜ |
+| 30 | `macroscopica` | Macroscopica (6X) | ✅ |
 | 31 | `ventricoli` | Ventricoli (2) | ✅ |
 | 32 | `nuclei-della-base` | Nuclei della base (4X) | ✅ |
 | 33 | `sistema-limbico` | Sistema limbico (3X) | ✅ |
@@ -99,11 +100,11 @@ con la decussazione. 3. Sistema anterolaterale (spino-talamico). 4. Vie spino-ce
 
 | order | id | Appunti | Stato |
 |---|---|---|---|
-| 40 | `nervi-oculomotori` | Nervi abducente, trocleare e oculomotore X | ⬜ |
-| 41 | `nervo-trigemino` | 8.Nervo trigemino (3X) | ⬜ |
-| 42 | `nervo-faciale` | Nervo faciale (X) | ⬜ |
-| 43 | `nervo-glossofaringeo` | Nervo glossofaringeo (2X) | ⬜ |
-| 44 | `nervo-vago` | Nervo vago (4X) | ⬜ |
+| 40 | `nervi-oculomotori` | Nervi abducente, trocleare e oculomotore X | ✅ |
+| 41 | `nervo-trigemino` | 8.Nervo trigemino (3X) | ✅ |
+| 42 | `nervo-faciale` | Nervo faciale (X) | ✅ |
+| 43 | `nervo-glossofaringeo` | Nervo glossofaringeo (2X) | ✅ |
+| 44 | `nervo-vago` | Nervo vago (4X) | ✅ |
 
 **Nervi oculomotori (III, IV, VI).** Modello: bulbo oculare con i sei muscoli estrinseci e
 l'elevatore della palpebra, tronco encefalico con i tre nuclei, decorso dei tre nervi fino all'orbita.
@@ -135,12 +136,12 @@ a succlavia e arco aortico, rami cardiaci, plesso esofageo, tronchi vagali.
 
 | order | id | Appunti | Stato |
 |---|---|---|---|
-| 50 | `sistema-visivo` | Sistema visivo (10X) | ⬜ |
-| 51 | `orecchio-esterno` | Orecchio esterno (2X) | ⬜ |
-| 52 | `orecchio-medio` | Orecchio medio | ⬜ |
-| 53 | `orecchio-interno` | Orecchio interno X | ⬜ |
-| 54 | `vie-vestibolo-cocleari` | Vie vestibolo-cocleari (3X) | ⬜ |
-| 55 | `sistema-uditivo` | Sistema uditivo 3X | ⬜ |
+| 50 | `sistema-visivo` | Sistema visivo (10X) | ✅ |
+| 51 | `orecchio-esterno` | Orecchio esterno (2X) | ✅ |
+| 52 | `orecchio-medio` | Orecchio medio | ✅ |
+| 53 | `orecchio-interno` | Orecchio interno X | ✅ |
+| 54 | `vie-vestibolo-cocleari` | Vie vestibolo-cocleari (3X) | ✅ |
+| 55 | `sistema-uditivo` | Sistema uditivo 3X | ✅ |
 
 **Sistema visivo.** Modello: i due occhi con emiretine a colori, nervi ottici, chiasma, tratti,
 corpi genicolati laterali, radiazione ottica (con l'ansa di Meyer), corteccia calcarina.
@@ -175,8 +176,8 @@ superiore, lemnisco laterale, collicolo inferiore, corpo genicolato mediale, cor
 
 | order | id | Appunti | Stato |
 |---|---|---|---|
-| 60 | `sistema-nervoso-vegetativo` | SNV (5X) | ⬜ |
-| 61 | `controllo-vegetativo` | Controllo vegetativo (5X) | ⬜ |
+| 60 | `sistema-nervoso-vegetativo` | SNV (5X) | ✅ |
+| 61 | `controllo-vegetativo` | Controllo vegetativo (5X) | ✅ |
 
 **Sistema nervoso vegetativo.** Modello: tronco e midollo con la colonna intermedio-laterale,
 catena del simpatico, gangli prevertebrali, nuclei parasimpatici cranici e sacrali, alcuni organi bersaglio schematici.
@@ -191,8 +192,8 @@ Doppie pagine da definire sugli appunti: centri, vie discendenti, riflessi veget
 
 | order | id | Appunti | Stato |
 |---|---|---|---|
-| 70 | `sistema-vascolare` | Sistema vascolare | ⬜ |
-| 71 | `base-cranica` | Base cranica (2X) | ⬜ |
+| 70 | `sistema-vascolare` | Sistema vascolare | ✅ |
+| 71 | `base-cranica` | Base cranica (2X) | ✅ |
 
 **Sistema vascolare.** Modello: carotidi interne, arterie vertebrali e basilare, poligono di
 Willis, arterie cerebrali anteriore, media e posteriore sopra un encefalo trasparente; seni venosi.
