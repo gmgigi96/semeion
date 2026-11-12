@@ -61,6 +61,14 @@ I modelli devono essere **anatomicamente realistici**, non schemi.
 - **Reperi utili**: la carotide interna reale per canale carotico e foro lacero.
 - **Peso**: ossa e muscoli sono leggeri; un cranio intero con una sessantina di oggetti
   sta sotto 2 MB con `simplify` 0.5.
+- **Controllare sempre i livelli delle radici** contro i fori intervertebrali dello
+  scheletro: nel plesso lombare di Z-Anatomy femorale e otturatorio nascono un livello
+  troppo in alto. I tratti sbagliati si tagliano con `split` e si ricostruiscono.
+- **Calibro dei nervi**: i tubi hanno 0,5-1 mm di raggio, invisibili a scala del tronco;
+  si possono ingrossare lungo le normali nel modello (vedi `src/models/plesso-lombare.js`),
+  conservando il decorso reale.
+- Esistono varianti `.ol`/`.or`/`.el`/`.er` (origini e inserzioni dei muscoli): non sono
+  `.l`/`.r`. Non esiste un «nervo sottocostale».
 - **Primi piani**: finché il motore non offre uno zoom centrato su un punto, si può
   spostare e scalare `this.inner` con un metodo del modello (vedi `focus()` in
   `src/models/nervo-faciale.js`), ripristinando tutto in `reset()`.
