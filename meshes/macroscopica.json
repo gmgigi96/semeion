@@ -1,0 +1,62 @@
+{
+ "frame": { "origin": [0, -80, 1457], "scale": 0.0045 },
+ "parts": {
+  "sfg": ["Left superior frontal gyrus"],
+  "mfg": ["Left middle frontal gyrus"],
+  "ifg": ["Left inferior frontal gyrus"],
+  "precentral": ["Left precentral gyrus"],
+  "orbital": ["Orbital gyrus"],
+  "postcentral": ["Left postcentral gyrus"],
+  "spl": ["Left superior parietal lobule"],
+  "supramarginal": ["Left supramarginal gyrus"],
+  "angular": ["Left angular gyrus"],
+  "stg": ["Anterior part of left superior temporal gyrus", "Posterior part of left superior temporal gyrus"],
+  "mtg": ["Left middle temporal gyrus"],
+  "itg": ["Left inferior temporal gyrus"],
+  "fusiform": ["Left fusiform gyrus"],
+  "occipital": ["Left occipital lobe"],
+  "insula": ["Left insula"],
+  "cingulate": ["Left cingulate gyrus"],
+  "parahippocampal": ["Left parahippocampal gyrus"],
+  "white": ["White matter of left cerebral hemisphere"],
+  "hemiR": [
+   "Right superior frontal gyrus", "Right middle frontal gyrus", "Right inferior frontal gyrus",
+   "Right precentral gyrus", "Right postcentral gyrus", "Right superior parietal lobule",
+   "Right supramarginal gyrus", "Right angular gyrus",
+   "Anterior part of right superior temporal gyrus", "Posterior part of right superior temporal gyrus",
+   "Right middle temporal gyrus", "Right inferior temporal gyrus", "Right fusiform gyrus",
+   "Right occipital lobe", "Right parahippocampal gyrus", "Right cingulate gyrus"
+  ],
+  "callosum": ["Corpus callosum"],
+  "septum": ["Septum of telencephalon"],
+  "fornix": ["Left fornix of forebrain"],
+  "thalamus": ["Left thalamus"],
+  "hypothalamus": ["Hypothalamus", "Tuber cinereum", "Mammillary body"],
+  "chiasm": ["Optic chiasm", "Left optic tract"],
+  "pineal": ["Pineal body"],
+  "pituitary": ["Pituitary gland"],
+  "midbrain": ["Midbrain", "Peduncle of midbrain", "Left superior colliculus", "Right superior colliculus", "Left inferior colliculus", "Right inferior colliculus"],
+  "pons": ["Pons"],
+  "medulla": ["Medulla oblongata"],
+  "cerebellum": ["Cerebellum"]
+ },
+ "split": {
+  "orbital": [["orbital", "x < 0.003"], ["hemiR", "true"]],
+  "precentral": [["paracentral", "x > -0.016"], ["precentral", "true"]],
+  "postcentral": [["paracentral", "x > -0.016"], ["postcentral", "true"]],
+  "spl": [["precuneus", "x > -0.016"], ["spl", "true"]],
+  "occipital": [
+   ["cuneus", "x > -0.03 && y > (z > -0.316 ? 0.40 + (z + 0.316) * 0.4 : 0.40 + (z + 0.316) * 0.8)"],
+   ["lingual", "x > -0.03"],
+   ["occipital", "true"]
+  ],
+  "insula": [["insulaS", "z > 0.13 - (y - 0.42) * 0.85"], ["insulaL", "true"]],
+  "hypothalamus": [["hypothalamus", "x < 0.0031"]],
+  "chiasm": [["chiasm", "x < 0.0031"]],
+  "midbrain": [["midbrain", "x < 0.0031"], ["midbrainR", "true"]],
+  "pons": [["pons", "x < 0.0031"], ["ponsR", "true"]],
+  "medulla": [["medulla", "x < 0.0031"], ["medullaR", "true"]],
+  "cerebellum": [["cerebellum", "x < 0.0031"], ["cerebellumR", "true"]]
+ },
+ "simplify": 0.5
+}
