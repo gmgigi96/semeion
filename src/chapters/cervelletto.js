@@ -138,6 +138,7 @@ const spreads = [
       options: [
         {
           label: 'Fastigio', lit: [...ANT_VERMIS, 'fastigial', 'vestibular', 'reticular'], links: ['fast-vest', 'fast-ret'],
+          focus: { at: 'fastigial', scale: 2.2 },
           info: 'Verme del lobo anteriore › fastigio › nuclei vestibolari e formazione reticolare: muscolatura assiale, postura.',
         },
         {

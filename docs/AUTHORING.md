@@ -71,9 +71,8 @@ I modelli devono essere **anatomicamente realistici**, non schemi.
   conservando il decorso reale.
 - Esistono varianti `.ol`/`.or`/`.el`/`.er` (origini e inserzioni dei muscoli): non sono
   `.l`/`.r`. Non esiste un «nervo sottocostale».
-- **Primi piani**: finché il motore non offre uno zoom centrato su un punto, si può
-  spostare e scalare `this.inner` con un metodo del modello (vedi `focus()` in
-  `src/models/nervo-faciale.js`), ripristinando tutto in `reset()`.
+- **Primi piani**: usare lo zoom del motore (vedi «Primi piani» più sotto). I capitoli
+  scritti prima hanno un proprio `focus()`/`setFocus()` nel modello: non imitarli.
 
 ### Dal manifesto al file di mesh
 
@@ -191,6 +190,20 @@ sceglierne uno accende parti, vie e indicatori.
     `labels` (`{ id: 'testo' }`, etichette sul modello).
   - **A passi**: `steps: [{ ids, links, activity, text }]` e `stepTime` in secondi; i passi
     si accendono uno dopo l'altro e il commento mostra `k/n · text`.
+
+### Primi piani
+
+Il motore ingrandisce il modello attorno a un suo punto e lo porta sopra il centro della
+base; ciò che esce dal volume sopra la pagina destra (sotto la pagina, oltre la piega e i
+bordi, sopra i pulsanti, e ciò che a schermo supererebbe il bordo alto del libro) viene tagliato.
+
+- Per tutta la pagina: `view: { focus: { at: 'idParte', scale: 2 } }`.
+- Per un'opzione o per un passo di `selector`: `focus: { at: [x, y, z], scale: 3 }`
+  (`focus: null` torna all'insieme anche se la pagina ha un primo piano).
+- `at` è l'id di una parte (il suo centro) o un punto nelle coordinate del modello;
+  `height` sposta la quota a cui il punto viene portato (predefinita 0.36); `clip: false`
+  toglie il ritaglio.
+- Da codice: `model.zoomTo({ at, scale })`, `model.zoomTo(null)`.
 
 Massimo 7 pulsanti (due righe) e commenti di una o due righe: lo spazio sotto il modello è poco.
 

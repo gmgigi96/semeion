@@ -13,23 +13,44 @@ const WHITE = new THREE.Color(0xffffff);
 
 // Involucro "in resina trasparente": quasi invisibile di fronte, più denso
 // sui bordi, così la sagoma si legge senza coprire ciò che contiene.
+// Limiti della pagina destra nello spazio del libro (vedi src/book.js): la
+// pagina va da x = 0 (piega) a x = 1, e i pulsanti cominciano a z = 0.2.
+// Le normali puntano verso la parte che resta visibile.
+const PAGE_PLANES = [
+  new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
+  new THREE.Plane(new THREE.Vector3(1, 0, 0), -0.015),
+  new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0.985),
+  new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.2),
+  // bordo alto della pagina, visto dalla camera (che guarda lungo (0, -1.5, -1)):
+  // taglia ciò che a schermo finirebbe oltre il libro
+  new THREE.Plane(new THREE.Vector3(0, -1, 1.5).normalize(), 0.58),
+];
+const FAR_AWAY = 1000;
+// Punto, nel sistema del modello che ruota, su cui cade il centro di un primo piano.
+const LENS_ANCHOR = new THREE.Vector3(0, 0.36, 0);
+
 function ghostMaterial(color) {
   return new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
+    clipping: true,
     uniforms: { uColor: { value: new THREE.Color(color) }, uOpacity: { value: 0 } },
     vertexShader: `
+      #include <clipping_planes_pars_vertex>
       varying vec3 vN; varying vec3 vV;
       void main() {
-        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        #include <clipping_planes_vertex>
         vN = normalize(normalMatrix * normal);
-        vV = normalize(-mv.xyz);
-        gl_Position = projectionMatrix * mv;
+        vV = normalize(-mvPosition.xyz);
+        gl_Position = projectionMatrix * mvPosition;
       }`,
     fragmentShader: `
+      #include <clipping_planes_pars_fragment>
       uniform vec3 uColor; uniform float uOpacity;
       varying vec3 vN; varying vec3 vV;
       void main() {
+        #include <clipping_planes_fragment>
         float rim = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.2);
         gl_FragColor = vec4(uColor, uOpacity * (0.12 + 2.6 * rim));
       }`,
@@ -53,8 +74,16 @@ export class AnatomyModel {
     // ribaltamento (`overlay`) per restare leggibili.
     this.mirror = new THREE.Group();
     this.mirror.scale.x = -1;
+    // `lens` è il primo piano chiesto con zoomTo(): ingrandisce il modello
+    // attorno a un suo punto, portandolo sopra il centro della base.
+    this.lens = new THREE.Group();
     this.inner = new THREE.Group();
-    this.mirror.add(this.inner);
+    this.lens.add(this.inner);
+    this.mirror.add(this.lens);
+    this.zoom = null; // { at: Vector3, scale }
+    // Nei primi piani ciò che esce dalla pagina destra viene tagliato: piano
+    // della pagina, piega del libro, bordo esterno, riga dei pulsanti.
+    this.clipPlanes = PAGE_PLANES.map((p) => p.clone());
     this.overlay = new THREE.Group();
     this.spin.add(this.mirror, this.overlay);
     this.tilt.add(this.spin);
@@ -110,6 +139,8 @@ export class AnatomyModel {
           emissive: color, emissiveIntensity: 0, transparent: true, opacity: 0,
           side: double ? THREE.DoubleSide : THREE.FrontSide,
         });
+    mat.clippingPlanes = this.clipPlanes;
+    mat.clipShadows = true;
     const meshes = geos.map((g) => {
       // ogni pezzo ruota e si dilata attorno al proprio centro
       g.computeBoundingBox();
@@ -172,6 +203,8 @@ export class AnatomyModel {
     const mat = new THREE.MeshStandardMaterial({
       color, emissive: color, emissiveIntensity: 0.55, transparent: true, opacity: 0, roughness: 0.4,
     });
+    mat.clippingPlanes = this.clipPlanes;
+    mat.clipShadows = true;
     const g = taperTube(pts, r, { seg: 36, radial: 8, caps: false });
     const curve = g.userData.curve;
     const tube = new THREE.Mesh(g, mat);
@@ -244,7 +277,22 @@ export class AnatomyModel {
     }
   }
 
+  // Primo piano su un punto del modello: `at` è l'id di una parte o [x, y, z]
+  // nelle coordinate del modello, `scale` l'ingrandimento. Con `clip: false`
+  // ciò che esce dalla pagina non viene tagliato. zoomTo(null) torna all'insieme.
+  zoomTo(focus) {
+    if (!focus) {
+      this.zoom = null;
+      return;
+    }
+    const at = Array.isArray(focus.at) ? new THREE.Vector3(...focus.at) : this.parts.get(focus.at)?.center.clone();
+    if (!at) return console.error(`zoomTo: parte sconosciuta ${focus.at}`);
+    if (typeof focus.at === 'string' && focus.midline) at.x = 0;
+    this.zoom = { at, scale: focus.scale ?? 2, clip: focus.clip !== false, height: focus.height ?? LENS_ANCHOR.y };
+  }
+
   reset() {
+    this.zoomTo(null);
     this.hover = new Set();
     this.lookFn = null;
     this.onClick = null;
@@ -259,6 +307,24 @@ export class AnatomyModel {
     // il modello si alza dalla pagina lungo il proprio asse (nessuna deformazione)
     this.spin.scale.y = this.flat.scale.y = Math.max(0.001, this.grow);
     const k = 1 - Math.exp(-Math.min(realDt, 0.5) * 9);
+
+    // primo piano: lens porta il punto scelto sopra il centro della base
+    const kz = 1 - Math.exp(-Math.min(realDt, 0.5) * 4);
+    const z = this.zoom;
+    const scale = z?.scale ?? 1;
+    const target = new THREE.Vector3();
+    if (z) {
+      // il punto è dato nelle coordinate del modello: tiene conto di come il modello ha posto `inner`
+      const p = z.at.clone().multiply(this.inner.scale).add(this.inner.position);
+      target.set(-p.x * scale, z.height - p.y * scale, -p.z * scale);
+    }
+    this.lens.scale.lerp(new THREE.Vector3(scale, scale, scale), kz);
+    this.lens.position.lerp(target, kz);
+    for (const [i, plane] of this.clipPlanes.entries()) {
+      plane.copy(PAGE_PLANES[i]);
+      if (!z?.clip) plane.constant = FAR_AWAY;
+    }
+
     const hovering = [...this.hover].some((id) => this.parts.has(id) && !this.parts.get(id).ghost);
     const col = new THREE.Color();
 
@@ -282,7 +348,8 @@ export class AnatomyModel {
       if (part.ghost) {
         const u = part.mat.uniforms;
         u.uColor.value.lerp(col, k);
-        u.uOpacity.value += (opacity * (1 + glow * 2) - u.uOpacity.value) * k;
+        // in primo piano un involucro copre più schermo: lo si alleggerisce
+        u.uOpacity.value += ((opacity * (1 + glow * 2)) / Math.sqrt(this.lens.scale.x) - u.uOpacity.value) * k;
       } else {
         part.mat.color.lerp(col, k);
         part.mat.emissive.copy(part.mat.color);

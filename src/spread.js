@@ -114,6 +114,7 @@ export async function buildSpread(def, ctx) {
     update: () => modeApi.update?.(),
     enter() {
       model.reset();
+      model.zoomTo?.(def.view?.focus ?? null);
       // modello -> testo: la struttura sotto il puntatore accende i termini collegati
       model.onHover = (id) => {
         setHover(id ? [id] : []);

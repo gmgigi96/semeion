@@ -26,13 +26,16 @@ export async function infoText(controls, y) {
 // Scelta di un'opzione su un AnatomyModel.
 //   base      parti sempre visibili nella pagina
 //   looks     aspetto di base per parte, es. { v3: { opacity: 0.4 } }
-//   options   [{ label, lit, show, links, info, activity, dead, scale, steps }]
+//   options   [{ label, lit, show, links, info, activity, dead, scale, steps, focus }]
+//             focus: { at, scale } primo piano (vedi AnatomyModel.zoomTo); anche per passo
 //             steps: [{ ids, links, text }] si accendono uno dopo l'altro
 //   pick      { idParte: indiceOpzione } per scegliere cliccando il modello
 //   initial   opzione attiva all'ingresso (null = nessuna)
 export function selector({ base, options, looks = {}, pick = {}, initial = null, labels = {}, idle = '' }) {
-  return async ({ model, controls }) => {
+  return async ({ model, controls, def }) => {
     let sel = null;
+    // primo piano: quello del passo, altrimenti dell'opzione, altrimenti della pagina
+    const focus = (...list) => model.zoomTo?.(list.find((f) => f !== undefined) ?? def?.view?.focus ?? null);
     let t0 = 0;
     let shownStep = -1;
     const { chips, height } = await chipsInto(
@@ -51,6 +54,7 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
       model.show([...base, ...(o?.show ?? []), ...(o?.lit ?? []), ...(o?.steps?.flatMap((s) => s.ids) ?? [])]);
       model.setActivity(o?.activity ?? {});
       model.setLabels(o?.labels ?? labels);
+      focus(o?.steps?.[0].focus, o?.focus);
       if (!o?.steps) {
         model.showLinks(o?.links ?? []);
         info.text = o?.info ?? idle;
@@ -87,6 +91,7 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
         const k = stepOf(o);
         if (k === shownStep) return;
         shownStep = k;
+        focus(o.steps[k].focus, o.focus);
         info.text = `${k + 1}/${o.steps.length} · ${o.steps[k].text}`;
         const done = o.steps.slice(0, k + 1);
         model.showLinks(done.flatMap((s) => s.links ?? []));
