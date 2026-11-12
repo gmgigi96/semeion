@@ -1,0 +1,248 @@
+{
+ "source": "zanatomy",
+ "frame": {
+  "origin": [
+   0,
+   15,
+   1492
+  ],
+  "scale": 0.0048
+ },
+ "simplify": 0.5,
+ "parts": {
+  "viii": [
+   "Vestibulocochlear nerve (VIII).r"
+  ],
+  "vest": [
+   "Vestibular nerve.r"
+  ],
+  "cn": [
+   "Cochlear nerve"
+  ],
+  "vii": [
+   "Facial nerve (VII).r"
+  ],
+  "cochlea": [
+   "Cochlea.r"
+  ],
+  "lab": [
+   "Vestibule.r"
+  ],
+  "ponsAll": [
+   "Pons.r",
+   "Pons.l"
+  ],
+  "medullaAll": [
+   "Medulla oblongata.r",
+   "Medulla oblongata.l"
+  ],
+  "midbrain": [
+   "Midbrain.r",
+   "Midbrain.l"
+  ],
+  "cordAll": [
+   "White matter of spinal cord"
+  ],
+  "vstAll": [
+   "Lateral vestibulospinal tract"
+  ],
+  "cerebellum": [
+   "Anterior quadrangular lobule.r",
+   "Anterior quadrangular lobule.l",
+   "Posterior quadrangular lobule.r",
+   "Posterior quadrangular lobule.l",
+   "Superior semilunar lobule.r",
+   "Superior semilunar lobule.l",
+   "Inferior semilunar lobule.r",
+   "Inferior semilunar lobule.l",
+   "Gracile lobule.r",
+   "Gracile lobule.l",
+   "Biventral lobule.r",
+   "Biventral lobule.l",
+   "Tonsil of cerebellum.r",
+   "Tonsil of cerebellum.l",
+   "Wing of central lobule.r",
+   "Wing of central lobule.l",
+   "Lingula of cerebellum",
+   "Central lobule",
+   "Culmen",
+   "Declive",
+   "Folium of vermis",
+   "Tuber of vermis",
+   "Pyramis of vermis",
+   "Uvula of vermis"
+  ],
+  "floccAll": [
+   "Flocculus.r",
+   "Flocculus.l"
+  ],
+  "nodule": [
+   "Nodule of vermis"
+  ],
+  "nucVI": [
+   "Nucleus of abducens nerve.r",
+   "Nucleus of abducens nerve.l"
+  ],
+  "nucIV": [
+   "Nucleus of trochlear nerve.r",
+   "Nucleus of trochlear nerve.l"
+  ],
+  "nucIII": [
+   "Nucleus of oculomotor nerve.r",
+   "Nucleus of oculomotor nerve.l"
+  ],
+  "ic": [
+   "Inferior colliculus.r",
+   "Inferior colliculus.l"
+  ],
+  "mgb": [
+   "Medial geniculate body.r",
+   "Medial geniculate body.l"
+  ],
+  "thalamus": [
+   "Thalamus.r",
+   "Thalamus.l"
+  ],
+  "heschl": [
+   "Transverse temporal gyri.r",
+   "Transverse temporal gyri.l"
+  ],
+  "stg": [
+   "Superior temporal gyrus (Lateral part).r",
+   "Superior temporal gyrus (Lateral part).l"
+  ],
+  "temporalR": [
+   "Temporal bone.r"
+  ]
+ },
+ "split": {
+  "viii": [
+   [
+    "viiiCist",
+    "(ax/0.0048) > 14.2"
+   ]
+  ],
+  "vest": [
+   [
+    "vnTrunk",
+    "(ax/0.0048) < 30.5"
+   ],
+   [
+    "vnStem",
+    "(ax/0.0048) < 34"
+   ],
+   [
+    "vnHilum",
+    "(ax/0.0048) < 36.3"
+   ],
+   [
+    "vnAmp",
+    "(y/0.0048+1492) > Math.min(1582.2, 1581.3 + ((ax/0.0048) - 36.2) * 0.9)"
+   ],
+   [
+    "vnUtr",
+    "(y/0.0048+1492) > 1580.75"
+   ],
+   [
+    "vnSac",
+    "true"
+   ]
+  ],
+  "vii": [
+   [
+    "fn",
+    "(ax/0.0048) > 16.2 && (ax/0.0048) < 37.4 && (15-z/0.0048) > -5 && (y/0.0048+1492) > 1575"
+   ]
+  ],
+  "lab": [
+   [
+    "canalSup",
+    "(y/0.0048+1492) > 1584.9"
+   ],
+   [
+    "canalLat",
+    "(ax/0.0048) > 41.3 && (y/0.0048+1492) > 1581.6"
+   ],
+   [
+    "canalPost",
+    "(15-z/0.0048) > 11.6 || ((15-z/0.0048) > 8.9 && (y/0.0048+1492) < 1581.9)"
+   ],
+   [
+    "vestibule",
+    "true"
+   ]
+  ],
+  "cn": [
+   [
+    "cnTrunk",
+    "(ax/0.0048) < 31"
+   ],
+   [
+    "cnEnd",
+    "true"
+   ]
+  ],
+  "ponsAll": [
+   [
+    "ponsUp",
+    "(y/0.0048+1492) >= 1594"
+   ],
+   [
+    "ponsR",
+    "x > 0"
+   ],
+   [
+    "ponsL",
+    "true"
+   ]
+  ],
+  "medullaAll": [
+   [
+    "medullaLow",
+    "(y/0.0048+1492) <= 1558"
+   ],
+   [
+    "medR",
+    "x > 0"
+   ],
+   [
+    "medL",
+    "true"
+   ]
+  ],
+  "cordAll": [
+   [
+    "cord",
+    "(y/0.0048+1492) > 1512"
+   ]
+  ],
+  "vstAll": [
+   [
+    "vst",
+    "(y/0.0048+1492) > 1512"
+   ]
+  ],
+  "stg": [
+   [
+    "stg",
+    "(15-z/0.0048) > -10 && (15-z/0.0048) < 34"
+   ]
+  ],
+  "floccAll": [
+   [
+    "flocculus",
+    "x > 0"
+   ],
+   [
+    "flocculusL",
+    "true"
+   ]
+  ],
+  "temporalR": [
+   [
+    "petrous",
+    "(ax/0.0048) < 54 && (y/0.0048+1492) < 1593 && (15-z/0.0048) > -14 && (15-z/0.0048) < 22"
+   ]
+  ]
+ }
+}
