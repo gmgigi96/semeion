@@ -1,0 +1,245 @@
+{
+ "source": "zanatomy",
+ "frame": {
+  "origin": [
+   0,
+   0,
+   1470
+  ],
+  "scale": 0.0034
+ },
+ "simplify": 0.5,
+ "parts": {
+  "ix": [
+   "Glossopharyngeal nerve (IX).r"
+  ],
+  "nucAmb": [
+   "Nucleus ambiguus.r",
+   "Nucleus ambiguus.l"
+  ],
+  "nucSolAll": [
+   "Nucleus of solitary tract.r",
+   "Nucleus of solitary tract.l"
+  ],
+  "nucSal": [
+   "Inferior salivatory nucleus.r",
+   "Inferior salivatory nucleus.l"
+  ],
+  "pons": [
+   "Pons.r",
+   "Pons.l"
+  ],
+  "medulla": [
+   "Medulla oblongata.r",
+   "Medulla oblongata.l"
+  ],
+  "midbrain": [
+   "Midbrain.r",
+   "Midbrain.l"
+  ],
+  "temporalR": [
+   "Temporal bone.r"
+  ],
+  "skull": [
+   "Frontal bone",
+   "Occipital bone",
+   "Sphenoid bone",
+   "Mandible",
+   "Temporal bone.l",
+   "Parietal bone.r",
+   "Parietal bone.l",
+   "Maxilla.r",
+   "Maxilla.l",
+   "Zygomatic bone.r",
+   "Zygomatic bone.l",
+   "Nasal bone.r",
+   "Nasal bone.l"
+  ],
+  "hyoid": [
+   "Hyoid bone"
+  ],
+  "icaAll": [
+   "Internal carotid artery.r"
+  ],
+  "ccaAll": [
+   "Right common carotid artery"
+  ],
+  "eca": [
+   "External carotid artery.r"
+  ],
+  "ijvAll": [
+   "Internal jugular vein.r"
+  ],
+  "stylo": [
+   "Stylopharyngeus muscle.r"
+  ],
+  "constrSup": [
+   "Superior pharyngeal constrictor.r",
+   "Superior pharyngeal constrictor.l"
+  ],
+  "constrLow": [
+   "Middle pharyngeal constrictor.r",
+   "Middle pharyngeal constrictor.l",
+   "Inferior pharyngeal constrictor.r",
+   "Inferior pharyngeal constrictor.l"
+  ],
+  "nasopharynx": [
+   "Nasopharynx"
+  ],
+  "tongue": [
+   "Tongue"
+  ],
+  "tonsil": [
+   "Palatine tonsil.r",
+   "Palatine tonsil.l"
+  ],
+  "epiglottis": [
+   "Epiglottis"
+  ],
+  "atnAll": [
+   "Meningeal branch of maxillary nerve.r"
+  ],
+  "v3": [
+   "Posterior division of mandibular nerve.r"
+  ],
+  "cochlea": [
+   "Cochlea.r"
+  ],
+  "ossicles": [
+   "Malleus.r",
+   "Incus.r",
+   "Stapes.r"
+  ],
+  "tympanic": [
+   "Tympanic membrane.r"
+  ],
+  "fn": [
+   "Facial nerve (VII).r"
+  ],
+  "parotidAll": [
+   "Parotid gland.r"
+  ]
+ },
+ "split": {
+  "ix": [
+   [
+    "ixBulb",
+    "(ax/0.0034) < 13.6 && (-z/0.0034) > 10"
+   ],
+   [
+    "ixCist",
+    "(ax/0.0034) < 28.5 && (y/0.0034+1470) > 1560"
+   ],
+   [
+    "ixFor",
+    "(y/0.0034+1470) > 1556 && (ax/0.0034) < 36"
+   ]
+  ],
+  "nucSolAll": [
+   [
+    "nucGust",
+    "(y/0.0034+1470) > 1572.4"
+   ],
+   [
+    "nucSol",
+    "true"
+   ]
+  ],
+  "temporalR": [
+   [
+    "petrous",
+    "(ax/0.0034) < 54 && (y/0.0034+1470) < 1593 && (-z/0.0034) > -14 && (-z/0.0034) < 22"
+   ],
+   [
+    "skullR",
+    "(y/0.0034+1470) < 1628"
+   ],
+   [
+    "vault",
+    "true"
+   ]
+  ],
+  "skull": [
+   [
+    "skullR",
+    "x > 0 && (y/0.0034+1470) < 1628"
+   ],
+   [
+    "skullL",
+    "(y/0.0034+1470) < 1628"
+   ],
+   [
+    "vault",
+    "true"
+   ]
+  ],
+  "icaAll": [
+   [
+    "sinus",
+    "(y/0.0034+1470) < 1509"
+   ],
+   [
+    "ica",
+    "(y/0.0034+1470) < 1572"
+   ],
+   [
+    "icaTop",
+    "true"
+   ]
+  ],
+  "ccaAll": [
+   [
+    "cca",
+    "y > 0.008"
+   ]
+  ],
+  "ijvAll": [
+   [
+    "ijv",
+    "(y/0.0034+1470) > 1543"
+   ]
+  ],
+  "tongue": [
+   [
+    "tongueAnt",
+    "(-z/0.0034) < -40.6"
+   ],
+   [
+    "tonguePost",
+    "true"
+   ]
+  ],
+  "atnAll": [
+   [
+    "atn",
+    "(y/0.0034+1470) < 1600"
+   ]
+  ],
+  "fn": [
+   [
+    "gspn",
+    "(-z/0.0034) < -2.3 && (-z/0.0034) > -13 && (y/0.0034+1470) > 1583.6 && (ax/0.0034) > 39.5 && (ax/0.0034) < 44"
+   ],
+   [
+    "vii",
+    "(ax/0.0034) > 26 && (ax/0.0034) < 52 && (y/0.0034+1470) > 1561 && (y/0.0034+1470) < 1590 && (-z/0.0034) > -14"
+   ]
+  ],
+  "constrLow": [
+   [
+    "constrLow",
+    "y > 0.03"
+   ]
+  ],
+  "parotidAll": [
+   [
+    "parotid",
+    "(y/0.0034+1470) > 1549"
+   ],
+   [
+    "parotidLow",
+    "true"
+   ]
+  ]
+ }
+}
