@@ -1,0 +1,214 @@
+{
+ "source": "zanatomy",
+ "frame": {
+  "origin": [
+   0,
+   10,
+   1500
+  ],
+  "scale": 0.0038
+ },
+ "simplify": 0.5,
+ "parts": {
+  "midbrain": [
+   "Midbrain.l",
+   "Midbrain.r"
+  ],
+  "pons": [
+   "Pons.l",
+   "Pons.r"
+  ],
+  "medulla": [
+   "Medulla oblongata.l",
+   "Medulla oblongata.r"
+  ],
+  "cordAll": [
+   "White matter of spinal cord"
+  ],
+  "antAll": [
+   "Anterior horn of spinal cord"
+  ],
+  "postAll": [
+   "Posterior horn of spinal cord"
+  ],
+  "retAll": [
+   "Spinal reticular process"
+  ],
+  "v4": [
+   "Fourth ventricle"
+  ],
+  "aqueduct": [
+   "Aqueduct of midbrain"
+  ],
+  "collSup": [
+   "Superior colliculus.l",
+   "Superior colliculus.r"
+  ],
+  "collInf": [
+   "Inferior colliculus.l",
+   "Inferior colliculus.r"
+  ],
+  "scp": [
+   "Superior cerebellar peduncle.l",
+   "Superior cerebellar peduncle.r"
+  ],
+  "peduncle": [
+   "Base of peduncle.l",
+   "Base of peduncle.r"
+  ],
+  "red": [
+   "Red nucleus.l",
+   "Red nucleus.r"
+  ],
+  "thalamus": [
+   "Thalamus.l",
+   "Thalamus.r"
+  ],
+  "hypoAll": [
+   "Hypothalamus"
+  ],
+  "amygdala": [
+   "Amygdaloid body.l",
+   "Amygdaloid body.r"
+  ],
+  "striatum": [
+   "Caudate nucleus.l",
+   "Caudate nucleus.r",
+   "Putamen.l",
+   "Putamen.r"
+  ],
+  "cerebellum": [
+   "Anterior quadrangular lobule.l",
+   "Anterior quadrangular lobule.r",
+   "Posterior quadrangular lobule.l",
+   "Posterior quadrangular lobule.r",
+   "Superior semilunar lobule.l",
+   "Superior semilunar lobule.r",
+   "Inferior semilunar lobule.l",
+   "Inferior semilunar lobule.r",
+   "Gracile lobule.l",
+   "Gracile lobule.r",
+   "Biventral lobule.l",
+   "Biventral lobule.r",
+   "Tonsil of cerebellum.l",
+   "Tonsil of cerebellum.r",
+   "Flocculus.l",
+   "Flocculus.r",
+   "Wing of central lobule.l",
+   "Wing of central lobule.r",
+   "Central lobule",
+   "Culmen",
+   "Declive",
+   "Folium of vermis",
+   "Tuber of vermis",
+   "Pyramis of vermis",
+   "Uvula of vermis",
+   "Nodule of vermis",
+   "Lingula of cerebellum"
+  ],
+  "cortex": [
+   "Angular gyrus.l",
+   "Angular gyrus.r",
+   "Cingulate gyrus (Posteroventral part*).l",
+   "Cingulate gyrus (Posteroventral part*).r",
+   "Cingulate gyrus and sulcus (Middle anterior part).l",
+   "Cingulate gyrus and sulcus (Middle anterior part).r",
+   "Cingulate gyrus and sulcus (Middle posterior part).l",
+   "Cingulate gyrus and sulcus (Middle posterior part).r",
+   "Cingulate gyrus and sulcus (Posterior dorsal part).l",
+   "Cingulate gyrus and sulcus (Posterior dorsal part).r",
+   "Cuneus.l",
+   "Cuneus.r",
+   "Inferior occipital gyrus and sulcus*.l",
+   "Inferior occipital gyrus and sulcus*.r",
+   "Inferior temporal gyrus.l",
+   "Inferior temporal gyrus.r",
+   "Insula (Subcentral gyrus and ant. and post. sulci*).l",
+   "Insula (Subcentral gyrus and ant. and post. sulci*).r",
+   "Lateral occipital gyrus (Middle occipital gyrus*).l",
+   "Lateral occipital gyrus (Middle occipital gyrus*).r",
+   "Lateral occipitotemporal gyrus.l",
+   "Lateral occipitotemporal gyrus.r",
+   "Lingual gyrus.l",
+   "Lingual gyrus.r",
+   "Medial occipitotemporal gyrus (Parahippocampal*).l",
+   "Medial occipitotemporal gyrus (Parahippocampal*).r",
+   "Middle frontal gyrus.l",
+   "Middle frontal gyrus.r",
+   "Middle temporal gyrus.l",
+   "Middle temporal gyrus.r",
+   "Occipital pole.l",
+   "Occipital pole.r",
+   "Opercular part of inferior frontal gyrus.l",
+   "Opercular part of inferior frontal gyrus.r",
+   "Orbital gyri (Frontomarginal gyrus and sulcus*).l",
+   "Orbital gyri (Frontomarginal gyrus and sulcus*).r",
+   "Orbital gyri.l",
+   "Orbital gyri.r",
+   "Orbital part of  inferior frontal gyrus.l",
+   "Orbital part of  inferior frontal gyrus.r",
+   "Paracentral gyrus and sulcus*.l",
+   "Paracentral gyrus and sulcus*.r",
+   "Postcentral gyrus.l",
+   "Postcentral gyrus.r",
+   "Precentral gyrus.l",
+   "Precentral gyrus.r",
+   "Precuneus.l",
+   "Precuneus.r",
+   "Straight gyrus (Gyrus rectus).l",
+   "Straight gyrus (Gyrus rectus).r",
+   "Superior frontal gyrus.l",
+   "Superior frontal gyrus.r",
+   "Superior occipital gyri.l",
+   "Superior occipital gyri.r",
+   "Superior parietal lobule.l",
+   "Superior parietal lobule.r",
+   "Superior temporal gyrus (Lateral part).l",
+   "Superior temporal gyrus (Lateral part).r",
+   "Supramarginal gyrus.l",
+   "Supramarginal gyrus.r",
+   "Temporal plane.l",
+   "Temporal plane.r",
+   "Temporal pole.l",
+   "Temporal pole.r",
+   "Transverse frontopolar gyrus and sulcus*.l",
+   "Transverse frontopolar gyrus and sulcus*.r",
+   "Transverse temporal gyri.l",
+   "Transverse temporal gyri.r",
+   "Triangular part of inferior frontal gyrus.l",
+   "Triangular part of inferior frontal gyrus.r"
+  ]
+ },
+ "split": {
+  "cordAll": [
+   [
+    "cord",
+    "y > 0.035"
+   ]
+  ],
+  "antAll": [
+   [
+    "antHorn",
+    "y > 0.035"
+   ]
+  ],
+  "postAll": [
+   [
+    "postHorn",
+    "y > 0.035"
+   ]
+  ],
+  "retAll": [
+   [
+    "cordRet",
+    "y > 0.035"
+   ]
+  ],
+  "hypoAll": [
+   [
+    "hypothalamus",
+    "y > 0.2"
+   ]
+  ]
+ }
+}
