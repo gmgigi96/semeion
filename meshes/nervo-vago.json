@@ -1,0 +1,350 @@
+{
+ "source": "zanatomy",
+ "frame": {
+  "origin": [
+   0,
+   0,
+   1095
+  ],
+  "scale": 0.0015
+ },
+ "simplify": 0.5,
+ "parts": {
+  "vag": [
+   "Vagus nerve (X).r",
+   "Vagus nerve (X).l"
+  ],
+  "ix": [
+   "Glossopharyngeal nerve (IX).r"
+  ],
+  "xii": [
+   "Hypoglossal nerve (XII).r"
+  ],
+  "xi": [
+   "Accessory nerve (XI).r"
+  ],
+  "nucAmb": [
+   "Nucleus ambiguus.r",
+   "Nucleus ambiguus.l"
+  ],
+  "nucDors": [
+   "Posterior nucleus of vagus nerve.r",
+   "Posterior nucleus of vagus nerve.l"
+  ],
+  "nucSol": [
+   "Nucleus of solitary tract.r",
+   "Nucleus of solitary tract.l"
+  ],
+  "nucXI": [
+   "Nucleus of accessory nerve.r",
+   "Nucleus of accessory nerve.l"
+  ],
+  "nucXII": [
+   "Nucleus of hypoglossal nerve.r",
+   "Nucleus of hypoglossal nerve.l"
+  ],
+  "trigRoot": [
+   "Sensory root of trigeminal nerve.r",
+   "Sensory root of trigeminal nerve.l"
+  ],
+  "medulla": [
+   "Medulla oblongata.r",
+   "Medulla oblongata.l"
+  ],
+  "pons": [
+   "Pons.r",
+   "Pons.l"
+  ],
+  "skull": [
+   "Occipital bone",
+   "Temporal bone.r",
+   "Temporal bone.l",
+   "Sphenoid bone"
+  ],
+  "spine": [
+   "Atlas (C1)",
+   "Axis (C2)",
+   "Vertebra C3",
+   "Vertebra C4",
+   "Vertebra C5",
+   "Vertebra C6",
+   "Vertebra C7",
+   "Vertebra T1",
+   "Vertebra T2",
+   "Vertebra T3",
+   "Vertebra T4",
+   "Vertebra T5",
+   "Vertebra T6",
+   "Vertebra T7",
+   "Vertebra T8",
+   "Vertebra T9",
+   "Vertebra T10",
+   "Vertebra T11",
+   "Vertebra T12"
+  ],
+  "hyoid": [
+   "Hyoid bone"
+  ],
+  "thyroidCart": [
+   "Thyroid cartilage"
+  ],
+  "cricoid": [
+   "Cricoid cartilage"
+  ],
+  "epiglottis": [
+   "Epiglottis"
+  ],
+  "arytenoid": [
+   "Arytenoid cartilage.r",
+   "Arytenoid cartilage.l"
+  ],
+  "cricothyroid": [
+   "Straight part of cricothyroid muscle.r",
+   "Straight part of cricothyroid muscle.l",
+   "Oblique part of cricothyroid muscle.r",
+   "Oblique part of cricothyroid muscle.l"
+  ],
+  "intrinsic": [
+   "Posterior crico-arytenoid muscle.r",
+   "Posterior crico-arytenoid muscle.l",
+   "Lateral crico-arytenoid muscle.r",
+   "Lateral crico-arytenoid muscle.l",
+   "External part of thyro-arytenoid muscle.r",
+   "External part of thyro-arytenoid muscle.l",
+   "Transverse arytenoid muscle"
+  ],
+  "constrictor": [
+   "Middle pharyngeal constrictor.r",
+   "Middle pharyngeal constrictor.l",
+   "Inferior pharyngeal constrictor.r",
+   "Inferior pharyngeal constrictor.l"
+  ],
+  "thyroid": [
+   "Thyroid gland"
+  ],
+  "trachea": [
+   "Trachea"
+  ],
+  "bronchi": [
+   "Right main bronchus",
+   "Left main bronchus"
+  ],
+  "oesophagus": [
+   "Oesophagus"
+  ],
+  "stomach": [
+   "Stomach"
+  ],
+  "diaphragm": [
+   "Diaphragm"
+  ],
+  "arch": [
+   "Aortic arch"
+  ],
+  "aortaAsc": [
+   "Ascending aorta"
+  ],
+  "aortaDesc": [
+   "Thoracic aorta"
+  ],
+  "brachioceph": [
+   "Brachiocephalic trunk"
+  ],
+  "subclavianR": [
+   "Right subclavian artery"
+  ],
+  "subclavianL": [
+   "Left subclavian artery"
+  ],
+  "ccaR": [
+   "Right common carotid artery"
+  ],
+  "ccaL": [
+   "Left common carotid artery"
+  ],
+  "icaR": [
+   "Internal carotid artery.r"
+  ],
+  "icaL": [
+   "Internal carotid artery.l"
+  ],
+  "jugular": [
+   "Internal jugular vein.r",
+   "Internal jugular vein.l"
+  ],
+  "heart": [
+   "Left ventricle",
+   "Right ventricle",
+   "Left atrium",
+   "Right atrium",
+   "Pulmonary trunk"
+  ],
+  "lungR": [
+   "Superior lobe of right lung",
+   "Middle lobe of right lung",
+   "Inferior lobe of right lung"
+  ],
+  "lungL": [
+   "Superior lobe of left lung",
+   "Inferior lobe of left lung"
+  ]
+ },
+ "split": {
+  "vag": [
+   [
+    "vxPhar",
+    "(-z/0.0015) < -2 && (y/0.0015+1095) > 1523 && (y/0.0015+1095) < 1539 && (ax/0.0015) < 25"
+   ],
+   [
+    "vxRoot",
+    "(ax/0.0015) < 16.3 && (y/0.0015+1095) > 1565"
+   ],
+   [
+    "gJug",
+    "(y/0.0015+1095) > 1563.6 && (ax/0.0015) > 24.2"
+   ],
+   [
+    "vxCist",
+    "(y/0.0015+1095) > 1563.6"
+   ],
+   [
+    "gNod",
+    "(y/0.0015+1095) > 1545.6 && (y/0.0015+1095) < 1552.6"
+   ],
+   [
+    "vxSub",
+    "(y/0.0015+1095) > 1535"
+   ],
+   [
+    "vxCervR",
+    "(y/0.0015+1095) > 1479 && (x/0.0015) > 0"
+   ],
+   [
+    "vxCervL",
+    "(y/0.0015+1095) > 1479"
+   ]
+  ],
+  "xi": [
+   [
+    "xi",
+    "(y/0.0015+1095) > 1470 && (-z/0.0015) < 45"
+   ]
+  ],
+  "ix": [
+   [
+    "ix",
+    "(y/0.0015+1095) > 1480"
+   ]
+  ],
+  "trigRoot": [
+   [
+    "nucSpV",
+    "(y/0.0015+1095) < 1580"
+   ]
+  ],
+  "skull": [
+   [
+    "skullBase",
+    "(y/0.0015+1095) < 1588"
+   ]
+  ],
+  "spine": [
+   [
+    "spineC",
+    "(y/0.0015+1095) > 1425"
+   ],
+   [
+    "spineT",
+    "true"
+   ]
+  ],
+  "intrinsic": [
+   [
+    "intrinsicR",
+    "(x/0.0015) > 0"
+   ],
+   [
+    "intrinsicL",
+    "true"
+   ]
+  ],
+  "trachea": [
+   [
+    "tracheaC",
+    "(y/0.0015+1095) > 1415"
+   ],
+   [
+    "tracheaT",
+    "true"
+   ]
+  ],
+  "oesophagus": [
+   [
+    "esoC",
+    "(y/0.0015+1095) > 1415"
+   ],
+   [
+    "esoM",
+    "(y/0.0015+1095) > 1338"
+   ],
+   [
+    "esoLow",
+    "true"
+   ]
+  ],
+  "aortaAsc": [
+   [
+    "aortaAscTop",
+    "(y/0.0015+1095) > 1338"
+   ],
+   [
+    "aortaAscLow",
+    "true"
+   ]
+  ],
+  "aortaDesc": [
+   [
+    "aortaDescTop",
+    "(y/0.0015+1095) > 1338"
+   ],
+   [
+    "aortaDescLow",
+    "true"
+   ]
+  ],
+  "bronchi": [
+   [
+    "bronchiTop",
+    "(y/0.0015+1095) > 1338"
+   ],
+   [
+    "bronchiLow",
+    "true"
+   ]
+  ],
+  "jugular": [
+   [
+    "jugLowR",
+    "(y/0.0015+1095) < 1490 && (x/0.0015) > 0"
+   ],
+   [
+    "jugHighR",
+    "(x/0.0015) > 0"
+   ],
+   [
+    "jugLowL",
+    "(y/0.0015+1095) < 1490"
+   ],
+   [
+    "jugHighL",
+    "true"
+   ]
+  ],
+  "diaphragm": [
+   [
+    "diaphragm",
+    "(y/0.0015+1095) > 1112"
+   ]
+  ]
+ }
+}
