@@ -1,0 +1,126 @@
+{
+ "frame": { "origin": [0, -80, 1437], "scale": 0.0041 },
+ "simplify": 0.35,
+ "parts": {
+  "ica": ["Right internal carotid artery", "Left internal carotid artery"],
+  "ophthalmic": ["Right ophthalmic artery", "Left ophthalmic artery"],
+  "achor": [
+   "Right anterior choroidal artery", "Left anterior choroidal artery",
+   "Branch of right anterior choroidal artery to posterior limb of right internal capsule",
+   "Branch of left anterior choroidal artery to posterior limb of left internal capsule"
+  ],
+  "pcom": [
+   "Right posterior communicating artery", "Left posterior communicating artery",
+   "Hypothalamic branch of right posterior communicating artery", "Hypothalamic branch of left posterior communicating artery"
+  ],
+  "acom": ["Anterior communicating artery"],
+  "aca": ["Right anterior cerebral artery", "Left anterior cerebral artery"],
+  "acaB": [
+   "Right callosomarginal artery", "Left callosomarginal artery",
+   "Right pericallosal artery", "Left pericallosal artery",
+   "Right medial frontobasal artery", "Left medial frontobasal artery",
+   "Intermediomedial branch of right callosomarginal artery", "Intermediomedial branch of left callosomarginal artery",
+   "Paracentral branch of right callosomarginal artery", "Paracentral branch of left callosomarginal artery",
+   "Posteromedial branch of right callosomarginal artery", "Posteromedial branch of left callosomarginal artery",
+   "Precuneal branch of right pericallosal artery", "Precuneal branch of left pericallosal artery"
+  ],
+  "mca": [
+   "Sphenoid part of right middle cerebral artery", "Sphenoid part of left middle cerebral artery",
+   "Trunk of inferior terminal branch of right middle cerebral artery", "Trunk of inferior terminal branch of left middle cerebral artery"
+  ],
+  "striate": ["Anterolateral central branch of right middle cerebral artery", "Anterolateral central branch of left middle cerebral artery"],
+  "mcaB": [
+   "Insular part of right middle cerebral artery", "Insular part of left middle cerebral artery",
+   "Right lateral frontobasal artery", "Left lateral frontobasal artery",
+   "Right prefrontal artery", "Left prefrontal artery",
+   "Artery of right precentral sulcus", "Artery of left precentral sulcus",
+   "Artery of central sulcus",
+   "Artery of right postcentral sulcus", "Artery of left postcentral sulcus",
+   "Right anterior parietal artery", "Left anterior parietal artery",
+   "Right posterior parietal artery", "Left posterior parietal artery",
+   "Branch of right middle cerebral artery to right angular gyrus", "Branch of left middle cerebral artery to left angular gyrus",
+   "Right polar temporal artery", "Left polar temporal artery",
+   "Right anterior temporal artery", "Left anterior temporal artery",
+   "Middle temporal branch of right middle cerebral artery", "Middle temporal branch of left middle cerebral artery",
+   "Posterior temporal branch of right middle cerebral artery", "Posterior temporal branch of left middle cerebral artery",
+   "Temporo-occipital branch of right middle cerebral artery", "Temporo-occipital branch of left middle cerebral artery"
+  ],
+  "va": ["Right vertebral artery", "Left vertebral artery"],
+  "asa": ["Right anterior spinal artery", "Left anterior spinal artery"],
+  "basilar": [
+   "Basilar artery",
+   "Lateral branch of right pontine artery", "Lateral branch of left pontine artery",
+   "Medial branch of right pontine artery", "Medial branch of left pontine artery"
+  ],
+  "pica": ["Right posterior inferior cerebellar artery", "Left posterior inferior cerebellar artery"],
+  "aica": ["Anterior inferior cerebellar artery"],
+  "sca": [
+   "Right superior cerebellar artery", "Left superior cerebellar artery",
+   "Lateral branch of right superior cerebellar artery", "Lateral branch of left superior cerebellar artery",
+   "Medial branch of right superior cerebellar artery", "Medial branch of left superior cerebellar artery",
+   "Superior vermian branch of medial branch of right superior cerebellar artery", "Superior vermian branch of medial branch of left superior cerebellar artery"
+  ],
+  "pcaP1": ["Precommunicating part of right posterior cerebral artery", "Precommunicating part of left posterior cerebral artery"],
+  "pca": ["Postcommunicating part of right posterior cerebral artery", "Postcommunicating part of left posterior cerebral artery"],
+  "pcaB": [
+   "Right lateral occipital artery", "Left lateral occipital artery",
+   "Right medial occipital artery", "Left medial occipital artery",
+   "Anterior temporal branch of right lateral occipital artery", "Anterior temporal branch of left lateral occipital artery",
+   "Middle temporal branch of right lateral occipital artery", "Middle temporal branch of left lateral occipital artery",
+   "Set of posterior temporal branches of lateral occipital artery",
+   "Left splenial artery"
+  ],
+  "pcaDeep": [
+   "Right thalamoperforating artery", "Left thalamoperforating artery",
+   "Right thalamogeniculate artery", "Left thalamogeniculate artery",
+   "Posteromedial central branch of right posterior cerebral artery", "Posteromedial central branch of left posterior cerebral artery",
+   "Right posterior medial choroidal artery", "Left posterior medial choroidal artery"
+  ],
+  "terrMCA": [
+   "Right middle frontal gyrus", "Left middle frontal gyrus",
+   "Right inferior frontal gyrus", "Left inferior frontal gyrus",
+   "Anterior part of right superior temporal gyrus", "Anterior part of left superior temporal gyrus",
+   "Posterior part of right superior temporal gyrus", "Posterior part of left superior temporal gyrus",
+   "Right middle temporal gyrus", "Left middle temporal gyrus",
+   "Right supramarginal gyrus", "Left supramarginal gyrus",
+   "Right angular gyrus", "Left angular gyrus",
+   "Right insula", "Left insula"
+  ],
+  "dorsal": [
+   "Right superior frontal gyrus", "Left superior frontal gyrus",
+   "Right precentral gyrus", "Left precentral gyrus",
+   "Right postcentral gyrus", "Left postcentral gyrus",
+   "Orbital gyrus"
+  ],
+  "spl": ["Right superior parietal lobule", "Left superior parietal lobule"],
+  "cing": ["Right cingulate gyrus", "Left cingulate gyrus"],
+  "tempInf": [
+   "Right inferior temporal gyrus", "Left inferior temporal gyrus",
+   "Right fusiform gyrus", "Left fusiform gyrus"
+  ],
+  "terrPCA": [
+   "Right occipital lobe", "Left occipital lobe",
+   "Right parahippocampal gyrus", "Left parahippocampal gyrus"
+  ],
+  "midbrain": ["Midbrain", "Peduncle of midbrain"],
+  "pons": ["Pons"],
+  "medulla": ["Medulla oblongata"],
+  "cerebellum": ["Cerebellum"],
+  "capsule": ["Right internal capsule", "Left internal capsule"],
+  "putamen": ["Right putamen", "Left putamen"],
+  "tentorium": ["Tentorium cerebelli"]
+ },
+ "split": {
+  "ica": [
+   ["icaCer", "y > 0.385"],
+   ["icaCav", "y > 0.285"],
+   ["icaPetr", "y > 0.2"],
+   ["icaCerv", "y > 0.012"]
+  ],
+  "va": [["va", "y > 0.012"]],
+  "dorsal": [["terrACA", "ax < 0.09"], ["terrMCA", "true"]],
+  "spl": [["terrPCA", "z < -0.29"], ["terrACA", "ax < 0.09"], ["terrMCA", "true"]],
+  "cing": [["terrPCA", "z < -0.143 && y < 0.5"], ["terrACA", "true"]],
+  "tempInf": [["terrMCA", "z > 0.08"], ["terrPCA", "true"]]
+ }
+}
