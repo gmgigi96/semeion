@@ -1,0 +1,92 @@
+{
+ "source": "zanatomy",
+ "frame": {"origin":[-18,63,1192],"scale":0.0068},
+ "parts": {
+  "vT8": ["Vertebra T8"],
+  "vT9": ["Vertebra T9"],
+  "disc": ["Intervertebral disc T8-T9"],
+  "rib8Src": ["Eighth rib.r"],
+  "rib9Src": ["Ninth rib.r"],
+  "cordSrc": ["White matter of spinal cord"],
+  "antHornSrc": ["Anterior horn of spinal cord"],
+  "postHornSrc": ["Posterior horn of spinal cord"],
+  "greyMidSrc": ["Lateral intermediate substance"],
+  "imlSrc": ["Intermediolateral nucleus"],
+  "duraSrc": ["Spinal dura"],
+  "rootPSrc": ["Posterior root of spinal nerve.r"],
+  "rootPLSrc": ["Posterior root of spinal nerve.l"],
+  "ganglionSrc": ["Spinal ganglion.r"],
+  "ganglionLSrc": ["Spinal ganglion.l"],
+  "intercostalSrc": ["Intercostal nerves.r"],
+  "intercostalLSrc": ["Intercostal nerves.l"],
+  "trunkSrc": ["Sympathetic trunk.r"],
+  "sgangSrc": ["Ganglia of sympathetic trunk.r"],
+  "sympSrc": ["Sympathetic nerves.r"],
+  "transvSrc": ["Multifidus thoracis muscle.r","Rotatores.r","Semispinalis thoracis muscle.r"],
+  "erectorSrc": ["Longissimus thoracis muscle.r","Iliocostalis thoracis muscle.r"]
+ },
+ "split": {
+  "cordSrc": [
+   ["cord","((X,Y,Z)=>Z>1231&&Z<1287)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "antHornSrc": [
+   ["antHorn","((X,Y,Z)=>Z>1231&&Z<1287)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "postHornSrc": [
+   ["postHorn","((X,Y,Z)=>Z>1231&&Z<1287)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "greyMidSrc": [
+   ["greyMid","((X,Y,Z)=>Z>1231&&Z<1287)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "imlSrc": [
+   ["iml","((X,Y,Z)=>Z>1231&&Z<1287)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "duraSrc": [
+   ["dura","((X,Y,Z)=>Z>1231&&Z<1287&&(Math.abs(X)<8.6||(Z>1255&&Z<1270)))(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "rootPSrc": [
+   ["rootP","((X,Y,Z)=>Z>1256&&Z<1271)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "rootPLSrc": [
+   ["rootPL","((X,Y,Z)=>Z>1256&&Z<1271)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "ganglionSrc": [
+   ["ganglion","((X,Y,Z)=>Z>1255&&Z<1266)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "ganglionLSrc": [
+   ["ganglionL","((X,Y,Z)=>Z>1255&&Z<1266)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "intercostalSrc": [
+   ["nerve","((X,Y,Z)=>Y>50&&X>-22.5&&Math.abs(Z-1262)<5)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"],
+   ["anterior","((X,Y,Z)=>Y>50&&X>-33&&Math.abs(Z-1262)<5)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"],
+   ["anteriorD","((X,Y,Z)=>Y>50&&X>-75&&(X>-42?Math.abs(Z-1262)<5:Math.abs(Z-(1263+(X+42)*0.6))<6))(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "intercostalLSrc": [
+   ["nerveL","((X,Y,Z)=>Y>50&&X<22&&Math.abs(Z-1262)<5)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "trunkSrc": [
+   ["trunk","((X,Y,Z)=>Z>1231&&Z<1287)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "sgangSrc": [
+   ["sgang","((X,Y,Z)=>Z>1260.5&&Z<1265.5)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"],
+   ["sgangCtx","((X,Y,Z)=>Z>1242&&Z<1280)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "sympSrc": [
+   ["grey","((X,Y,Z)=>Z>1257&&Z<1265&&Y<69.6&&X>-17.8-(Y-60.8)*0.33)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"],
+   ["white","((X,Y,Z)=>Z>1257&&Z<1265&&Y<68.6)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"],
+   ["posterior","((X,Y,Z)=>Z>1250&&Z<1261&&Y>=68.6&&Y<93)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "rib8Src": [
+   ["rib8","((X,Y,Z)=>X>-78)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "rib9Src": [
+   ["rib9","((X,Y,Z)=>X>-78&&Z>1221)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "transvSrc": [
+   ["transv","((X,Y,Z)=>Z>1222&&Z<1285)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ],
+  "erectorSrc": [
+   ["erector","((X,Y,Z)=>Z>1222&&Z<1285&&X>-76)(-x/0.0068-18,63-z/0.0068,y/0.0068+1192)"]
+  ]
+ }
+}
