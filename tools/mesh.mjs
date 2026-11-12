@@ -41,7 +41,7 @@ const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 const source = manifest.source ?? 'bodyparts3d';
 const SRC =
   srcArg ??
-  (source === 'bodyparts3d' && process.env.BP3D) ??
+  (source === 'bodyparts3d' ? process.env.BP3D : undefined) ??
   path.join(process.env.SOURCES ?? path.resolve('../sources'), source);
 const OBJ = path.join(SRC, 'obj/all');
 const name = path.basename(manifestPath, '.json');

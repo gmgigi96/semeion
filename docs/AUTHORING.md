@@ -46,6 +46,25 @@ I modelli devono essere **anatomicamente realistici**, non schemi.
 4. Nel resoconto finale dire chiaramente **quali parti sono mesh reali e quali
    ricostruite a mano**, e con quale fonte.
 
+### Note pratiche su Z-Anatomy (dai primi capitoli)
+
+- **Terna**: `.r` finisce a x > 0 senza interventi. La testa sta a z 1496-1707 mm
+  (esempio: origine `[0, 0, 1485]`, scala 0.0034 per l'intera testa).
+- **I nervi sono tubi** (sezione a 36 vertici, raggio 0,4-1,7 mm), spesso più tubi
+  scollegati in un solo oggetto. Prima di scrivere le regole di `split` conviene estrarre
+  componenti connesse e linea d'asse; le regole vanno limitate in tutte e tre le
+  coordinate, altrimenti catturano rami lontani.
+- **Ci sono**: nuclei dei nervi cranici nel tronco (circa 386 vertici l'uno), ossicini,
+  chiocciola, «Vestibule» con i canali semicircolari, ghiandole, muscoli mimici.
+- **Mancano**: gangli (genicolato, sfeno-palatino, sottomandibolare, trigeminale), muscoli
+  dell'orecchio medio, nervo intermedio, cute; il padiglione è solo in frammenti.
+- **Reperi utili**: la carotide interna reale per canale carotico e foro lacero.
+- **Peso**: ossa e muscoli sono leggeri; un cranio intero con una sessantina di oggetti
+  sta sotto 2 MB con `simplify` 0.5.
+- **Primi piani**: finché il motore non offre uno zoom centrato su un punto, si può
+  spostare e scalare `this.inner` con un metodo del modello (vedi `focus()` in
+  `src/models/nervo-faciale.js`), ripristinando tutto in `reset()`.
+
 ### Dal manifesto al file di mesh
 
 ```bash
