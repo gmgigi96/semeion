@@ -124,8 +124,8 @@ export async function buildSpread(def, ctx) {
   };
 }
 
-// Frontespizio con l'indice dei capitoli.
-export async function buildToc(chapters, ctx) {
+// Frontespizio con l'indice dei capitoli, raggruppati per parti su due colonne.
+export async function buildToc(chapters, parts, ctx) {
   const left = new THREE.Group();
   const right = new THREE.Group();
 
@@ -141,43 +141,63 @@ export async function buildToc(chapters, ctx) {
   intro.position.set(M, -0.34 - bounds(title).h - 0.06, intro.position.z);
   left.add(kicker, title, intro);
 
-  const head = makeText('INDICE', SMALL);
-  head.position.set(M, -0.16, head.position.z);
-  right.add(head);
-  let y = -0.215;
-  for (const [i, ch] of chapters.entries()) {
-    const row = new THREE.Group();
-    row.position.set(M, y, 0);
-    const num = makeText(String(i + 1), { font: FONT.bold, fontSize: 0.06, color: ACCENT, anchorY: 'top' });
-    const name = makeText(ch.title, { font: FONT.bold, fontSize: 0.038 });
-    name.position.x = 0.085;
-    name.position.y = -0.004;
-    const sub = makeText(`${ch.blurb}  ·  ${ch.spreads.length} doppie pagine`, {
-      font: FONT.italic, fontSize: 0.0215, color: INK_SOFT, maxWidth: W - 0.09, lineHeight: 1.35,
-    });
-    sub.position.set(0.085, -0.056, sub.position.z);
-    await ready(sub);
-    const h = 0.056 + bounds(sub).h + 0.03;
+  // righe dell'indice: intestazioni di parte e capitoli numerati
+  const rows = [];
+  for (const part of [...parts, ...new Set(chapters.map((c) => c.part).filter((p) => !parts.includes(p)))]) {
+    const list = chapters.filter((c) => c.part === part);
+    if (!list.length) continue;
+    rows.push({ part });
+    for (const ch of list) rows.push({ ch, n: chapters.indexOf(ch) + 1 });
+  }
+  const colW = (W - 0.04) / 2;
+  const lineH = 0.046, headH = 0.062, top = -0.15, bottom = -1.2;
+  let col = 0;
+  let y = top;
+  const waits = [];
+  for (const [i, row] of rows.entries()) {
+    // una parte non resta mai orfana in fondo a una colonna
+    const need = row.part ? headH + lineH : lineH;
+    if (y - need < bottom && col === 0) {
+      col = 1;
+      y = top;
+    }
+    const x = M + col * (colW + 0.04);
+    if (row.part) {
+      if (y !== top) y -= 0.016;
+      const t = makeText(row.part.toUpperCase(), { ...SMALL, fontSize: 0.0135, color: ACCENT });
+      t.position.set(x, y - 0.012, t.position.z);
+      right.add(t);
+      waits.push(ready(t));
+      y -= headH - 0.016;
+      continue;
+    }
+    const num = makeText(String(row.n), { font: FONT.bold, fontSize: 0.021, color: ACCENT, anchorX: 'right', anchorY: 'middle' });
+    num.position.set(x + 0.034, y - lineH / 2, num.position.z);
+    const name = makeText(row.ch.title, { font: FONT.semi, fontSize: 0.0235, anchorY: 'middle' });
+    name.position.set(x + 0.05, y - lineH / 2, name.position.z);
     const hit = new THREE.Mesh(
-      new THREE.PlaneGeometry(W + 0.04, h),
+      new THREE.PlaneGeometry(colW, lineH),
       new THREE.MeshBasicMaterial({ color: MARKER, transparent: true, opacity: 0, depthWrite: false })
     );
-    hit.position.set(W / 2, -h / 2 + 0.012, 0.0004);
+    hit.position.set(x + colW / 2, y - lineH / 2, 0.0004);
     hit.renderOrder = 1;
     hit.userData.ui = {
-      hover: (on) => (hit.material.opacity = on ? 0.22 : 0),
-      click: () => ctx.openChapter(i),
+      hover: (on) => (hit.material.opacity = on ? 0.25 : 0),
+      click: () => ctx.openChapter(chapters.indexOf(row.ch)),
       cursor: 'pointer',
+      tip: row.ch.blurb,
     };
-    row.add(hit, num, name, sub);
-    right.add(row);
-    y -= h + 0.022;
+    right.add(hit, num, name);
+    waits.push(ready(name));
+    y -= lineH;
   }
+  const head = makeText('INDICE', SMALL);
+  head.position.set(M, -0.075, head.position.z);
   const hint = makeText('SCEGLI UN CAPITOLO · FRECCE DELLA TASTIERA PER SFOGLIARE', {
     fontSize: 0.0135, font: FONT.bold, color: ACCENT, letterSpacing: 0.1, anchorX: 'center', maxWidth: W, textAlign: 'center',
   });
-  hint.position.set(0.5, -1.25, hint.position.z);
-  right.add(hint);
-  await Promise.all([ready(kicker), ready(intro), ready(head), ready(hint)]);
+  hint.position.set(0.5, -1.27, hint.position.z);
+  right.add(head, hint);
+  await Promise.all([ready(kicker), ready(intro), ready(head), ready(hint), ...waits]);
   return { left, right, enter() {} };
 }

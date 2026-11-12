@@ -1,5 +1,6 @@
 // Capitolo "Sistema limbico". Testi dagli appunti di neuroanatomia (Sistema limbico).
 import { selector } from '../modes.js';
+import { Brain } from '../brain.js';
 
 const LOBE = ['cingulate', 'isthmus', 'parahippocampal', 'entorhinal', 'uncus'];
 const FORNIX = ['fimbria', 'crus', 'fxBody', 'fxCol'];
@@ -150,7 +151,10 @@ export default {
   id: 'sistema-limbico',
   title: 'Sistema limbico',
   blurb: "Lobo limbico, ippocampo e fornice, circuito di Papez, amigdala.",
+  part: 'Encefalo',
+  order: 33,
   model: 'brain',
+  createModel: () => new Brain(),
   yaw: -1.05,
   spreads,
 };

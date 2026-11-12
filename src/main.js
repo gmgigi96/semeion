@@ -2,12 +2,8 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Text } from 'troika-three-text';
 import { Book, PAGE_H } from './book.js';
-import { Plexus } from './plexus.js';
-import { Brain } from './brain.js';
-import { Cerebellum } from './cerebellum.js';
-import { Hypothalamus } from './hypothalamus.js';
 import { buildSpread, buildToc } from './spread.js';
-import { CHAPTERS } from './chapters/index.js';
+import { CHAPTERS, PARTS } from './chapters/index.js';
 import { FONT } from './ui.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -42,24 +38,20 @@ scene.add(book.group);
 
 // I modelli si costruiscono alla prima pagina che li usa.
 const MODEL_SCALE = 0.9;
-const factories = {
-  plexus: () => new Plexus(),
-  brain: () => new Brain(),
-  cerebellum: () => new Cerebellum(),
-  hypothalamus: () => new Hypothalamus(),
-};
 const models = {};
 let active = null; // modello sulla pagina corrente
-function modelFor(name) {
-  if (!name) return null;
-  if (!models[name]) {
-    const m = (models[name] = factories[name]());
+// Capitoli con la stessa chiave `model` condividono lo stesso modello.
+function modelFor(chapter) {
+  if (!chapter) return null;
+  const key = chapter.model ?? chapter.id;
+  if (!models[key]) {
+    const m = (models[key] = chapter.createModel());
     m.group.position.set(0.5, 0.001, -PAGE_H / 2 + 0.66);
     m.group.scale.setScalar(MODEL_SCALE);
     m.group.visible = false;
     scene.add(m.group);
   }
-  return models[name];
+  return models[key];
 }
 
 // Sequenza piatta delle doppie pagine: indice, poi i capitoli uno dopo l'altro.
@@ -127,10 +119,10 @@ function build(i) {
     toc: () => goTo(0),
     openChapter: (c) => goTo(CHAPTERS[c].first),
   };
-  if (page.toc) return buildToc(CHAPTERS, ctx);
+  if (page.toc) return buildToc(CHAPTERS, PARTS, ctx);
   return buildSpread(page.def, {
     ...ctx,
-    model: modelFor(page.chapter.model),
+    model: modelFor(page.chapter),
     chapter: page.chapter,
     index: page.index,
     count: page.chapter.spreads.length,
@@ -145,7 +137,7 @@ async function goTo(i, animate = true) {
   const dir = i > index ? 1 : -1;
   const page = PAGES[i];
   const next = await build(i);
-  const model = modelFor(page.chapter?.model);
+  const model = modelFor(page.chapter);
   if (current && animate) {
     growTarget = 0;
     await wait(260);
@@ -175,7 +167,7 @@ async function goTo(i, animate = true) {
   active = model;
   current = next;
   index = i;
-  history.replaceState(null, '', `#${i + 1}`);
+  history.replaceState(null, '', page.toc ? '#' : `#${page.chapter.id}/${page.index + 1}`);
   next.enter();
   growTarget = 1;
   busy = false;
@@ -290,6 +282,13 @@ renderer.setAnimationLoop(() => {
   renderer.render(scene, camera);
 });
 
-const start = Math.min(PAGES.length, Math.max(1, parseInt(location.hash.slice(1)) || 1)) - 1;
-goTo(start, false);
+// Indirizzo di una pagina: #id-capitolo/numero (es. #cervelletto/2).
+function pageFromHash() {
+  const [id, n] = decodeURIComponent(location.hash.slice(1)).split('/');
+  const chapter = CHAPTERS.find((c) => c.id === id);
+  if (!chapter) return 0;
+  return chapter.first + Math.min(chapter.spreads.length, Math.max(1, parseInt(n) || 1)) - 1;
+}
+addEventListener('hashchange', () => goTo(pageFromHash()));
+goTo(pageFromHash(), false);
 window.__book = { goTo, scene, camera, models, get model() { return active; } };

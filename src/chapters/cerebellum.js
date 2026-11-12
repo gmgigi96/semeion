@@ -1,5 +1,6 @@
 // Capitolo "Cervelletto". Testi dagli appunti di neuroanatomia (Cervelletto).
 import { selector } from '../modes.js';
+import { Cerebellum } from '../cerebellum.js';
 
 const ANT = ['antVermis', 'antHemi'];
 const POST = ['postVermis', 'pyramis', 'uvula', 'postHemi'];
@@ -136,7 +137,10 @@ export default {
   id: 'cervelletto',
   title: 'Cervelletto',
   blurb: 'Lobi e peduncoli, i tre cervelletti funzionali, nuclei profondi, fibre muscoidi e rampicanti.',
+  part: 'Encefalo',
+  order: 34,
   model: 'cerebellum',
+  createModel: () => new Cerebellum(),
   yaw: 2.45,
   spreads,
 };

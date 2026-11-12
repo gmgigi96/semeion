@@ -1,6 +1,7 @@
 // Capitolo "Ipotalamo". Testi dagli appunti di neuroanatomia
 // (Ipotalamo; Anatomia funzionale dell'ipotalamo).
 import { selector } from '../modes.js';
+import { Hypothalamus } from '../hypothalamus.js';
 
 const CONTEXT = ['v3', 'thalamus', 'commissure', 'lamina', 'chiasm', 'fornix', 'mtt', 'mammillary', 'stalk', 'adeno', 'neuro', 'eminence'];
 const PRE = ['preopticM', 'preopticL'];
@@ -147,7 +148,10 @@ export default {
   id: 'ipotalamo',
   title: 'Ipotalamo',
   blurb: "Regioni e nuclei, le vie verso l'ipofisi, termoregolazione, fame, sonno.",
+  part: 'Encefalo',
+  order: 35,
   model: 'hypothalamus',
+  createModel: () => new Hypothalamus(),
   yaw: -1.0,
   spreads,
 };

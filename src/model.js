@@ -65,6 +65,7 @@ export class AnatomyModel {
 
   ui(id, name) {
     return {
+      id,
       tip: name,
       drag: true,
       hover: (on) => this.onHover?.(on ? id : null),

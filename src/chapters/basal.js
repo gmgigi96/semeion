@@ -1,5 +1,6 @@
 // Capitolo "Nuclei della base". Testi dagli appunti di neuroanatomia (Nuclei della base).
 import { selector } from '../modes.js';
+import { Brain } from '../brain.js';
 
 const CAUDATE = ['caudHead', 'caudBody', 'caudTail'];
 const STRIATUM = [...CAUDATE, 'putamen'];
@@ -144,7 +145,10 @@ export default {
   id: 'nuclei-della-base',
   title: 'Nuclei della base',
   blurb: 'Striato, pallido, subtalamo e sostanza nera: i circuiti che regolano il movimento.',
+  part: 'Encefalo',
+  order: 32,
   model: 'brain',
+  createModel: () => new Brain(),
   yaw: -0.55,
   spreads,
 };

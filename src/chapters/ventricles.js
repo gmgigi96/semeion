@@ -1,6 +1,7 @@
 // Capitolo "Ventricoli cerebrali". Testi dagli appunti di neuroanatomia
 // (Ventricoli) e, per l'ultima pagina, di neurochirurgia (3. Idrocefalo).
 import { selector } from '../modes.js';
+import { Brain } from '../brain.js';
 
 const LATERAL = ['lvFront', 'lvBody', 'lvTrig', 'lvTemp', 'lvOcc'];
 const PASSAGES = ['monro', 'aqueduct', 'luschka', 'magendie', 'canal'];
@@ -126,7 +127,10 @@ export default {
   id: 'ventricoli',
   title: 'Ventricoli cerebrali',
   blurb: "Le quattro cavità, il viaggio del liquor e l'idrocefalo.",
+  part: 'Encefalo',
+  order: 31,
   model: 'brain',
+  createModel: () => new Brain(),
   yaw: -0.95,
   spreads,
 };

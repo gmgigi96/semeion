@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { makeText, FONT, INK, ACCENT } from '../ui.js';
 import { W, chipsInto, infoText } from '../modes.js';
-import { ROOTS, ROOT_COLORS, LEVELS, NERVE, DIM, DEAD, LIT, TERMINALS } from '../plexus.js';
+import { Plexus, ROOTS, ROOT_COLORS, LEVELS, NERVE, DIM, DEAD, LIT, TERMINALS } from '../plexus.js';
 
 const lv = (...names) => names.map((n) => `lvl:${n}`);
 const DIVS_A = ['Ua', 'Ma', 'La'];
@@ -311,7 +311,10 @@ export default {
   id: 'plesso-brachiale',
   title: 'Plesso brachiale',
   blurb: "Dalle radici C5-T1 ai nervi dell'arto superiore, fino alle lesioni.",
+  part: 'Midollo e nervi spinali',
+  order: 13,
   model: 'plexus',
+  createModel: () => new Plexus(),
   yaw: 0,
   spreads,
 };
