@@ -232,7 +232,7 @@ export class AnatomyModel {
           outlineWidth: '9%', outlineColor: 0xfbf6ea,
         });
         t.frustumCulled = false;
-        t.material.depthTest = false;
+        for (const m of [t.material].flat()) m.depthTest = false; // con il contorno i materiali sono due
         t.renderOrder = 30;
         const p = this.parts.get(id);
         t.userData.anchor = new THREE.Vector3(p.center.x, p.top + 0.012, p.center.z);
