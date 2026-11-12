@@ -1,0 +1,274 @@
+{
+ "source": "zanatomy",
+ "frame": {
+  "origin": [
+   0,
+   0,
+   1485
+  ],
+  "scale": 0.0034
+ },
+ "simplify": 0.5,
+ "parts": {
+  "fn": [
+   "Facial nerve (VII).r"
+  ],
+  "fnLeft": [
+   "Facial nerve (VII).l"
+  ],
+  "chordaZA": [
+   "Chorda tympani.r"
+  ],
+  "lingual": [
+   "Lingual nerve.r"
+  ],
+  "viii": [
+   "Vestibulocochlear nerve (VIII).r",
+   "Vestibular nerve.r",
+   "Cochlear nerve"
+  ],
+  "nucMot": [
+   "Motor nucleus of facial nerve.r",
+   "Motor nucleus of facial nerve.l"
+  ],
+  "nucSal": [
+   "Superior salivatory nucleus.r",
+   "Superior salivatory nucleus.l"
+  ],
+  "nucSol": [
+   "Nucleus of solitary tract.r",
+   "Nucleus of solitary tract.l"
+  ],
+  "nucVI": [
+   "Nucleus of abducens nerve.r",
+   "Nucleus of abducens nerve.l"
+  ],
+  "pons": [
+   "Pons.r",
+   "Pons.l"
+  ],
+  "medullaAll": [
+   "Medulla oblongata.r",
+   "Medulla oblongata.l"
+  ],
+  "midbrain": [
+   "Midbrain.r",
+   "Midbrain.l"
+  ],
+  "temporalR": [
+   "Temporal bone.r"
+  ],
+  "skull": [
+   "Frontal bone",
+   "Occipital bone",
+   "Sphenoid bone",
+   "Mandible",
+   "Temporal bone.l",
+   "Parietal bone.r",
+   "Parietal bone.l",
+   "Maxilla.r",
+   "Maxilla.l",
+   "Zygomatic bone.r",
+   "Zygomatic bone.l",
+   "Nasal bone.r",
+   "Nasal bone.l"
+  ],
+  "cochlea": [
+   "Cochlea.r"
+  ],
+  "labyrinth": [
+   "Vestibule.r"
+  ],
+  "ossicles": [
+   "Malleus.r",
+   "Incus.r"
+  ],
+  "stapes": [
+   "Stapes.r"
+  ],
+  "tympanic": [
+   "Tympanic membrane.r"
+  ],
+  "mUpR": [
+   "Frontalis muscle.r",
+   "Orbital part of orbicularis oculi.r",
+   "Palpebral part of orbicularis oculi.r",
+   "Corrugator supercilii.r",
+   "Procerus muscle.r"
+  ],
+  "mUpL": [
+   "Frontalis muscle.l",
+   "Orbital part of orbicularis oculi.l",
+   "Palpebral part of orbicularis oculi.l",
+   "Corrugator supercilii.l",
+   "Procerus muscle.l"
+  ],
+  "mLowR": [
+   "Bucinator.r",
+   "Risorius muscle.r",
+   "Orbicularis oris muscle.r",
+   "Zygomaticus major muscle.r",
+   "Zygomaticus minor muscle.r",
+   "Levator labii superioris.r",
+   "Levator anguli oris.r",
+   "Levator nasolabialis.r",
+   "Nasalis muscle.r",
+   "Depressor anguli oris.r",
+   "Depressor labii inferioris.r",
+   "Mentalis muscle.r",
+   "Depressor septi nasi.r"
+  ],
+  "mLowL": [
+   "Bucinator.l",
+   "Risorius muscle.l",
+   "Orbicularis oris muscle.l",
+   "Zygomaticus major muscle.l",
+   "Zygomaticus minor muscle.l",
+   "Levator labii superioris.l",
+   "Levator anguli oris.l",
+   "Levator nasolabialis.l",
+   "Nasalis muscle.l",
+   "Depressor anguli oris.l",
+   "Depressor labii inferioris.l",
+   "Mentalis muscle.l",
+   "Depressor septi nasi.l"
+  ],
+  "occipitalis": [
+   "Occipitalis muscle.r"
+  ],
+  "digastric": [
+   "Posterior belly of digastric muscle.r"
+  ],
+  "stylohyoid": [
+   "Stylohyoid muscle.r"
+  ],
+  "lacrimal": [
+   "Lacrimal gland.r"
+  ],
+  "parotid": [
+   "Parotid gland.r"
+  ],
+  "submandibular": [
+   "Submandibular gland.r"
+  ],
+  "sublingual": [
+   "Sublingual gland.r"
+  ],
+  "tongue": [
+   "Tongue"
+  ],
+  "maxillary": [
+   "Maxillary nerve.r"
+  ]
+ },
+ "split": {
+  "fn": [
+   [
+    "gspn",
+    "(-z/0.0034) < -2.3 && (-z/0.0034) > -13 && (y/0.0034+1485) > 1583.6 && (ax/0.0034) > 39.5 && (ax/0.0034) < 44"
+   ],
+   [
+    "chordaTy",
+    "((ax/0.0034) > 45.95 && (y/0.0034+1485) > 1574.2 && (y/0.0034+1485) < 1584.2 && (-z/0.0034) > 1.5 && (-z/0.0034) < 14) || ((-z/0.0034) > 12.25 && (y/0.0034+1485) > 1571.3 && (y/0.0034+1485) < 1576 && (ax/0.0034) > 45 && (ax/0.0034) < 48.6)"
+   ],
+   [
+    "fnPons",
+    "(ax/0.0034) < 16.2 && (-z/0.0034) > 0"
+   ],
+   [
+    "fnCist",
+    "(ax/0.0034) < 26.8 && (-z/0.0034) > -5"
+   ],
+   [
+    "fnMeat",
+    "(ax/0.0034) < 37.4 && (-z/0.0034) > -5 && (y/0.0034+1485) > 1575"
+   ],
+   [
+    "fnLab",
+    "(-z/0.0034) < 0.5 && (y/0.0034+1485) > 1581 && (ax/0.0034) < 45.5"
+   ],
+   [
+    "fnTymp",
+    "(y/0.0034+1485) > 1578.6 && (-z/0.0034) > 0.5 && (ax/0.0034) < 46.5"
+   ],
+   [
+    "fnMast",
+    "(y/0.0034+1485) > 1562.2 && (-z/0.0034) > 6 && (ax/0.0034) < 49.5"
+   ],
+   [
+    "fnTrunk",
+    "(-z/0.0034) > -5 && (y/0.0034+1485) > 1547.5 && (y/0.0034+1485) < 1555.5 + ((-z/0.0034) + 5) * 0.47"
+   ],
+   [
+    "cervFac",
+    "((-z/0.0034) > -30 && (y/0.0034+1485) < 1556) || ((-z/0.0034) <= -30 && (-z/0.0034) > -62 && (y/0.0034+1485) < 1534)"
+   ],
+   [
+    "tempFac",
+    "true"
+   ]
+  ],
+  "chordaZA": [
+   [
+    "chordaLow",
+    "(-z/0.0034) < -1.4"
+   ]
+  ],
+  "nucMot": [
+   [
+    "nucMotUp",
+    "(-z/0.0034) > 10.6"
+   ],
+   [
+    "nucMotLow",
+    "true"
+   ]
+  ],
+  "medullaAll": [
+   [
+    "medulla",
+    "(y/0.0034+1485) > 1556"
+   ],
+   [
+    "medullaLow",
+    "true"
+   ]
+  ],
+  "temporalR": [
+   [
+    "petrous",
+    "(ax/0.0034) < 54 && (y/0.0034+1485) < 1593 && (-z/0.0034) > -14 && (-z/0.0034) < 22"
+   ],
+   [
+    "skullR",
+    "true"
+   ]
+  ],
+  "skull": [
+   [
+    "skullR",
+    "x > 0"
+   ],
+   [
+    "skullL",
+    "true"
+   ]
+  ],
+  "tongue": [
+   [
+    "tongueAnt",
+    "(-z/0.0034) < -40.6"
+   ],
+   [
+    "tonguePost",
+    "true"
+   ]
+  ],
+  "maxillary": [
+   [
+    "maxillary",
+    "(-z/0.0034) > -56"
+   ]
+  ]
+ }
+}
