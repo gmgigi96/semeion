@@ -1,0 +1,76 @@
+{
+ "source": "zanatomy",
+ "frame": { "origin": [-15, 0, 1167], "scale": 0.00148 },
+ "parts": {
+  "skull": [
+   "Frontal bone", "Parietal bone.r", "Parietal bone.l", "Occipital bone", "Temporal bone.r", "Temporal bone.l",
+   "Sphenoid bone", "Maxilla.r", "Maxilla.l", "Zygomatic bone.r", "Zygomatic bone.l", "Nasal bone.r", "Nasal bone.l"
+  ],
+  "mandible": ["Mandible"],
+  "atlas": ["Atlas (C1)"],
+  "axis": ["Axis (C2)"],
+  "vC3": ["Vertebra C3"],
+  "vC4": ["Vertebra C4"],
+  "vC5": ["Vertebra C5"],
+  "vC6": ["Vertebra C6"],
+  "vC7": ["Vertebra C7"],
+  "discs": [
+   "Intervertebral disc C2-C3", "Intervertebral disc C3-C4", "Intervertebral disc C4-C5",
+   "Intervertebral disc C5-C6", "Intervertebral disc C6-C7", "Intervertebral disc C7-T1"
+  ],
+  "thoracic": [
+   "Vertebra T1", "Vertebra T2", "Vertebra T3", "Vertebra T4", "Vertebra T5", "Vertebra T6", "Vertebra T7", "Vertebra T8", "Vertebra T9",
+   "Intervertebral disc T1-T2", "Intervertebral disc T2-T3", "Intervertebral disc T3-T4", "Intervertebral disc T4-T5",
+   "Intervertebral disc T5-T6", "Intervertebral disc T6-T7", "Intervertebral disc T7-T8", "Intervertebral disc T8-T9"
+  ],
+  "hyoid": ["Hyoid bone"],
+  "larynx": ["Thyroid cartilage", "Cricoid cartilage", "Trachea"],
+  "clavicle": ["Clavicle.r"],
+  "rib1": ["First rib.r", "Costal cartilage of first rib.r"],
+  "ribs": [
+   "Second rib.r", "Third rib.r", "Fourth rib.r", "Fifth rib.r", "Sixth rib.r", "Seventh rib.r",
+   "Costal cartilage of second rib.r", "Costal cartilage of third rib.r", "Costal cartilage of fourth rib.r",
+   "Costal cartilage of fifth rib.r", "Costal cartilage of sixth rib.r", "Costal cartilage of seventh rib.r"
+  ],
+  "sternum": ["Manubrium of sternum", "Body of sternum"],
+  "scm": ["Sternocleidomastoid muscle.r"],
+  "scalA": ["Scalenus anterior muscle.r"],
+  "scalM": ["Scalenus medius muscle.r", "Scalenus posterior muscle.r"],
+  "levator": ["Levator scapulae.r"],
+  "trapezius": ["Ascending part of trapezius muscle.r"],
+  "platysma": ["Platysma.r"],
+  "sternohyoid": ["Sternohyoid muscle.r"],
+  "omohyoid": ["Omohyoid muscle.r"],
+  "sternothyroid": ["Sternothyroid muscle.r"],
+  "thyrohyoid": ["Thyrohyoid muscle.r"],
+  "geniohyoid": ["Geniohyoid muscle.r"],
+  "diaSrc": ["Diaphragm"],
+  "carotid": ["Right common carotid artery", "Internal carotid artery.r"],
+  "ijv": ["Internal jugular vein.r"],
+  "ejv": ["External jugular vein.r"],
+  "subA": ["Right subclavian artery", "Brachiocephalic trunk"],
+  "subV": ["Right subclavian vein"],
+  "svc": ["Right brachiocephalic vein", "Superior vena cava"],
+  "atrium": ["Right atrium"],
+  "heart": ["Right ventricle", "Left ventricle", "Left atrium", "Ascending aorta", "Aortic arch", "Pulmonary trunk"],
+  "ivc": ["Inferior vena cava (thoracic part)"],
+  "parotid": ["Parotid gland.r"],
+  "auricle": [
+   "Helix.r", "Antihelix.r", "Lobule of auricle.r", "Concha of auricle.r", "Tragus.r", "Antitragus.r", "Scapha.r",
+   "Crura of antihelix.r", "Cavity of concha.r", "Cymba conchae.r", "Triangular fossa.r"
+  ],
+  "hypoglossal": ["Hypoglossal nerve (XII).r"],
+  "accSrc": ["Accessory nerve (XI).r"],
+  "vagusSrc": ["Vagus nerve (X).r"],
+  "bpSrc": ["Roots of brachial plexus.r"],
+  "gangSrc": ["Spinal ganglion.r"]
+ },
+ "simplify": 0.4,
+ "split": {
+  "diaSrc": [["diaR", "y > 0.0266 && x > -0.0222"], ["diaL", "y > 0.0266"]],
+  "vagusSrc": [["vagus", "y > 0.3152"]],
+  "accSrc": [["accessory", "y > 0.3300"]],
+  "bpSrc": [["r4", "y > 0.4794 || (y > 0.4766 && x > 0.0148)"], ["brachial", "true"]],
+  "gangSrc": [["ganglia", "y > 0.4040"]]
+ }
+}
