@@ -1,0 +1,57 @@
+{
+ "frame": { "origin": [0, -80, 1450], "scale": 0.004 },
+ "parts": {
+  "frontal": ["Frontal bone"],
+  "ethmoid": ["Ethmoid"],
+  "sphenoid": ["Sphenoid bone"],
+  "temporal": ["Right temporal bone", "Left temporal bone"],
+  "occipital": ["Occipital bone"],
+  "parietal": ["Right parietal bone", "Left parietal bone"],
+  "stem": ["Midbrain", "Peduncle of midbrain", "Pons"],
+  "medulla": ["Medulla oblongata"],
+  "pituitary": ["Pituitary gland"],
+  "optic": ["Right optic nerve", "Left optic nerve", "Optic chiasm"],
+  "ophthalmicA": ["Right ophthalmic artery", "Left ophthalmic artery"],
+  "ica": ["Right internal carotid artery", "Left internal carotid artery"],
+  "vertebral": ["Right vertebral artery", "Left vertebral artery", "Basilar artery"],
+  "cn3": [
+   "Superior branch of right oculomotor nerve", "Superior branch of left oculomotor nerve",
+   "Inferior branch of right oculomotor nerve", "Inferior branch of left oculomotor nerve"
+  ],
+  "cn4": ["Right trochlear nerve", "Left trochlear nerve"],
+  "v1": ["Right ophthalmic nerve", "Left ophthalmic nerve"],
+  "frontalN": ["Right frontal nerve", "Left frontal nerve"],
+  "lacrimalN": ["Right lacrimal nerve", "Left lacrimal nerve"],
+  "nasociliaryN": ["Right nasociliary nerve", "Left nasociliary nerve"],
+  "ethmoidalN": [
+   "Right anterior ethmoidal nerve", "Left anterior ethmoidal nerve",
+   "Right posterior ethmoidal nerve", "Left posterior ethmoidal nerve"
+  ]
+ },
+ "split": {
+  "frontal": [["frontal", "y < 0.4205 + 0.174 * z"]],
+  "ethmoid": [
+   ["cristaGalli", "Math.abs(x - 0.0026) < 0.007 && y > 0.292 && z > 0.215"],
+   ["ethmoid", "y > 0.25"]
+  ],
+  "sphenoid": [
+   ["sphLesser", "y > 0.308 && z > 0.084 + 0.42 * ax"],
+   ["clivusSph", "ax < 0.06 && z < 0.064"],
+   ["sphBody", "ax < 0.05"],
+   ["sphGreater", "true"]
+  ],
+  "temporal": [
+   ["tempPost", "z + 0.6 * ax < 0.072"],
+   ["tempMid", "true"]
+  ],
+  "occipital": [
+   ["occBasilar", "z > -0.016 && ax < 0.064"],
+   ["occipital", "y < 0.4205 + 0.174 * z"]
+  ],
+  "parietal": [["parietal", "y < 0.4205 + 0.174 * z"]],
+  "medulla": [["medulla", "y > 0.07"]],
+  "ophthalmicA": [["ophthalmicA", "z < 0.17"]],
+  "ica": [["ica", "y > 0.08"]],
+  "vertebral": [["vertebral", "y > 0.08"]]
+ }
+}
