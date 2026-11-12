@@ -46,8 +46,17 @@ export class AnatomyModel {
     this.tilt = new THREE.Group();
     this.tilt.rotation.x = tilt;
     this.spin = new THREE.Group();
+    // Le coordinate dei modelli hanno x verso la destra del paziente, y in alto,
+    // z in avanti: è una terna sinistrorsa. `mirror` la ribalta, così a schermo
+    // il modello non è l'immagine speculare del vero (visto di fronte, la destra
+    // del paziente sta a sinistra di chi guarda). Le etichette stanno fuori dal
+    // ribaltamento (`overlay`) per restare leggibili.
+    this.mirror = new THREE.Group();
+    this.mirror.scale.x = -1;
     this.inner = new THREE.Group();
-    this.spin.add(this.inner);
+    this.mirror.add(this.inner);
+    this.overlay = new THREE.Group();
+    this.spin.add(this.mirror, this.overlay);
     this.tilt.add(this.spin);
     this.group.add(this.flat, this.tilt);
     this.yaw = 0;
@@ -226,8 +235,8 @@ export class AnatomyModel {
         t.material.depthTest = false;
         t.renderOrder = 30;
         const p = this.parts.get(id);
-        t.position.set(p.center.x, p.top + 0.012, p.center.z);
-        this.inner.add(t);
+        t.userData.anchor = new THREE.Vector3(p.center.x, p.top + 0.012, p.center.z);
+        this.overlay.add(t);
         this.labels.set(id, t);
       }
       t.text = text;
@@ -295,9 +304,18 @@ export class AnatomyModel {
       l.curve.getPointAt((this.time * 0.55 + l.phase) % 1, l.pulse.position);
     }
 
+    // etichette: seguono la parte (anche se `inner` è stato spostato o scalato)
+    // e restano rivolte a chi guarda
     const inv = new THREE.Quaternion();
-    this.inner.getWorldQuaternion(inv).invert();
+    this.overlay.getWorldQuaternion(inv).invert();
     const q = inv.multiply(camera.quaternion);
-    for (const t of this.labels.values()) t.quaternion.copy(q);
+    this.inner.updateWorldMatrix(true, false);
+    this.overlay.updateWorldMatrix(true, false);
+    for (const t of this.labels.values()) {
+      if (!t.visible) continue;
+      t.position.copy(t.userData.anchor).applyMatrix4(this.inner.matrixWorld);
+      this.overlay.worldToLocal(t.position);
+      t.quaternion.copy(q);
+    }
   }
 }
