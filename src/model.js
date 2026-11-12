@@ -235,7 +235,7 @@ export class AnatomyModel {
         for (const m of [t.material].flat()) m.depthTest = false; // con il contorno i materiali sono due
         t.renderOrder = 30;
         const p = this.parts.get(id);
-        t.userData.anchor = new THREE.Vector3(p.center.x, p.top + 0.012, p.center.z);
+        t.userData.anchor = new THREE.Vector3(p.center.x, p.top, p.center.z);
         this.overlay.add(t);
         this.labels.set(id, t);
       }
@@ -315,6 +315,7 @@ export class AnatomyModel {
       if (!t.visible) continue;
       t.position.copy(t.userData.anchor).applyMatrix4(this.inner.matrixWorld);
       this.overlay.worldToLocal(t.position);
+      t.position.y += 0.012; // scarto fisso, anche se `inner` è ingrandito
       t.quaternion.copy(q);
     }
   }
