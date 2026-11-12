@@ -71,7 +71,8 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
             const k = stepOf(o);
             const now = o.steps[k].ids.includes(part.id);
             const before = o.steps.slice(0, k).some((s) => s.ids.includes(part.id));
-            if (now) return { ...look, glow: 0.55, opacity: 1 };
+            // un involucro trasparente si illumina ma non diventa opaco
+            if (now) return part.ghost ? { ...look, glow: 0.55 } : { ...look, glow: 0.55, opacity: 1 };
             if (before) return { ...look, glow: 0.15 };
             return { ...look, dim: true };
           }
