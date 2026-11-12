@@ -1,0 +1,353 @@
+{
+ "source": "zanatomy",
+ "frame": {
+  "origin": [
+   0,
+   40,
+   800
+  ],
+  "scale": 0.00105
+ },
+ "parts": {
+  "occipitalW": [
+   "Occipital bone"
+  ],
+  "medulla": [
+   "Medulla oblongata.r",
+   "Medulla oblongata.l"
+  ],
+  "vAtlas": [
+   "Atlas (C1)"
+  ],
+  "vAxis": [
+   "Axis (C2)"
+  ],
+  "vCerv": [
+   "Vertebra C3",
+   "Vertebra C4",
+   "Vertebra C5",
+   "Vertebra C6",
+   "Vertebra C7",
+   "Intervertebral disc C2-C3",
+   "Intervertebral disc C3-C4",
+   "Intervertebral disc C4-C5",
+   "Intervertebral disc C5-C6",
+   "Intervertebral disc C6-C7",
+   "Intervertebral disc C7-T1"
+  ],
+  "vThorUp": [
+   "Vertebra T1",
+   "Vertebra T2",
+   "Vertebra T3",
+   "Vertebra T4",
+   "Vertebra T5",
+   "Vertebra T6",
+   "Vertebra T7",
+   "Vertebra T8",
+   "Intervertebral disc T1-T2",
+   "Intervertebral disc T2-T3",
+   "Intervertebral disc T3-T4",
+   "Intervertebral disc T4-T5",
+   "Intervertebral disc T5-T6",
+   "Intervertebral disc T6-T7",
+   "Intervertebral disc T7-T8",
+   "Intervertebral disc T8-T9"
+  ],
+  "vThorLow": [
+   "Vertebra T9",
+   "Vertebra T10",
+   "Vertebra T11",
+   "Vertebra T12",
+   "Intervertebral disc T9-T10",
+   "Intervertebral disc T10-T11",
+   "Intervertebral disc T11-T12",
+   "Intervertebral disc T12-L1"
+  ],
+  "vL1": [
+   "Vertebra L1"
+  ],
+  "vL2": [
+   "Vertebra L2"
+  ],
+  "vLumb": [
+   "Vertebra L3",
+   "Vertebra L4",
+   "Vertebra L5",
+   "Intervertebral disc L1-L2",
+   "Intervertebral disc L2-L3",
+   "Intervertebral disc L3-L4",
+   "Intervertebral disc L4-L5",
+   "Intervertebral disc L5-S1"
+  ],
+  "sacrum": [
+   "Sacrum"
+  ],
+  "coccyx": [
+   "Coccyx"
+  ],
+  "cordW": [
+   "White matter of spinal cord"
+  ],
+  "antHornW": [
+   "Anterior horn of spinal cord"
+  ],
+  "postHornW": [
+   "Posterior horn of spinal cord"
+  ],
+  "canalW": [
+   "Central canal"
+  ],
+  "postRootW": [
+   "Posterior root of spinal nerve.r",
+   "Posterior root of spinal nerve.l"
+  ],
+  "antRootW": [
+   "Anterior root of spinal nerve.r",
+   "Anterior root of spinal nerve.l"
+  ],
+  "ganglionW": [
+   "Spinal ganglion.r",
+   "Spinal ganglion.l"
+  ],
+  "cauda": [
+   "Cauda equina"
+  ],
+  "sleevesW": [
+   "Spinal dura"
+  ],
+  "pllW": [
+   "Posterior longitudinal ligament"
+  ],
+  "flavaW": [
+   "Ligamenta flava"
+  ],
+  "gracileW": [
+   "Gracile fasciculus"
+  ],
+  "cuneateW": [
+   "Cuneate fasciculus"
+  ],
+  "cstLatW": [
+   "Lateral corticospinal tract"
+  ],
+  "cstAntW": [
+   "Anterior corticospinal tract"
+  ],
+  "sctPostW": [
+   "Posterior spinocerebellar tract"
+  ],
+  "sctAntW": [
+   "Anterior spinocerebellar tract"
+  ],
+  "sttLatW": [
+   "Lateral spinothalamic tract"
+  ],
+  "sttAntW": [
+   "Anterior spinothalamic tract"
+  ],
+  "rubroW": [
+   "Rubrospinal tract"
+  ],
+  "lissauerW": [
+   "Posterolateral tract"
+  ],
+  "vestLatW": [
+   "Lateral vestibulospinal tract"
+  ],
+  "retMedW": [
+   "Medial reticulospinal tract"
+  ]
+ },
+ "split": {
+  "occipitalW": [
+   [
+    "occipital",
+    "y < 0.8211"
+   ]
+  ],
+  "cordW": [
+   [
+    "cordTop",
+    "y > 0.7203"
+   ],
+   [
+    "cervEnl",
+    "y > 0.6426"
+   ],
+   [
+    "cordThor",
+    "y > 0.4725"
+   ],
+   [
+    "lumbEnl",
+    "y > 0.357"
+   ],
+   [
+    "conus",
+    "true"
+   ]
+  ],
+  "antHornW": [
+   [
+    "antHorn",
+    "y > 0.7203"
+   ]
+  ],
+  "postHornW": [
+   [
+    "postHorn",
+    "y > 0.7203"
+   ]
+  ],
+  "canalW": [
+   [
+    "canal",
+    "y > 0.7203"
+   ]
+  ],
+  "postRootW": [
+   [
+    "postRootTop",
+    "y > 0.7203"
+   ],
+   [
+    "postRootCerv",
+    "y > 0.6352"
+   ],
+   [
+    "postRoot",
+    "y > 0.4462"
+   ]
+  ],
+  "antRootW": [
+   [
+    "antRootTop",
+    "y > 0.7203"
+   ],
+   [
+    "antRootCerv",
+    "y > 0.6352"
+   ],
+   [
+    "antRoot",
+    "y > 0.4462"
+   ]
+  ],
+  "ganglionW": [
+   [
+    "ganglionTop",
+    "y > 0.7203"
+   ],
+   [
+    "ganglionCerv",
+    "y > 0.6352"
+   ],
+   [
+    "ganglion",
+    "y > 0.4462"
+   ],
+   [
+    "ganglionLow",
+    "true"
+   ]
+  ],
+  "sleevesW": [
+   [
+    "sleevesTop",
+    "ax > 0.0095 && y > 0.7203"
+   ],
+   [
+    "sleevesCerv",
+    "ax > 0.0095 && y > 0.6352"
+   ],
+   [
+    "sleeves",
+    "ax > 0.0095 && y > 0.4462"
+   ]
+  ],
+  "pllW": [
+   [
+    "pllTop",
+    "y > 0.7203"
+   ]
+  ],
+  "flavaW": [
+   [
+    "flavaTop",
+    "y > 0.7203"
+   ]
+  ],
+  "gracileW": [
+   [
+    "gracile",
+    "y > 0.7203"
+   ]
+  ],
+  "cuneateW": [
+   [
+    "cuneate",
+    "y > 0.7203"
+   ]
+  ],
+  "cstLatW": [
+   [
+    "cstLat",
+    "y > 0.7203"
+   ]
+  ],
+  "cstAntW": [
+   [
+    "cstAnt",
+    "y > 0.7203"
+   ]
+  ],
+  "sctPostW": [
+   [
+    "sctPost",
+    "y > 0.7203"
+   ]
+  ],
+  "sctAntW": [
+   [
+    "sctAnt",
+    "y > 0.7203"
+   ]
+  ],
+  "sttLatW": [
+   [
+    "sttLat",
+    "y > 0.7203"
+   ]
+  ],
+  "sttAntW": [
+   [
+    "sttAnt",
+    "y > 0.7203"
+   ]
+  ],
+  "rubroW": [
+   [
+    "rubro",
+    "y > 0.7203"
+   ]
+  ],
+  "lissauerW": [
+   [
+    "lissauer",
+    "y > 0.7203"
+   ]
+  ],
+  "vestLatW": [
+   [
+    "vestLat",
+    "y > 0.7203"
+   ]
+  ],
+  "retMedW": [
+   [
+    "retMed",
+    "y > 0.7203"
+   ]
+  ]
+ }
+}
