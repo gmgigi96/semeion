@@ -4,6 +4,8 @@ import { Text } from 'troika-three-text';
 import { Book, PAGE_H } from './book.js';
 import { Plexus } from './plexus.js';
 import { Brain } from './brain.js';
+import { Cerebellum } from './cerebellum.js';
+import { Hypothalamus } from './hypothalamus.js';
 import { buildSpread, buildToc } from './spread.js';
 import { CHAPTERS } from './chapters/index.js';
 import { FONT } from './ui.js';
@@ -40,7 +42,12 @@ scene.add(book.group);
 
 // I modelli si costruiscono alla prima pagina che li usa.
 const MODEL_SCALE = 0.9;
-const factories = { plexus: () => new Plexus(), brain: () => new Brain() };
+const factories = {
+  plexus: () => new Plexus(),
+  brain: () => new Brain(),
+  cerebellum: () => new Cerebellum(),
+  hypothalamus: () => new Hypothalamus(),
+};
 const models = {};
 let active = null; // modello sulla pagina corrente
 function modelFor(name) {

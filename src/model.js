@@ -72,13 +72,32 @@ export class AnatomyModel {
     };
   }
 
+  // Base di legno piatta sulla pagina e asta d'acciaio che regge il modello.
+  addStand({ radius = 0.2, z = 0, rod }) {
+    const wood = new THREE.MeshPhysicalMaterial({ color: 0x4a3122, roughness: 0.45, clearcoat: 0.6 });
+    const steel = new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: 1, roughness: 0.25 });
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.03, 0.026, 64), wood);
+    base.scale.set(radius, 1, radius);
+    base.position.set(0, 0.013, z);
+    base.castShadow = base.receiveShadow = true;
+    this.flat.add(base);
+    if (rod) {
+      const [x, y0, y1, rz] = rod;
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, y1 - y0, 12), steel);
+      m.position.set(x, (y0 + y1) / 2, rz);
+      m.castShadow = true;
+      this.inner.add(m);
+    }
+  }
+
   // ghost: involucro trasparente di contesto, non intercetta il puntatore.
-  addPart(id, name, color, geos, { ghost = false, opacity = ghost ? 0.1 : 1, roughness = 0.45 } = {}) {
+  addPart(id, name, color, geos, { ghost = false, opacity = ghost ? 0.1 : 1, roughness = 0.45, double = false } = {}) {
     const mat = ghost
       ? ghostMaterial(color)
       : new THREE.MeshPhysicalMaterial({
           color, roughness, clearcoat: 0.5, clearcoatRoughness: 0.35,
           emissive: color, emissiveIntensity: 0, transparent: true, opacity: 0,
+          side: double ? THREE.DoubleSide : THREE.FrontSide,
         });
     const meshes = geos.map((g) => {
       // ogni pezzo ruota e si dilata attorno al proprio centro
