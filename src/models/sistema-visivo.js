@@ -353,13 +353,15 @@ export class VisualSystem extends AnatomyModel {
   }
 
   // Due dischi rivolti a chi guarda: il campo visivo di ciascun occhio, in
-  // quadranti; la parte cieca è scura. Il lato destro del campo sta sempre dalla
-  // parte in cui, sullo schermo, si trova la destra del paziente.
+  // quadranti, come lo vede il paziente (campo destro a destra, occhio destro
+  // a destra); la parte cieca è scura. Stanno in `overlay`, fuori dal
+  // ribaltamento del modello, così scritte e lati restano dritti.
   #fields() {
     const R = 0.062;
     const group = (this.fieldGroup = new THREE.Group());
     group.visible = false;
-    this.inner.add(group);
+    group.position.copy(this.inner.position);
+    this.overlay.add(group);
     this.fieldDiscs = [];
     const basic = (color, order) => {
       const m = new THREE.MeshBasicMaterial({ color, depthTest: false, depthWrite: false, transparent: true, side: THREE.DoubleSide });
@@ -423,12 +425,9 @@ export class VisualSystem extends AnatomyModel {
   update(dt, camera, realDt = dt) {
     super.update(dt, camera, realDt);
     if (!this.fieldGroup?.visible) return;
-    this.inner.updateWorldMatrix(true, false);
     const q = new THREE.Quaternion();
-    this.inner.getWorldQuaternion(q).invert().multiply(camera.quaternion);
-    // da che parte dello schermo sta la destra del paziente
-    const x = V(1, 0, 0).transformDirection(this.inner.matrixWorld).transformDirection(camera.matrixWorldInverse).x;
-    const side = x >= 0 ? 1 : -1;
+    this.overlay.getWorldQuaternion(q).invert().multiply(camera.quaternion);
+    const side = 1;
     const col = new THREE.Color();
     const seen = (half) => col.set(half === 'L' ? FIELD_L : FIELD_R).lerp(new THREE.Color(0xffffff), 0.35);
     for (const { eye, disc, quads, macula } of this.fieldDiscs) {
