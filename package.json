@@ -1,0 +1,19 @@
+{
+  "name": "semeion",
+  "version": "1.0.0",
+  "description": "Libro digitale interattivo di medicina in 3D",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "type": "module",
+  "dependencies": {
+    "three": "^0.187.0",
+    "troika-three-text": "^0.53.1"
+  },
+  "private": true,
+  "devDependencies": {
+    "vite": "^8.3.8"
+  }
+}
