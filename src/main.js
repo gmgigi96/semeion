@@ -138,6 +138,7 @@ async function goTo(i, animate = true) {
   const page = PAGES[i];
   const next = await build(i);
   const model = modelFor(page.chapter);
+  await model?.ready; // i modelli con mesh reali si caricano in modo asincrono
   if (current && animate) {
     growTarget = 0;
     await wait(260);
@@ -163,7 +164,7 @@ async function goTo(i, animate = true) {
   const view = page.def?.view;
   if (model && (view?.yaw != null || PAGES[index]?.chapter !== page.chapter || PAGES[index]?.def?.view?.yaw != null))
     model.yaw = view?.yaw ?? page.chapter.yaw ?? 0;
-  zoomTarget = view?.zoom ?? 1;
+  zoomTarget = view?.zoom ?? page.chapter?.zoom ?? 1;
   active = model;
   current = next;
   index = i;

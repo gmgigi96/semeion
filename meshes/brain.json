@@ -1,0 +1,217 @@
+{
+ "frame": {
+  "origin": [
+   0,
+   -80,
+   1457
+  ],
+  "scale": 0.0045
+ },
+ "parts": {
+  "hemi": [
+   "Right angular gyrus",
+   "Left angular gyrus",
+   "Right fusiform gyrus",
+   "Left fusiform gyrus",
+   "Right inferior frontal gyrus",
+   "Left inferior frontal gyrus",
+   "Right inferior temporal gyrus",
+   "Left inferior temporal gyrus",
+   "Right middle frontal gyrus",
+   "Left middle frontal gyrus",
+   "Right middle temporal gyrus",
+   "Left middle temporal gyrus",
+   "Right occipital lobe",
+   "Left occipital lobe",
+   "Right postcentral gyrus",
+   "Left postcentral gyrus",
+   "Right superior frontal gyrus",
+   "Left superior frontal gyrus",
+   "Right superior parietal lobule",
+   "Left superior parietal lobule",
+   "Right supramarginal gyrus",
+   "Left supramarginal gyrus",
+   "Orbital gyrus",
+   "Anterior part of left superior temporal gyrus",
+   "Anterior part of right superior temporal gyrus",
+   "Posterior part of left superior temporal gyrus",
+   "Posterior part of right superior temporal gyrus"
+  ],
+  "insula": [
+   "Right insula",
+   "Left insula"
+  ],
+  "stem": [
+   "Midbrain",
+   "Peduncle of midbrain",
+   "Pons",
+   "Medulla oblongata"
+  ],
+  "cerebellum": [
+   "Cerebellum"
+  ],
+  "lv": [
+   "Right lateral ventricle",
+   "Left lateral ventricle"
+  ],
+  "monro": [
+   "Interventricular foramen"
+  ],
+  "v3": [
+   "Third ventricle"
+  ],
+  "aqueduct": [
+   "Cerebral aqueduct"
+  ],
+  "v4": [
+   "Fourth ventricle"
+  ],
+  "canal": [
+   "Central canal of spinal cord"
+  ],
+  "plexus": [
+   "Choroid plexus of cerebral hemisphere"
+  ],
+  "caudate": [
+   "Right caudate nucleus",
+   "Left caudate nucleus"
+  ],
+  "putamen": [
+   "Right putamen",
+   "Left putamen"
+  ],
+  "pallidum": [
+   "Right globus pallidus",
+   "Left globus pallidus"
+  ],
+  "thalamus": [
+   "Right thalamus",
+   "Left thalamus"
+  ],
+  "amygdala": [
+   "Right amygdala",
+   "Left amygdala"
+  ],
+  "capsule": [
+   "Right internal capsule",
+   "Left internal capsule"
+  ],
+  "callosum": [
+   "Corpus callosum"
+  ],
+  "cingulate": [
+   "Right cingulate gyrus",
+   "Left cingulate gyrus"
+  ],
+  "parahippocampal": [
+   "Right parahippocampal gyrus",
+   "Left parahippocampal gyrus"
+  ],
+  "hippocampus": [
+   "Right hippocampus",
+   "Left hippocampus"
+  ],
+  "fornix": [
+   "Right fornix of forebrain",
+   "Left fornix of forebrain",
+   "Commissure of fornix of forebrain"
+  ],
+  "commissure": [
+   "Anterior commissure"
+  ],
+  "mammillary": [
+   "Mammillary body"
+  ],
+  "hypothalamus": [
+   "Hypothalamus"
+  ],
+  "stria": [
+   "Stria terminalis",
+   "Left stria terminalis"
+  ],
+  "chiasm": [
+   "Optic chiasm",
+   "Right optic tract",
+   "Left optic tract"
+  ],
+  "septal": [
+   "Septum of telencephalon"
+  ],
+  "cortex": [
+   "Right precentral gyrus",
+   "Left precentral gyrus"
+  ]
+ },
+ "split": {
+  "lv": [
+   [
+    "lvTemp",
+    "y < 0.44 && ax > 0.09 && z > -0.15"
+   ],
+   [
+    "lvOcc",
+    "z < -0.18"
+   ],
+   [
+    "lvTrig",
+    "z < -0.09"
+   ],
+   [
+    "lvFront",
+    "z > 0.07"
+   ],
+   [
+    "lvBody",
+    "true"
+   ]
+  ],
+  "caudate": [
+   [
+    "caudHead",
+    "z > 0.09"
+   ],
+   [
+    "caudTail",
+    "z < -0.02 || y < 0.44"
+   ],
+   [
+    "caudBody",
+    "true"
+   ]
+  ],
+  "pallidum": [
+   [
+    "gpi",
+    "ax < 0.09"
+   ],
+   [
+    "gpe",
+    "true"
+   ]
+  ],
+  "fornix": [
+   [
+    "crus",
+    "ax > 0.035"
+   ],
+   [
+    "fxCol",
+    "z > 0.045 && y < 0.455"
+   ],
+   [
+    "fxBody",
+    "true"
+   ]
+  ],
+  "parahippocampal": [
+   [
+    "entorhinal",
+    "z > 0.03"
+   ],
+   [
+    "parahippocampal",
+    "true"
+   ]
+  ]
+ }
+}

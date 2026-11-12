@@ -3,7 +3,7 @@ import { selector } from '../modes.js';
 import { Brain } from '../brain.js';
 
 const LOBE = ['cingulate', 'isthmus', 'parahippocampal', 'entorhinal', 'uncus'];
-const FORNIX = ['fimbria', 'crus', 'fxBody', 'fxCol'];
+const FORNIX = ['crus', 'fxBody', 'fxCol'];
 const SHELL = ['hemi', 'stem'];
 
 const spreads = [
@@ -29,7 +29,7 @@ const spreads = [
         { label: 'Lobo limbico', lit: LOBE, info: 'Giro del cingolo, istmo, circonvoluzione paraippocampale, corteccia entorinale, uncus.' },
         {
           label: 'Strutture profonde',
-          lit: ['hippocampus', 'amygdala', 'septal', 'hypothalamus', 'anterior', 'mammillary', ...FORNIX, 'fxPost'],
+          lit: ['hippocampus', 'amygdala', 'septal', 'hypothalamus', 'anterior', 'mammillary', ...FORNIX],
           info: 'Ippocampo e fornice, amigdala, area settale, corpi mammillari, ipotalamo e nuclei anteriori del talamo.',
         },
       ],
@@ -40,8 +40,8 @@ const spreads = [
     body:
       "L'{ippocampo|hippo}, nella porzione mesiale del lobo temporale, è formato da corno d'Ammone e giro dentato. Dalla sua superficie nasce la {fimbria|fimbria}, un nastro di sostanza bianca che si stacca e forma le {gambe del fornice|crus}. Le due gambe si uniscono nel {corpo del fornice|body}, che in avanti si continua nelle {colonne|col}. Alla {commessura anteriore|ac} le fibre si dividono: il {fornice precommessurale|pre} raggiunge l'{area settale|septal}; quello {postcommessurale|post} scende nel diencefalo fino ai {corpi mammillari|mb}.",
     terms: {
-      hippo: ['hippocampus'], fimbria: ['fimbria'], crus: ['crus'], body: ['fxBody'], col: ['fxCol'],
-      ac: ['commissure'], pre: ['fxPre'], septal: ['septal'], post: ['fxPost'], mb: ['mammillary'],
+      hippo: ['hippocampus'], fimbria: ['crus'], crus: ['crus'], body: ['fxBody'], col: ['fxCol'],
+      ac: ['commissure'], pre: ['septal'], septal: ['septal'], post: ['fxCol', 'mammillary'], mb: ['mammillary'],
     },
     quiz: {
       question: 'Dove termina il fornice postcommessurale?',
@@ -52,28 +52,26 @@ const spreads = [
     caption: 'Il fornice dei due lati, dalla fimbria alle due destinazioni.',
     instruction: 'SCEGLI UNA DESTINAZIONE E SEGUI LE FIBRE DALL’IPPOCAMPO',
     mode: selector({
-      base: [...SHELL, 'callosum', 'hippocampus', ...FORNIX, 'fxPre', 'fxPost', 'commissure', 'mammillary', 'septal'],
+      base: [...SHELL, 'callosum', 'hippocampus', ...FORNIX, 'commissure', 'mammillary', 'septal'],
       options: [
         {
           label: 'Postcommessurale', stepTime: 1.2,
           steps: [
             { ids: ['hippocampus'], text: "Ippocampo (corno d'Ammone)" },
-            { ids: ['fimbria'], text: 'Fimbria' },
-            { ids: ['crus'], text: 'Gambe del fornice' },
+            { ids: ['crus'], text: 'Fimbria e gambe del fornice' },
             { ids: ['fxBody'], text: 'Corpo del fornice' },
             { ids: ['fxCol'], text: 'Colonne del fornice' },
-            { ids: ['fxPost', 'mammillary'], text: 'Dietro la commessura anteriore, fino ai corpi mammillari' },
+            { ids: ['mammillary'], text: 'Dietro la commessura anteriore, fino ai corpi mammillari' },
           ],
         },
         {
           label: 'Precommessurale', stepTime: 1.2,
           steps: [
             { ids: ['hippocampus'], text: "Ippocampo (corno d'Ammone)" },
-            { ids: ['fimbria'], text: 'Fimbria' },
-            { ids: ['crus'], text: 'Gambe del fornice' },
+            { ids: ['crus'], text: 'Fimbria e gambe del fornice' },
             { ids: ['fxBody'], text: 'Corpo del fornice' },
             { ids: ['fxCol'], text: 'Colonne del fornice' },
-            { ids: ['fxPre', 'septal'], text: "Davanti alla commessura anteriore, fino all'area settale" },
+            { ids: ['septal'], text: "Davanti alla commessura anteriore, fino all'area settale" },
           ],
         },
       ],
@@ -84,7 +82,7 @@ const spreads = [
     body:
       "Il circuito di Papez collega le strutture limbiche in un anello che sembra alla base della formazione della memoria a breve termine. Dall'{ippocampo|hippo} le fibre percorrono il {fornice|fornix} e raggiungono i {corpi mammillari|mb}. Da qui nasce il {fascio mammillotalamico|mtt}, diretto ai {nuclei anteriori del talamo|ant}, che proiettano al {giro del cingolo|cing}. Attraverso l'istmo e la {circonvoluzione paraippocampale|phg}, con la corteccia entorinale, l'informazione rientra nell'ippocampo lungo la via perforante, e il giro ricomincia.",
     terms: {
-      hippo: ['hippocampus'], fornix: [...FORNIX, 'fxPost'], mb: ['mammillary'], mtt: ['mtt'],
+      hippo: ['hippocampus'], fornix: FORNIX, mb: ['mammillary'], mtt: ['mtt'],
       ant: ['anterior'], cing: ['cingulate'], phg: ['parahippocampal', 'entorhinal'],
     },
     quiz: {
@@ -96,13 +94,13 @@ const spreads = [
     caption: 'Le sette tappe del circuito, accese in ordine.',
     instruction: 'FAI PARTIRE IL CIRCUITO E SEGUI L’ANELLO',
     mode: selector({
-      base: [...SHELL, 'callosum', ...LOBE, 'hippocampus', ...FORNIX, 'fxPost', 'mammillary', 'mtt', 'anterior', 'thalamus'],
+      base: [...SHELL, 'callosum', ...LOBE, 'hippocampus', ...FORNIX, 'mammillary', 'mtt', 'anterior', 'thalamus'],
       options: [
         {
           label: 'Avvia il circuito', stepTime: 1.4,
           steps: [
             { ids: ['hippocampus'], text: 'Ippocampo' },
-            { ids: [...FORNIX, 'fxPost'], text: 'Fornice' },
+            { ids: FORNIX, text: 'Fornice' },
             { ids: ['mammillary'], text: 'Corpi mammillari' },
             { ids: ['mtt'], text: 'Fascio mammillotalamico' },
             { ids: ['anterior'], text: 'Nuclei anteriori del talamo' },
@@ -155,6 +153,7 @@ export default {
   order: 33,
   model: 'brain',
   createModel: () => new Brain(),
+  zoom: 1.1,
   yaw: -1.05,
   spreads,
 };

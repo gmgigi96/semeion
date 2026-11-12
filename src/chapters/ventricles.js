@@ -21,7 +21,7 @@ const spreads = [
       correct: 1,
       explain: "L'acquedotto è il residuo della vescicola mesencefalica.",
     },
-    caption: "Calco dei ventricoli all'interno di un encefalo trasparente.",
+    caption: "Ventricoli reali (mesh BodyParts3D) dentro un encefalo trasparente.",
     instruction: 'ISOLA UNA CAVITÀ · TRASCINA IL MODELLO PER RUOTARLO',
     mode: selector({
       base: [...SHELL, ...SYSTEM],
@@ -55,7 +55,7 @@ const spreads = [
       options: [
         { label: 'Corno frontale', lit: ['lvFront', 'caudHead', 'fxCol'], info: 'Parete laterale: testa del caudato. Parete mediale: setto pellucido e colonne del fornice.' },
         { label: 'Cella media', lit: ['lvBody', 'callosum', 'caudBody', 'thalamus', 'fxBody'], info: 'Volta: corpo calloso. Pavimento: corpo del caudato, talamo e fornice.' },
-        { label: 'Corno temporale', lit: ['lvTemp', 'caudTail', 'hippocampus', 'fimbria'], info: 'Volta: tapetum e coda del caudato. Pavimento: ippocampo, con alveus e fimbria.' },
+        { label: 'Corno temporale', lit: ['lvTemp', 'caudTail', 'hippocampus', 'crus'], info: 'Volta: tapetum e coda del caudato. Pavimento: ippocampo, con alveus e fimbria.' },
         { label: 'Corno occipitale', lit: ['lvOcc', 'lvTrig'], info: 'Nasce dal trigono e termina nel lobo occipitale; sulla faccia mediale, bulbo e calcar avis.' },
       ],
     }),
@@ -131,6 +131,7 @@ export default {
   order: 31,
   model: 'brain',
   createModel: () => new Brain(),
+  zoom: 1.1,
   yaw: -0.95,
   spreads,
 };

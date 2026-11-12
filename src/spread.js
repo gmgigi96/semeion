@@ -139,7 +139,12 @@ export async function buildToc(chapters, parts, ctx) {
     { fontSize: 0.029, lineHeight: 1.5, maxWidth: W * 0.92, font: FONT.italic }
   );
   intro.position.set(M, -0.34 - bounds(title).h - 0.06, intro.position.z);
-  left.add(kicker, title, intro);
+  const credit = makeText(
+    'Mesh anatomiche: BodyParts3D, © The Database Center for Life Science, licenza CC Attribution 4.0 International.',
+    { fontSize: 0.0165, lineHeight: 1.4, maxWidth: W, color: INK_SOFT }
+  );
+  credit.position.set(M, NAV_Y + 0.03, credit.position.z);
+  left.add(kicker, title, intro, credit);
 
   // righe dell'indice: intestazioni di parte e capitoli numerati
   const rows = [];

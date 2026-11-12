@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { Text } from 'troika-three-text';
 import { FONT } from './ui.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { taperTube } from './geo.js';
 
 const GREY = new THREE.Color(0xa29c90);
@@ -125,6 +126,36 @@ export class AnatomyModel {
     };
     this.parts.set(id, part);
     return part;
+  }
+
+  // Parti da mesh anatomiche reali (file prodotto da tools/mesh.mjs, già nelle
+  // coordinate del modello). `defs`: { id: [nome, colore, opzioni] }. Le parti
+  // del file non elencate in `defs` vengono ignorate.
+  async loadMeshes(file, defs) {
+    const gltf = await new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}meshes/${file}`);
+    gltf.scene.updateMatrixWorld(true);
+    const v = new THREE.Vector3();
+    for (const node of gltf.scene.children) {
+      const def = defs[node.name];
+      if (!def) continue;
+      const meshes = node.isMesh ? [node] : node.children.filter((c) => c.isMesh);
+      const geos = meshes.map((m) => {
+        // le posizioni sono quantizzate: le riporto a numeri in virgola mobile
+        const src = m.geometry.attributes.position;
+        const pos = new Float32Array(src.count * 3);
+        for (let i = 0; i < src.count; i++) v.fromBufferAttribute(src, i).applyMatrix4(m.matrixWorld).toArray(pos, i * 3);
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        g.setIndex(m.geometry.index);
+        g.computeVertexNormals();
+        return g;
+      });
+      // prima il lato destro (x > 0): è quello a cui si agganciano le vie
+      geos.forEach((g) => g.computeBoundingBox());
+      geos.sort((a, b) => b.boundingBox.max.x + b.boundingBox.min.x - (a.boundingBox.max.x + a.boundingBox.min.x));
+      this.addPart(node.name, def[0], def[1], geos, def[2]);
+    }
+    for (const id of Object.keys(defs)) if (!this.parts.has(id)) console.error(`mesh mancante nel file ${file}: ${id}`);
   }
 
   // Connessione orientata: freccia per le vie eccitatorie, barra per le inibitorie.

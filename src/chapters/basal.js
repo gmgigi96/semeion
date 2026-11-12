@@ -9,7 +9,7 @@ const BASE = ['hemi', 'stem', ...NUCLEI, 'thalamus'];
 const OUT = ['gpi', 'snr'];
 // Per i circuiti: veduta frontale ingrandita, con il putamen a rappresentare lo striato.
 const CIRCUIT = ['hemi', 'stem', 'putamen', 'gpe', 'gpi', 'stn', 'snc', 'snr', 'thalamus', 'cortex'];
-const FRONTAL = { yaw: 0.3, zoom: 1.15 };
+const FRONTAL = { yaw: 0.3, zoom: 1.3 };
 
 const spreads = [
   {
@@ -149,6 +149,7 @@ export default {
   order: 32,
   model: 'brain',
   createModel: () => new Brain(),
+  zoom: 1.1,
   yaw: -0.55,
   spreads,
 };

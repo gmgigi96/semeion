@@ -38,4 +38,10 @@ Per aggiungere un capitolo: un nuovo file in `src/chapters/` registrato in `inde
 se serve un modello nuovo, le sue parti si aggiungono a `brain.js` o a una nuova
 classe che estende `AnatomyModel`.
 
-Font: Noto Serif (SIL Open Font License).
+## Crediti
+
+- Mesh anatomiche: **BodyParts3D**, © The Database Center for Life Science, licenza
+  [CC Attribution 4.0 International](https://dbarchive.biosciencedbc.jp/en/bodyparts3d/lic.html).
+  I file in `public/meshes/` sono derivati da BodyParts3D 4.0 con `tools/mesh.mjs`
+  (cambio di terna, suddivisione in parti, quantizzazione).
+- Font: Noto Serif (SIL Open Font License).
