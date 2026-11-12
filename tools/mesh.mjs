@@ -1,5 +1,6 @@
-// Costruisce il file di mesh di un modello a partire dalle mesh anatomiche
-// reali di BodyParts3D (© The Database Center for Life Science, CC BY 4.0).
+// Costruisce il file di mesh di un modello a partire da mesh anatomiche reali:
+// BodyParts3D (© The Database Center for Life Science, CC BY 4.0) oppure
+// Z-Anatomy (CC BY-SA 4.0), scelte con "source" nel manifesto.
 //
 //   node tools/mesh.mjs meshes/<modello>.json [cartella-sorgenti]
 //
@@ -7,6 +8,7 @@
 // BodyParts3D che la compongono (così come compaiono in `index.tsv`):
 //
 //   {
+//     "source": "bodyparts3d",                 // oppure "zanatomy"
 //     "frame": { "origin": [0, -80, 1457], "scale": 0.0045 },
 //     "parts": { "v3": ["Third ventricle"], "caudate": ["Right caudate nucleus", "Left caudate nucleus"] },
 //     "split": { "caudate": [["caudHead", "z > 0.07"], ["caudBody", "y > 0.42"], ["caudTail", "true"]] },
@@ -32,9 +34,16 @@ if (!manifestPath) {
   console.error('uso: node tools/mesh.mjs meshes/<modello>.json [cartella-sorgenti]');
   process.exit(2);
 }
-const SRC = srcArg ?? process.env.BP3D ?? path.resolve('../sources/bodyparts3d');
-const OBJ = path.join(SRC, 'obj/all');
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+// Due fonti, ciascuna con la propria terna: non si mescolano in un modello.
+//   bodyparts3d  BodyParts3D 4.0, CC BY 4.0 (encefalo, ossa, muscoli, vasi)
+//   zanatomy     Z-Anatomy, CC BY-SA 4.0 (in più: nervi, plessi, orecchio, seni)
+const source = manifest.source ?? 'bodyparts3d';
+const SRC =
+  srcArg ??
+  (source === 'bodyparts3d' && process.env.BP3D) ??
+  path.join(process.env.SOURCES ?? path.resolve('../sources'), source);
+const OBJ = path.join(SRC, 'obj/all');
 const name = path.basename(manifestPath, '.json');
 const { origin, scale } = manifest.frame;
 
@@ -138,6 +147,6 @@ await doc.transform(dedup(), quantize({ quantizePosition: 14 }));
 const out = path.resolve('public/meshes');
 fs.mkdirSync(out, { recursive: true });
 await new NodeIO().write(path.join(out, `${name}.glb`), doc);
-fs.writeFileSync(path.join(out, `${name}.json`), JSON.stringify({ source: 'BodyParts3D 4.0', frame: manifest.frame, parts: info }, null, 1));
+fs.writeFileSync(path.join(out, `${name}.json`), JSON.stringify({ source, frame: manifest.frame, parts: info }, null, 1));
 const kb = (fs.statSync(path.join(out, `${name}.glb`)).size / 1024).toFixed(0);
 console.log(`${name}.glb: ${Object.keys(info).length} parti, ${kb} KB`);

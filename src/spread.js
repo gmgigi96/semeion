@@ -140,7 +140,7 @@ export async function buildToc(chapters, parts, ctx) {
   );
   intro.position.set(M, -0.34 - bounds(title).h - 0.06, intro.position.z);
   const credit = makeText(
-    'Mesh anatomiche: BodyParts3D, © The Database Center for Life Science, licenza CC Attribution 4.0 International.',
+    'Mesh anatomiche: BodyParts3D, © The Database Center for Life Science, CC Attribution 4.0 International; Z-Anatomy, the libre 3D atlas of anatomy, CC BY-SA 4.0.',
     { fontSize: 0.0165, lineHeight: 1.4, maxWidth: W, color: INK_SOFT }
   );
   credit.position.set(M, NAV_Y + 0.03, credit.position.z);

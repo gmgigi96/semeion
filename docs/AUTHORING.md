@@ -16,15 +16,26 @@ Esempi completi da leggere prima di cominciare: `src/chapters/ventricles.js` con
 
 I modelli devono essere **anatomicamente realistici**, non schemi.
 
-1. **Ogni struttura che esiste in BodyParts3D si prende da lì.** L'elenco è
-   `$BP3D/index.tsv` (nome inglese, file, vertici, ingombro in mm): contiene encefalo e
-   strutture profonde, giri corticali, tronco, cervelletto, ossa (cranio osso per osso,
-   vertebre, coste, bacino), muscoli, arterie e vene, bulbo oculare con muscoli e nervi
-   dell'orbita. Cercare sempre con `grep -i` prima di disegnare qualcosa a mano.
-2. **Ciò che manca** (midollo spinale, nervi periferici e plessi, gran parte dei nervi
-   cranici, orecchio, nuclei del tronco, fasci) si modella a mano **dentro l'anatomia
-   reale**: stessa terna di riferimento, agganciato a punti di repere veri (un forame del
-   cranio, un solco, il centro di un nucleo reale), con forma, calibro, decorso e rapporti
+1. **Ogni struttura che esiste come mesh reale si prende da lì.** Ci sono due fonti,
+   ciascuna con il proprio elenco `index.tsv` (nome, file, vertici, ingombro in mm):
+   - `$SOURCES/bodyparts3d` — **BodyParts3D 4.0** (CC BY 4.0): encefalo e strutture
+     profonde, giri corticali, tronco, cervelletto, ossa, muscoli, arterie e vene, occhio
+     con muscoli e nervi dell'orbita. Niente midollo, nervi periferici, orecchio.
+   - `$SOURCES/zanatomy` — **Z-Anatomy** (CC BY-SA 4.0, derivato da BodyParts3D e
+     completato): in più nervi cranici e periferici, plessi, midollo spinale, orecchio
+     (ossicini, coclea, membrana timpanica), seni venosi, e ancora ossa, muscoli, vasi,
+     encefalo. I nomi finiscono in `.l` / `.r` per i due lati; l'ultima colonna
+     dell'indice elenca le collezioni a cui l'oggetto appartiene (utile per cercare
+     "tutto ciò che è innervato dal nervo mediano"). Ignorare gli oggetti con pochi vertici.
+
+   Le due fonti hanno **terne diverse** e non si sovrappongono: un modello usa una sola
+   fonte (`"source"` nel manifesto). Per i capitoli su nervi, plessi, midollo e orecchio
+   usare Z-Anatomy per tutto, ossa e muscoli compresi. Cercare sempre con `grep -i`
+   prima di disegnare qualcosa a mano.
+2. **Ciò che manca in entrambe** (nuclei del tronco, fasci, lamine, singoli nuclei
+   ipotalamici) si modella a mano **dentro l'anatomia reale**: stessa terna di
+   riferimento, agganciato a punti di repere veri (un forame del cranio, un solco, il
+   centro di un nucleo reale), con forma, calibro, decorso e rapporti
    **verificati su fonti autorevoli**.
 3. **Fonti**: cercare in rete atlanti e articoli ad accesso aperto (per esempio Gray's
    Anatomy 20ª ed. di pubblico dominio, StatPearls/NCBI Bookshelf, articoli di anatomia su
@@ -38,13 +49,15 @@ I modelli devono essere **anatomicamente realistici**, non schemi.
 ### Dal manifesto al file di mesh
 
 ```bash
-export BP3D=/home/gianmaria/Documents/Personal/meds/sources/bodyparts3d
-grep -i "sphenoid" $BP3D/index.tsv | cut -f1,2,3
+export SOURCES=/home/gianmaria/Documents/Personal/meds/sources
+grep -i "sphenoid" $SOURCES/bodyparts3d/index.tsv | cut -f1,2,3
+grep -i "median nerve" $SOURCES/zanatomy/index.tsv | cut -f1,3,4
 node tools/mesh.mjs meshes/<id>.json          # scrive public/meshes/<id>.glb e .json
 ```
 
 `meshes/<id>.json` (vedi `meshes/brain.json` e i commenti in testa a `tools/mesh.mjs`):
 
+- `source`: `"bodyparts3d"` (predefinito) o `"zanatomy"`.
 - `frame`: `{ "origin": [x, y, z] in mm, "scale": unità per mm }`. Le sorgenti hanno x verso
   sinistra, y verso dietro, z verso l'alto (testa attorno a z = 1450-1650); il risultato ha
   x destra, y alto, z avanti. Scegliere origine e scala in modo che il modello stia in
@@ -213,7 +226,7 @@ Il browser integrato non ha WebGL: si verifica con Chrome headless.
 
 ```bash
 ln -s /home/gianmaria/Documents/Personal/meds/libro/node_modules node_modules   # in un worktree
-export BP3D=/home/gianmaria/Documents/Personal/meds/sources/bodyparts3d
+export SOURCES=/home/gianmaria/Documents/Personal/meds/sources
 npx vite --port <PORTA> --strictPort &                                          # una porta propria
 node tools/shot.mjs "http://localhost:<PORTA>/#<id>/1" /tmp/<id>-1.png
 node tools/shot.mjs "http://localhost:<PORTA>/#<id>/3" /tmp/<id>-3.png click:"Etichetta del pulsante" wait:6000

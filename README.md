@@ -44,4 +44,8 @@ classe che estende `AnatomyModel`.
   [CC Attribution 4.0 International](https://dbarchive.biosciencedbc.jp/en/bodyparts3d/lic.html).
   I file in `public/meshes/` sono derivati da BodyParts3D 4.0 con `tools/mesh.mjs`
   (cambio di terna, suddivisione in parti, quantizzazione).
+- Dove indicato da `"source": "zanatomy"` nel manifesto, le mesh derivano da
+  **Z-Anatomy**, the libre 3D atlas of anatomy, licenza
+  [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), a sua volta derivato da
+  BodyParts3D; quei file `public/meshes/*.glb` sono distribuiti con la stessa licenza.
 - Font: Noto Serif (SIL Open Font License).
