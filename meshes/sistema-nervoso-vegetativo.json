@@ -1,0 +1,323 @@
+{
+ "source": "zanatomy",
+ "frame": {
+  "origin": [
+   0,
+   20,
+   795
+  ],
+  "scale": 0.00092
+ },
+ "simplify": 0.28,
+ "parts": {
+  "midbrain": [
+   "Midbrain.r",
+   "Midbrain.l"
+  ],
+  "pons": [
+   "Pons.r",
+   "Pons.l"
+  ],
+  "medulla": [
+   "Medulla oblongata.r",
+   "Medulla oblongata.l"
+  ],
+  "nucEW": [
+   "Accessory nucleus of oculomotor nerve.r",
+   "Accessory nucleus of oculomotor nerve.l"
+  ],
+  "nucSalSup": [
+   "Superior salivatory nucleus.r",
+   "Superior salivatory nucleus.l"
+  ],
+  "nucSalInf": [
+   "Inferior salivatory nucleus.r",
+   "Inferior salivatory nucleus.l"
+  ],
+  "nucAmb": [
+   "Nucleus ambiguus.r",
+   "Nucleus ambiguus.l"
+  ],
+  "nucDors": [
+   "Posterior nucleus of vagus nerve.r",
+   "Posterior nucleus of vagus nerve.l"
+  ],
+  "cord": [
+   "White matter of spinal cord"
+  ],
+  "hornAnt": [
+   "Anterior horn of spinal cord"
+  ],
+  "imlAll": [
+   "Intermediolateral nucleus"
+  ],
+  "rootAnt": [
+   "Anterior root of spinal nerve.r",
+   "Anterior root of spinal nerve.l"
+  ],
+  "rootPost": [
+   "Posterior root of spinal nerve.r",
+   "Posterior root of spinal nerve.l"
+  ],
+  "drg": [
+   "Spinal ganglion.r",
+   "Spinal ganglion.l"
+  ],
+  "icn": [
+   "Intercostal nerves.r",
+   "Intercostal nerves.l"
+  ],
+  "spineC": [
+   "Atlas (C1)",
+   "Axis (C2)",
+   "Vertebra C3",
+   "Vertebra C4",
+   "Vertebra C5",
+   "Vertebra C6",
+   "Vertebra C7"
+  ],
+  "spineT": [
+   "Vertebra T1",
+   "Vertebra T2",
+   "Vertebra T3",
+   "Vertebra T4",
+   "Vertebra T5",
+   "Vertebra T6",
+   "Vertebra T7",
+   "Vertebra T8",
+   "Vertebra T9",
+   "Vertebra T10",
+   "Vertebra T11",
+   "Vertebra T12"
+  ],
+  "spineL": [
+   "Vertebra L1",
+   "Vertebra L2",
+   "Vertebra L3",
+   "Vertebra L4",
+   "Vertebra L5"
+  ],
+  "sacrum": [
+   "Sacrum",
+   "Coccyx"
+  ],
+  "ribsAll": [
+   "First rib.r",
+   "First rib.l",
+   "Second rib.r",
+   "Second rib.l",
+   "Third rib.r",
+   "Third rib.l",
+   "Fourth rib.r",
+   "Fourth rib.l",
+   "Fifth rib.r",
+   "Fifth rib.l",
+   "Sixth rib.r",
+   "Sixth rib.l",
+   "Seventh rib.r",
+   "Seventh rib.l",
+   "Eighth rib.r",
+   "Eighth rib.l",
+   "Ninth rib.r",
+   "Ninth rib.l",
+   "Tenth rib.r",
+   "Tenth rib.l",
+   "Eleventh rib.r",
+   "Eleventh rib.l",
+   "Twelfth rib.r",
+   "Twelfth rib.l"
+  ],
+  "hip": [
+   "Hip bone.r",
+   "Hip bone.l"
+  ],
+  "skullAll": [
+   "Frontal bone",
+   "Occipital bone",
+   "Sphenoid bone",
+   "Mandible",
+   "Parietal bone.r",
+   "Parietal bone.l",
+   "Temporal bone.r",
+   "Temporal bone.l",
+   "Maxilla.r",
+   "Maxilla.l",
+   "Zygomatic bone.r",
+   "Zygomatic bone.l"
+  ],
+  "sclera": [
+   "Sclera.r",
+   "Sclera.l"
+  ],
+  "iris": [
+   "Iris.r",
+   "Iris.l"
+  ],
+  "lacrimal": [
+   "Lacrimal gland.r"
+  ],
+  "parotid": [
+   "Parotid gland.r"
+  ],
+  "submandibular": [
+   "Submandibular gland.r"
+  ],
+  "sublingual": [
+   "Sublingual gland.r"
+  ],
+  "nIII": [
+   "Oculomotor nerve (III).r"
+  ],
+  "optic": [
+   "Optic nerve (II).r"
+  ],
+  "nIXall": [
+   "Glossopharyngeal nerve (IX).r"
+  ],
+  "chordaAll": [
+   "Chorda tympani.r"
+  ],
+  "lingual": [
+   "Lingual nerve.r"
+  ],
+  "vag": [
+   "Vagus nerve (X).r",
+   "Vagus nerve (X).l"
+  ],
+  "aortaArch": [
+   "Aortic arch",
+   "Ascending aorta",
+   "Brachiocephalic trunk"
+  ],
+  "aortaThor": [
+   "Thoracic aorta"
+  ],
+  "aortaAbd": [
+   "Abdominal aorta"
+  ],
+  "celiacTrunk": [
+   "Coeliac trunk"
+  ],
+  "smaAll": [
+   "Superior mesenteric artery"
+  ],
+  "ima": [
+   "Inferior mesenteric artery"
+  ],
+  "renalA": [
+   "Right renal artery",
+   "Left renal artery"
+  ],
+  "iliac": [
+   "Common iliac artery.r",
+   "Common iliac artery.l",
+   "Internal iliac artery.r",
+   "Internal iliac artery.l",
+   "External iliac artery.r",
+   "External iliac artery.l"
+  ],
+  "carotid": [
+   "Internal carotid artery.r",
+   "Internal carotid artery.l",
+   "Right common carotid artery",
+   "Left common carotid artery"
+  ],
+  "subclavian": [
+   "Right subclavian artery",
+   "Left subclavian artery"
+  ],
+  "heart": [
+   "Left ventricle",
+   "Right ventricle",
+   "Left atrium",
+   "Right atrium",
+   "Pulmonary trunk"
+  ],
+  "lungs": [
+   "Superior lobe of right lung",
+   "Middle lobe of right lung",
+   "Inferior lobe of right lung",
+   "Superior lobe of left lung",
+   "Inferior lobe of left lung"
+  ],
+  "trachea": [
+   "Trachea",
+   "Right main bronchus",
+   "Left main bronchus"
+  ],
+  "oesophagus": [
+   "Oesophagus"
+  ],
+  "stomach": [
+   "Stomach"
+  ],
+  "kidney": [
+   "Kidney.r",
+   "Kidney.l"
+  ],
+  "adrenal": [
+   "Suprarenal gland.r",
+   "Suprarenal gland.l"
+  ],
+  "bladder": [
+   "Urinary bladder"
+  ],
+  "rectum": [
+   "Sigmoid colon"
+  ]
+ },
+ "split": {
+  "imlAll": [
+   [
+    "iml",
+    "(y/0.00092+795) < 1455 && (y/0.00092+795) > 1072"
+   ]
+  ],
+  "icn": [
+   [
+    "icn",
+    "(ax/0.00092) < 46 && (-z/0.00092+20) > 20"
+   ]
+  ],
+  "ribsAll": [
+   [
+    "ribs",
+    "(ax/0.00092) < 30 && (-z/0.00092+20) > 16"
+   ]
+  ],
+  "nIXall": [
+   [
+    "nIX",
+    "(y/0.00092+795) > 1535"
+   ]
+  ],
+  "chordaAll": [
+   [
+    "chorda",
+    "(-z/0.00092+20) < -1.4"
+   ]
+  ],
+  "vag": [
+   [
+    "vagHiR",
+    "(y/0.00092+795) > 1479 && (x/0.00092) > 0"
+   ],
+   [
+    "vagHiL",
+    "(y/0.00092+795) > 1479"
+   ]
+  ],
+  "smaAll": [
+   [
+    "sma",
+    "(y/0.00092+795) > 1100 && (ax/0.00092) < 12"
+   ]
+  ],
+  "skullAll": [
+   [
+    "skull",
+    "(y/0.00092+795) < 1616"
+   ]
+  ]
+ }
+}
