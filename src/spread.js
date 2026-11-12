@@ -3,13 +3,14 @@
 // didascalia e istruzione attorno al modello.
 import * as THREE from 'three';
 import { PAGE_H } from './book.js';
-import { makeText, ready, bounds, richText, chip, quiz, FONT, INK, INK_SOFT, ACCENT, MARKER } from './ui.js';
+import { makeText, ready, bounds, richText, quiz, FONT, INK, INK_SOFT, ACCENT, MARKER } from './ui.js';
 import { M, W } from './modes.js';
 
 const SMALL = { fontSize: 0.0155, font: FONT.bold, color: INK_SOFT, letterSpacing: 0.12 };
 const NAV_Y = -PAGE_H + 0.055;
 
-async function footer(left, right, ctx) {
+// Numeri di pagina. Per sfogliare c'è la barra in fondo allo schermo.
+function footer(left, right, ctx) {
   const pn = { fontSize: 0.018, color: INK_SOFT, anchorY: 'middle' };
   const pl = makeText(String(ctx.page * 2), { ...pn, anchorX: 'left' });
   pl.position.set(M, NAV_Y, pl.position.z);
@@ -17,21 +18,6 @@ async function footer(left, right, ctx) {
   pr.position.set(1 - M, NAV_Y, pr.position.z);
   left.add(pl);
   right.add(pr);
-  let x = M + 0.05;
-  if (ctx.hasPrev) {
-    const c = await chip('‹ indietro', { fontSize: 0.018, onClick: () => ctx.nav(-1) });
-    c.group.position.set(x + c.w / 2, NAV_Y, 0);
-    left.add(c.group);
-    x += c.w + 0.014;
-    const toc = await chip('indice', { fontSize: 0.018, onClick: () => ctx.toc() });
-    toc.group.position.set(x + toc.w / 2, NAV_Y, 0);
-    left.add(toc.group);
-  }
-  if (ctx.hasNext) {
-    const c = await chip('avanti ›', { fontSize: 0.018, onClick: () => ctx.nav(1) });
-    c.group.position.set(1 - M - 0.05 - c.w / 2, NAV_Y, 0);
-    right.add(c.group);
-  }
 }
 
 export async function buildSpread(def, ctx) {

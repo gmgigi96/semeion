@@ -202,7 +202,9 @@ bordi, sopra i pulsanti, e ciò che a schermo supererebbe il bordo alto del libr
   (`focus: null` torna all'insieme anche se la pagina ha un primo piano).
 - `at` è l'id di una parte (il suo centro) o un punto nelle coordinate del modello;
   `height` sposta la quota a cui il punto viene portato (predefinita 0.36); `clip: false`
-  toglie il ritaglio.
+  toglie il ritaglio; `tilt` cambia l'inclinazione del modello per quella vista (radianti);
+  `stand: false` nasconde la base di legno (l'asta sparisce sempre nei primi piani).
+- La rotazione resta quella della pagina (`view.yaw`).
 - Da codice: `model.zoomTo({ at, scale })`, `model.zoomTo(null)`.
 
 Massimo 7 pulsanti (due righe) e commenti di una o due righe: lo spazio sotto il modello è poco.

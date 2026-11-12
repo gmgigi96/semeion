@@ -66,6 +66,7 @@ export class AnatomyModel {
     this.flat = new THREE.Group();
     this.tilt = new THREE.Group();
     this.tilt.rotation.x = tilt;
+    this.restTilt = tilt;
     this.spin = new THREE.Group();
     // Le coordinate dei modelli hanno x verso la destra del paziente, y in alto,
     // z in avanti: è una terna sinistrorsa. `mirror` la ribalta, così a schermo
@@ -120,12 +121,14 @@ export class AnatomyModel {
     base.scale.set(radius, 1, radius);
     base.position.set(0, 0.013, z);
     base.castShadow = base.receiveShadow = true;
+    this.standBase = base;
     this.flat.add(base);
     if (rod) {
       const [x, y0, y1, rz] = rod;
       const m = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, y1 - y0, 12), steel);
       m.position.set(x, (y0 + y1) / 2, rz);
       m.castShadow = true;
+      this.standRod = m;
       this.inner.add(m);
     }
   }
@@ -279,7 +282,9 @@ export class AnatomyModel {
 
   // Primo piano su un punto del modello: `at` è l'id di una parte o [x, y, z]
   // nelle coordinate del modello, `scale` l'ingrandimento. Con `clip: false`
-  // ciò che esce dalla pagina non viene tagliato. zoomTo(null) torna all'insieme.
+  // ciò che esce dalla pagina non viene tagliato; `height` è la quota a cui portare
+  // il punto, `tilt` l'inclinazione del modello in questa vista (radianti, negativa =
+  // reclinato all'indietro), `stand: false` nasconde la base. zoomTo(null) torna all'insieme.
   zoomTo(focus) {
     if (!focus) {
       this.zoom = null;
@@ -288,7 +293,10 @@ export class AnatomyModel {
     const at = Array.isArray(focus.at) ? new THREE.Vector3(...focus.at) : this.parts.get(focus.at)?.center.clone();
     if (!at) return console.error(`zoomTo: parte sconosciuta ${focus.at}`);
     if (typeof focus.at === 'string' && focus.midline) at.x = 0;
-    this.zoom = { at, scale: focus.scale ?? 2, clip: focus.clip !== false, height: focus.height ?? LENS_ANCHOR.y };
+    this.zoom = {
+      at, scale: focus.scale ?? 2, clip: focus.clip !== false, height: focus.height ?? LENS_ANCHOR.y,
+      tilt: focus.tilt, stand: focus.stand !== false,
+    };
   }
 
   reset() {
@@ -320,9 +328,13 @@ export class AnatomyModel {
     }
     this.lens.scale.lerp(new THREE.Vector3(scale, scale, scale), kz);
     this.lens.position.lerp(target, kz);
+    this.tilt.rotation.x += ((z?.tilt ?? this.restTilt) - this.tilt.rotation.x) * kz;
+    // l'asta regge il modello intero: in primo piano non ha senso
+    if (this.standRod) this.standRod.visible = !z;
+    if (this.standBase) this.standBase.visible = !z || z.stand;
     for (const [i, plane] of this.clipPlanes.entries()) {
       plane.copy(PAGE_PLANES[i]);
-      if (!z?.clip) plane.constant = FAR_AWAY;
+      if (!z?.clip || this.freeView) plane.constant = FAR_AWAY;
     }
 
     const hovering = [...this.hover].some((id) => this.parts.has(id) && !this.parts.get(id).ghost);
