@@ -33,10 +33,9 @@
 //   - seno sagittale inferiore, vena di Galeno, vene cerebrali interne e basali:
 //     attorno allo splenio del corpo calloso, al talamo e al peduncolo
 //     cerebrale reali.
-// Fonti consultate per decorso, forma, calibro e rapporti:
-//   - H. Gray, Anatomy of the Human Body, 20ª ed. (1918), «The Sinuses of the
-//     Dura Mater», https://www.bartleby.com/lit-hub/anatomy-of-the-human-body/
-//     (testo di pubblico dominio, letto attraverso le voci seguenti che lo riportano)
+// Fonti lette per decorso, forma e rapporti (solo voci di Wikipedia: Gray,
+// StatPearls e Radiopaedia non erano raggiungibili; i calibri dei seni sono
+// valori plausibili, non misure tratte da una fonte):
 //   - «Superior sagittal sinus», https://en.wikipedia.org/wiki/Superior_sagittal_sinus
 //     (sezione triangolare, calibro crescente dall'avanti all'indietro, dal forame cieco al confluente)
 //   - «Dural venous sinuses», https://en.wikipedia.org/wiki/Dural_venous_sinuses
@@ -45,10 +44,10 @@
 //     (circa 1 x 2 cm; dalla fessura orbitaria superiore all'apice della rocca; contiene il sifone carotideo)
 //   - «Great cerebral vein», https://en.wikipedia.org/wiki/Great_cerebral_vein
 //     (lunghezza media circa 1 cm; sbocco nel seno retto)
-//   - Radiopaedia, «Cerebral vascular territories», https://radiopaedia.org/articles/1085
-//     (territori corticali delle tre arterie cerebrali)
-//   - Kim et al., «Mapping the supratentorial cerebral arterial territories using 1160
-//     large artery infarcts», JAMA Neurol 2019, https://pmc.ncbi.nlm.nih.gov/articles/PMC6439879
+// Territori corticali: da verificare. Riferimenti non letti direttamente, noti
+// solo dal riassunto di una ricerca: Radiopaedia, «Cerebral vascular territories»
+// (https://radiopaedia.org/articles/1085); Kim et al., JAMA Neurol 2019
+// (https://pmc.ncbi.nlm.nih.gov/articles/PMC6439879).
 //
 // Coordinate del modello: x laterale (destra +), y craniale, z anteriore.
 import * as THREE from 'three';
