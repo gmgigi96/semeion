@@ -1,0 +1,59 @@
+{
+ "source": "zanatomy",
+ "frame": { "origin": [0, -40, 1488], "scale": 0.0038 },
+ "simplify": 0.5,
+ "parts": {
+  "midbrain": ["Midbrain.l", "Midbrain.r"],
+  "pons": ["Pons.l", "Pons.r"],
+  "medulla": ["Medulla oblongata.l", "Medulla oblongata.r"],
+  "cordAll": ["White matter of spinal cord"],
+  "thalamus": ["Thalamus.l", "Thalamus.r"],
+  "sphenoid": ["Sphenoid bone"],
+  "mandible": ["Mandible"],
+  "skull": [
+   "Frontal bone", "Maxilla.l", "Maxilla.r", "Zygomatic bone.l", "Zygomatic bone.r",
+   "Temporal bone.l", "Temporal bone.r", "Nasal bone.l", "Nasal bone.r"
+  ],
+  "teeth": [
+   "Upper medial incisor.l", "Upper lateral incisor.l", "Upper canine.l", "Upper first premolar.l",
+   "Upper second premolar.l", "Upper first molar tooth.l", "Upper second molar tooth.l",
+   "Upper medial incisor.r", "Upper lateral incisor.r", "Upper canine.r", "Upper first premolar.r",
+   "Upper second premolar.r", "Upper first molar tooth.r", "Upper second molar tooth.r",
+   "Lower medial incisor.l", "Lower lateral incisor.l", "Lower canine.l", "Lower first premolar.l",
+   "Lower second premolar.l", "Lower first molar tooth.l", "Lower second molar tooth.l",
+   "Lower medial incisor.r", "Lower lateral incisor.r", "Lower canine.r", "Lower first premolar.r",
+   "Lower second premolar.r", "Lower first molar tooth.r", "Lower second molar tooth.r"
+  ],
+  "eyes": ["Sclera.l", "Sclera.r"],
+  "iris": ["Iris.l", "Iris.r"],
+  "cornea": ["Cornea.l", "Cornea.r"],
+  "tongue": ["Tongue"],
+  "lacrimal": ["Lacrimal gland.r"],
+  "vAll": ["Trigeminal nerve (V).r"],
+  "v1": ["Ophthalmic nerve.r"],
+  "v2": ["Maxillary nerve.r"],
+  "v3ant": ["Anterior division of mandibular nerve.r"],
+  "v3post": ["Posterior division of mandibular nerve.r"],
+  "atn": ["Meningeal branch of maxillary nerve.r"],
+  "buccal": ["Buccal nerve.r"],
+  "lingual": ["Lingual nerve.r"],
+  "ian": ["Inferior alveolar nerve.r"],
+  "mylon": ["Nerve to mylohyoid muscle.r"],
+  "mental": ["Mental nerve.r"],
+  "temporalis": ["Temporalis muscle.r"],
+  "masseter": ["Superficial part of masseter.r", "Deep part of masseter.r"],
+  "ptmed": ["Medial pterygoid muscle.r"],
+  "ptlat": ["Superior head of lateral pterygoid muscle.r", "Inferior head of lateral pterygoid muscle.r"],
+  "mylohyoid": ["Mylohyoid muscle.r"],
+  "digastric": ["Anterior belly of digastric muscle.r"],
+  "face": [
+   "Frontal region.l", "Orbital region.l", "Nasal region.l", "Infra-orbital region.l", "Zygomatic region.l",
+   "Buccal region.l", "Oral region.l", "Mental region.l", "Parotideomasseteric region.l", "Temporal region.l",
+   "Auricular region.l"
+  ]
+ },
+ "split": {
+  "cordAll": [["cord", "y > 0.07"]],
+  "vAll": [["v3trunk", "z > -0.1425"]]
+ }
+}
