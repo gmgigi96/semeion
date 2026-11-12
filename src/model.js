@@ -328,7 +328,14 @@ export class AnatomyModel {
     }
     this.lens.scale.lerp(new THREE.Vector3(scale, scale, scale), kz);
     this.lens.position.lerp(target, kz);
-    this.tilt.rotation.x += ((z?.tilt ?? this.restTilt) - this.tilt.rotation.x) * kz;
+    // l'inclinazione si tocca solo se un primo piano l'ha chiesta (alcuni
+    // modelli la gestiscono da sé), e poi la si riporta a riposo
+    if (z?.tilt != null) this.tiltDriven = true;
+    if (this.tiltDriven) {
+      const goal = z?.tilt ?? this.restTilt;
+      this.tilt.rotation.x += (goal - this.tilt.rotation.x) * kz;
+      if (z?.tilt == null && Math.abs(goal - this.tilt.rotation.x) < 1e-3) this.tiltDriven = false;
+    }
     // l'asta regge il modello intero: in primo piano non ha senso
     if (this.standRod) this.standRod.visible = !z;
     if (this.standBase) this.standBase.visible = !z || z.stand;
