@@ -1,0 +1,134 @@
+{
+ "frame": {
+  "origin": [
+   0,
+   -75,
+   1340
+  ],
+  "scale": 0.0028
+ },
+ "parts": {
+  "hemi": [
+   "Right angular gyrus",
+   "Left angular gyrus",
+   "Right fusiform gyrus",
+   "Left fusiform gyrus",
+   "Right inferior frontal gyrus",
+   "Left inferior frontal gyrus",
+   "Right inferior temporal gyrus",
+   "Left inferior temporal gyrus",
+   "Right middle temporal gyrus",
+   "Left middle temporal gyrus",
+   "Right occipital lobe",
+   "Left occipital lobe",
+   "Right superior parietal lobule",
+   "Left superior parietal lobule",
+   "Right supramarginal gyrus",
+   "Left supramarginal gyrus",
+   "Orbital gyrus",
+   "Anterior part of left superior temporal gyrus",
+   "Anterior part of right superior temporal gyrus",
+   "Posterior part of left superior temporal gyrus",
+   "Posterior part of right superior temporal gyrus"
+  ],
+  "frontal": [
+   "Right superior frontal gyrus",
+   "Left superior frontal gyrus",
+   "Right middle frontal gyrus",
+   "Left middle frontal gyrus"
+  ],
+  "precentral": [
+   "Right precentral gyrus",
+   "Left precentral gyrus"
+  ],
+  "postcentral": [
+   "Right postcentral gyrus",
+   "Left postcentral gyrus"
+  ],
+  "capsule": [
+   "Right internal capsule",
+   "Left internal capsule"
+  ],
+  "thalamus": [
+   "Right thalamus",
+   "Left thalamus"
+  ],
+  "caudate": [
+   "Right caudate nucleus",
+   "Left caudate nucleus"
+  ],
+  "lenticular": [
+   "Right putamen",
+   "Left putamen",
+   "Right globus pallidus",
+   "Left globus pallidus"
+  ],
+  "midbrain": [
+   "Midbrain"
+  ],
+  "peduncle": [
+   "Peduncle of midbrain"
+  ],
+  "pons": [
+   "Pons"
+  ],
+  "medulla": [
+   "Medulla oblongata"
+  ],
+  "colliculi": [
+   "Right superior colliculus",
+   "Left superior colliculus",
+   "Right inferior colliculus",
+   "Left inferior colliculus"
+  ],
+  "cerebellum": [
+   "Cerebellum"
+  ],
+  "occipital": [
+   "Occipital bone"
+  ],
+  "vertebrae": [
+   "Atlas",
+   "Axis",
+   "Third cervical vertebra",
+   "Fourth cervical vertebra"
+  ]
+ },
+ "split": {
+  "frontal": [
+   [
+    "area6",
+    "z > -0.02 && z < 0.07"
+   ],
+   [
+    "hemiF",
+    "true"
+   ]
+  ],
+  "capsule": [
+   [
+    "capAnt",
+    "z > 0.08"
+   ],
+   [
+    "capGenu",
+    "z > 0.058"
+   ],
+   [
+    "capPost",
+    "true"
+   ]
+  ],
+  "colliculi": [
+   [
+    "collSup",
+    "y > 0.549"
+   ],
+   [
+    "collInf",
+    "true"
+   ]
+  ]
+ },
+ "simplify": 0.5
+}
