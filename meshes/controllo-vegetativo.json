@@ -1,0 +1,352 @@
+{
+ "source": "zanatomy",
+ "frame": {
+  "origin": [
+   0,
+   10,
+   795
+  ],
+  "scale": 0.00085
+ },
+ "simplify": 0.5,
+ "parts": {
+  "cortex": [
+   "Angular gyrus.l",
+   "Angular gyrus.r",
+   "Cingulate gyrus (Posteroventral part*).l",
+   "Cingulate gyrus (Posteroventral part*).r",
+   "Cingulate gyrus and sulcus (Middle anterior part).l",
+   "Cingulate gyrus and sulcus (Middle anterior part).r",
+   "Cingulate gyrus and sulcus (Middle posterior part).l",
+   "Cingulate gyrus and sulcus (Middle posterior part).r",
+   "Cingulate gyrus and sulcus (Posterior dorsal part).l",
+   "Cingulate gyrus and sulcus (Posterior dorsal part).r",
+   "Cuneus.l",
+   "Cuneus.r",
+   "Inferior occipital gyrus and sulcus*.l",
+   "Inferior occipital gyrus and sulcus*.r",
+   "Inferior temporal gyrus.l",
+   "Inferior temporal gyrus.r",
+   "Insula (Subcentral gyrus and ant. and post. sulci*).l",
+   "Insula (Subcentral gyrus and ant. and post. sulci*).r",
+   "Lateral occipital gyrus (Middle occipital gyrus*).l",
+   "Lateral occipital gyrus (Middle occipital gyrus*).r",
+   "Lateral occipitotemporal gyrus.l",
+   "Lateral occipitotemporal gyrus.r",
+   "Lingual gyrus.l",
+   "Lingual gyrus.r",
+   "Medial occipitotemporal gyrus (Parahippocampal*).l",
+   "Medial occipitotemporal gyrus (Parahippocampal*).r",
+   "Middle frontal gyrus.l",
+   "Middle frontal gyrus.r",
+   "Middle temporal gyrus.l",
+   "Middle temporal gyrus.r",
+   "Occipital pole.l",
+   "Occipital pole.r",
+   "Opercular part of inferior frontal gyrus.l",
+   "Opercular part of inferior frontal gyrus.r",
+   "Orbital gyri (Frontomarginal gyrus and sulcus*).l",
+   "Orbital gyri (Frontomarginal gyrus and sulcus*).r",
+   "Orbital gyri.l",
+   "Orbital gyri.r",
+   "Orbital part of  inferior frontal gyrus.l",
+   "Orbital part of  inferior frontal gyrus.r",
+   "Postcentral gyrus.l",
+   "Postcentral gyrus.r",
+   "Precuneus.l",
+   "Precuneus.r",
+   "Straight gyrus (Gyrus rectus).l",
+   "Straight gyrus (Gyrus rectus).r",
+   "Superior occipital gyri.l",
+   "Superior occipital gyri.r",
+   "Superior parietal lobule.l",
+   "Superior parietal lobule.r",
+   "Superior temporal gyrus (Lateral part).l",
+   "Superior temporal gyrus (Lateral part).r",
+   "Supramarginal gyrus.l",
+   "Supramarginal gyrus.r",
+   "Temporal plane.l",
+   "Temporal plane.r",
+   "Temporal pole.l",
+   "Temporal pole.r",
+   "Transverse frontopolar gyrus and sulcus*.l",
+   "Transverse frontopolar gyrus and sulcus*.r",
+   "Transverse temporal gyri.l",
+   "Transverse temporal gyri.r",
+   "Triangular part of inferior frontal gyrus.l",
+   "Triangular part of inferior frontal gyrus.r"
+  ],
+  "sfg": [
+   "Superior frontal gyrus.r",
+   "Superior frontal gyrus.l"
+  ],
+  "area4": [
+   "Precentral gyrus.r",
+   "Precentral gyrus.l",
+   "Paracentral gyrus and sulcus*.r",
+   "Paracentral gyrus and sulcus*.l"
+  ],
+  "midbrain": [
+   "Midbrain.r",
+   "Midbrain.l"
+  ],
+  "pons": [
+   "Pons.r",
+   "Pons.l"
+  ],
+  "medulla": [
+   "Medulla oblongata.r",
+   "Medulla oblongata.l"
+  ],
+  "v4": [
+   "Fourth ventricle"
+  ],
+  "aqueduct": [
+   "Aqueduct of midbrain"
+  ],
+  "hypoAll": [
+   "Hypothalamus"
+  ],
+  "amygdala": [
+   "Amygdaloid body.r",
+   "Amygdaloid body.l"
+  ],
+  "cordAll": [
+   "White matter of spinal cord"
+  ],
+  "antAll": [
+   "Anterior horn of spinal cord"
+  ],
+  "postAll": [
+   "Posterior horn of spinal cord"
+  ],
+  "imlAll": [
+   "Intermediolateral nucleus"
+  ],
+  "cauda": [
+   "Cauda equina"
+  ],
+  "spineAll": [
+   "Atlas (C1)",
+   "Axis (C2)",
+   "Vertebra C3",
+   "Vertebra C4",
+   "Vertebra C5",
+   "Vertebra C6",
+   "Vertebra C7",
+   "Vertebra T1",
+   "Vertebra T2",
+   "Vertebra T3",
+   "Vertebra T4",
+   "Vertebra T5",
+   "Vertebra T6",
+   "Vertebra T7",
+   "Vertebra T8",
+   "Vertebra T9",
+   "Vertebra T10",
+   "Vertebra T11",
+   "Vertebra T12",
+   "Vertebra L1",
+   "Vertebra L2",
+   "Vertebra L3",
+   "Vertebra L4",
+   "Vertebra L5"
+  ],
+  "sacrum": [
+   "Sacrum",
+   "Coccyx"
+  ],
+  "hips": [
+   "Hip bone.r",
+   "Hip bone.l"
+  ],
+  "bladder": [
+   "Urinary bladder"
+  ],
+  "urethraAll": [
+   "Urethra"
+  ],
+  "prostate": [
+   "Prostate"
+  ],
+  "pudendal": [
+   "Pudendal nerve.r",
+   "Pudendal nerve.l"
+  ],
+  "heart": [
+   "Left ventricle",
+   "Right ventricle",
+   "Left atrium",
+   "Pulmonary trunk"
+  ],
+  "atriumR": [
+   "Right atrium"
+  ],
+  "svc": [
+   "Superior vena cava"
+  ],
+  "ivcAll": [
+   "Inferior vena cava (thoracic part)"
+  ],
+  "aorta": [
+   "Ascending aorta",
+   "Aortic arch"
+  ],
+  "cca": [
+   "Right common carotid artery",
+   "Brachiocephalic trunk"
+  ],
+  "icaAll": [
+   "Internal carotid artery.r"
+  ],
+  "eca": [
+   "External carotid artery.r"
+  ],
+  "lungs": [
+   "Superior lobe of right lung",
+   "Middle lobe of right lung",
+   "Inferior lobe of right lung",
+   "Superior lobe of left lung",
+   "Inferior lobe of left lung"
+  ],
+  "trachea": [
+   "Trachea"
+  ],
+  "vagRAll": [
+   "Vagus nerve (X).r"
+  ],
+  "ixAll": [
+   "Glossopharyngeal nerve (IX).r"
+  ],
+  "sympAll": [
+   "Sympathetic trunk.r"
+  ],
+  "vestibule": [
+   "Vestibule.r"
+  ]
+ },
+ "split": {
+  "sfg": [
+   [
+    "mpfc",
+    "ax < 0.0119 && z > 0.0323"
+   ],
+   [
+    "cortex",
+    "true"
+   ]
+  ],
+  "hypoAll": [
+   [
+    "hypothalamus",
+    "y > 0.59925"
+   ]
+  ],
+  "cordAll": [
+   [
+    "cordTop",
+    "y > 0.59925"
+   ],
+   [
+    "cordMid",
+    "y > 0.3825"
+   ],
+   [
+    "cordLumb",
+    "y > 0.2975"
+   ],
+   [
+    "cordConus",
+    "y > 0.2465"
+   ],
+   [
+    "cordTip",
+    "true"
+   ]
+  ],
+  "antAll": [
+   [
+    "antLumb",
+    "y > 0.2975 && y < 0.3825"
+   ],
+   [
+    "antConus",
+    "y < 0.2975 && y > 0.2465"
+   ]
+  ],
+  "postAll": [
+   [
+    "postLumb",
+    "y > 0.2975 && y < 0.3825"
+   ],
+   [
+    "postConus",
+    "y < 0.2975 && y > 0.2465"
+   ]
+  ],
+  "imlAll": [
+   [
+    "imlHeart",
+    "y > 0.49555 && y < 0.56015"
+   ],
+   [
+    "imlLumb",
+    "y > 0.33405 && y < 0.37655"
+   ],
+   [
+    "spn",
+    "y > 0.25755 && y < 0.28305"
+   ]
+  ],
+  "spineAll": [
+   [
+    "spineTop",
+    "y > 0.3825"
+   ],
+   [
+    "spineLow",
+    "true"
+   ]
+  ],
+  "urethraAll": [
+   [
+    "urethra",
+    "y > 0.0051"
+   ]
+  ],
+  "icaAll": [
+   [
+    "ica",
+    "y < 0.65875"
+   ]
+  ],
+  "vagRAll": [
+   [
+    "vagR",
+    "y > 0.5814"
+   ]
+  ],
+  "ivcAll": [
+   [
+    "ivc",
+    "y > 0.3655"
+   ]
+  ],
+  "ixAll": [
+   [
+    "ix",
+    "y > 0.595"
+   ]
+  ],
+  "sympAll": [
+   [
+    "sympTop",
+    "y > 0.3825"
+   ],
+   [
+    "sympLow",
+    "true"
+   ]
+  ]
+ }
+}
