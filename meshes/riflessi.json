@@ -1,0 +1,42 @@
+{
+ "source": "zanatomy",
+ "frame": { "origin": [0, 20, 330], "scale": 0.0009 },
+ "parts": {
+  "spineW": [
+   "Vertebra T11", "Vertebra T12", "Vertebra L1", "Vertebra L2", "Vertebra L3", "Vertebra L4", "Vertebra L5",
+   "Intervertebral disc T11-T12", "Intervertebral disc T12-L1", "Intervertebral disc L1-L2",
+   "Intervertebral disc L2-L3", "Intervertebral disc L3-L4", "Intervertebral disc L4-L5", "Intervertebral disc L5-S1"
+  ],
+  "sacrum": ["Sacrum", "Coccyx"],
+  "hipR": ["Hip bone.r"],
+  "hipL": ["Hip bone.l"],
+  "femurR": ["Femur.r"],
+  "femurL": ["Femur.l"],
+  "patellaR": ["Patella.r"],
+  "patellaL": ["Patella.l"],
+  "tibiaRW": ["Tibia.r", "Fibula.r"],
+  "tibiaLW": ["Tibia.l", "Fibula.l"],
+  "cordW": ["White matter of spinal cord"],
+  "rectusW": ["Rectus femoris muscle.r"],
+  "vasti": ["Vastus lateralis muscle.r", "Vastus medialis muscle.r", "Vastus intermedius muscle.r"],
+  "hams": ["Long head of biceps femoris.r", "Short head of biceps femoris.r", "Semitendinosus muscle.r", "Semimembranosus muscle.r"],
+  "quadL": ["Rectus femoris muscle.l", "Vastus lateralis muscle.l", "Vastus medialis muscle.l", "Vastus intermedius muscle.l"],
+  "hamsL": ["Long head of biceps femoris.l", "Short head of biceps femoris.l", "Semitendinosus muscle.l", "Semimembranosus muscle.l"],
+  "femNerveW": ["Femoral nerve.r"],
+  "femNerveLW": ["Femoral nerve.l"],
+  "sciaticW": ["Sciatic nerve.r", "Tibial nerve.r", "Common fibular nerve.r"],
+  "sciaticLW": ["Sciatic nerve.l", "Tibial nerve.l", "Common fibular nerve.l"]
+ },
+ "split": {
+  "spineW": [["spine", "y < 0.756"]],
+  "cordW": [["cord", "y < 0.756"]],
+  "tibiaRW": [["tibiaR", "y > 0.012"]],
+  "tibiaLW": [["tibiaL", "y > 0.012"]],
+  "rectusW": [["patLig", "y < 0.0864"], ["quadTendon", "y < 0.1755"], ["rectus", "true"]],
+  "femNerveW": [["femoral", "y < 0.5436"]],
+  "femNerveLW": [["femoralL", "y < 0.5436"]],
+  "sciaticW": [["sciatic", "y > 0.012"]],
+  "sciaticLW": [["sciaticL", "y > 0.012"]]
+ },
+ "simplify": 0.6
+}
