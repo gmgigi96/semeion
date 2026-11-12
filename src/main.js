@@ -163,7 +163,9 @@ async function goTo(i, animate = true) {
   // (o la pagina, se chiede una vista propria: es. frontale e ingrandita)
   const view = page.def?.view;
   if (model && (view?.yaw != null || PAGES[index]?.chapter !== page.chapter || PAGES[index]?.def?.view?.yaw != null))
-    model.yaw = view?.yaw ?? page.chapter.yaw ?? 0;
+    // gli angoli dei capitoli sono dati per il modello non ribaltato: con il
+    // ribaltamento lo stesso punto di vista si ottiene con l'angolo opposto
+    model.yaw = (view?.yaw ?? page.chapter.yaw ?? 0) * (model.mirror?.scale.x < 0 ? -1 : 1);
   zoomTarget = view?.zoom ?? page.chapter?.zoom ?? 1;
   active = model;
   current = next;

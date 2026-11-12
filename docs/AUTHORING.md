@@ -198,6 +198,11 @@ export class MioModello extends AnatomyModel {
 }
 ```
 
+- **Lati**: il motore ribalta il modello a schermo (`this.mirror`), così visto di fronte la
+  destra del paziente sta a sinistra di chi guarda, come nel vero: **non compensare a mano**.
+  Etichette e scritte proprie vanno aggiunte a `this.overlay` (fuori dal ribaltamento), non a
+  `this.inner`, altrimenti escono speculari. Una copia speculare di una geometria va creata
+  prima di `addPart`, che la ricentra.
 - **Coordinate**: x laterale (destra del paziente +), y verso l'alto, z anteriore. Unità libere,
   ma il modello deve stare in circa **x ±0.45, y 0…0.8, z ±0.35**, appoggiato sulla base a y = 0.
 - **`addPart(id, nome, colore, geometrie, opzioni)`**: una parte ha un nome e una o più
@@ -235,5 +240,5 @@ npx vite build --outDir /tmp/<id>-dist                                          
 
 Guardare ogni immagine: il testo non deve uscire dalla pagina né sovrapporsi ai pulsanti in
 fondo, il modello deve essere leggibile e stare sulla pagina destra, i pulsanti devono fare
-ciò che dicono. Lo scatto richiede circa 15 secondi: fare pochi scatti mirati (una per
+ciò che dicono. Con modelli pesanti o macchina carica mettere `wait:12000` prima dei `click:`. Lo scatto richiede circa 15 secondi: fare pochi scatti mirati (una per
 pagina, più le interazioni principali). Alla fine fermare il server avviato.

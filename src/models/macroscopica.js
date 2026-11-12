@@ -234,7 +234,7 @@ export class Macroscopica extends AnatomyModel {
   // Le etichette dei giri stanno sulla faccia laterale, non sopra l'ingombro.
   setLabels(map) {
     super.setLabels(map);
-    for (const [id, t] of this.labels) if (ANCHOR[id]) t.position.set(...ANCHOR[id]);
+    for (const [id, t] of this.labels) if (ANCHOR[id]) t.userData.anchor.set(...ANCHOR[id]);
   }
 
   // Triangoli dei giri, nelle coordinate del modello.

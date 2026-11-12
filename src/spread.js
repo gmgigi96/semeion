@@ -193,7 +193,7 @@ export async function buildToc(chapters, parts, ctx) {
       tip: row.ch.blurb,
     };
     right.add(hit, num, name);
-    waits.push(ready(name));
+    waits.push(ready(name), ready(num));
     y -= lineH;
   }
   const head = makeText('INDICE', SMALL);
@@ -203,6 +203,6 @@ export async function buildToc(chapters, parts, ctx) {
   });
   hint.position.set(0.5, -1.27, hint.position.z);
   right.add(head, hint);
-  await Promise.all([ready(kicker), ready(intro), ready(head), ready(hint), ...waits]);
+  await Promise.all([ready(kicker), ready(intro), ready(credit), ready(head), ready(hint), ...waits]);
   return { left, right, enter() {} };
 }

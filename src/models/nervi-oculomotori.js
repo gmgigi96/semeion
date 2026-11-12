@@ -129,6 +129,9 @@ export class OculomotorModel extends AnatomyModel {
 
   constructor() {
     super({ tilt: -0.5 });
+    // Questo modello ha già i lati scambiati a mano (vedi nota in testa): il
+    // ribaltamento del motore lo riporterebbe speculare, quindi qui è spento.
+    this.mirror.scale.x = 1;
     this.addStand({ radius: 0.15, z: 0 });
     // l'asta sta nel gruppo che ruota, non in quello che scorre (vedi setFocus)
     const rod = new THREE.Mesh(
