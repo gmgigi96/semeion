@@ -3,7 +3,9 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Text } from 'troika-three-text';
 import { Book, PAGE_H } from './book.js';
 import { Plexus } from './plexus.js';
-import { buildSpread, SPREAD_COUNT } from './chapter.js';
+import { Brain } from './brain.js';
+import { buildSpread, buildToc } from './spread.js';
+import { CHAPTERS } from './chapters/index.js';
 import { FONT } from './ui.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -36,10 +38,29 @@ const VIEW_TARGET = new THREE.Vector3(0, 0.1, 0.0);
 const book = new Book();
 scene.add(book.group);
 
-const plexus = new Plexus();
+// I modelli si costruiscono alla prima pagina che li usa.
 const MODEL_SCALE = 0.9;
-plexus.group.position.set(0.5, 0.001, -PAGE_H / 2 + 0.66);
-scene.add(plexus.group);
+const factories = { plexus: () => new Plexus(), brain: () => new Brain() };
+const models = {};
+let active = null; // modello sulla pagina corrente
+function modelFor(name) {
+  if (!name) return null;
+  if (!models[name]) {
+    const m = (models[name] = factories[name]());
+    m.group.position.set(0.5, 0.001, -PAGE_H / 2 + 0.66);
+    m.group.scale.setScalar(MODEL_SCALE);
+    m.group.visible = false;
+    scene.add(m.group);
+  }
+  return models[name];
+}
+
+// Sequenza piatta delle doppie pagine: indice, poi i capitoli uno dopo l'altro.
+const PAGES = [{ toc: true }];
+for (const chapter of CHAPTERS) {
+  chapter.first = PAGES.length;
+  chapter.spreads.forEach((def, index) => PAGES.push({ chapter, def, index }));
+}
 
 // etichetta che segue il puntatore sul modello
 const tip = new Text();
@@ -84,15 +105,40 @@ let index = -1;
 let busy = false;
 let grow = 0; // 0 = modello ripiegato, 1 = in piedi
 let growTarget = 0;
+let zoom = 1; // ingrandimento del modello chiesto dalla pagina
+let zoomTarget = 1;
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
+function build(i) {
+  const page = PAGES[i];
+  const ctx = {
+    page: i + 1,
+    hasPrev: i > 0,
+    hasNext: i < PAGES.length - 1,
+    nav: (d) => goTo(index + d),
+    toc: () => goTo(0),
+    openChapter: (c) => goTo(CHAPTERS[c].first),
+  };
+  if (page.toc) return buildToc(CHAPTERS, ctx);
+  return buildSpread(page.def, {
+    ...ctx,
+    model: modelFor(page.chapter.model),
+    chapter: page.chapter,
+    index: page.index,
+    count: page.chapter.spreads.length,
+    figure: `${CHAPTERS.indexOf(page.chapter) + 1}.${page.index + 1}`,
+  });
+}
+
 async function goTo(i, animate = true) {
-  if (busy || i < 0 || i >= SPREAD_COUNT || i === index) return;
+  if (busy || i < 0 || i >= PAGES.length || i === index) return;
   busy = true;
   clearHover();
   const dir = i > index ? 1 : -1;
-  const next = await buildSpread(i, { plexus, nav: (d) => goTo(index + d) });
+  const page = PAGES[i];
+  const next = await build(i);
+  const model = modelFor(page.chapter?.model);
   if (current && animate) {
     growTarget = 0;
     await wait(260);
@@ -109,6 +155,17 @@ async function goTo(i, animate = true) {
     book.left.add(next.left);
     book.right.add(next.right);
   }
+  if (model !== active) {
+    if (active) active.group.visible = false;
+    grow = 0;
+  }
+  // ogni capitolo si apre con il modello orientato nel modo più leggibile
+  // (o la pagina, se chiede una vista propria: es. frontale e ingrandita)
+  const view = page.def?.view;
+  if (model && (view?.yaw != null || PAGES[index]?.chapter !== page.chapter || PAGES[index]?.def?.view?.yaw != null))
+    model.yaw = view?.yaw ?? page.chapter.yaw ?? 0;
+  zoomTarget = view?.zoom ?? 1;
+  active = model;
   current = next;
   index = i;
   history.replaceState(null, '', `#${i + 1}`);
@@ -175,7 +232,7 @@ el.addEventListener('pointermove', (e) => {
     drag.y0 = e.clientY;
     drag.x = e.clientX;
     if (drag.rotate && drag.moved > 5) {
-      plexus.group.rotation.y += dx * 0.009;
+      active.yaw += dx * 0.009;
       spin = dx * 0.009;
       el.style.cursor = 'grabbing';
       tip.visible = false;
@@ -188,7 +245,7 @@ el.addEventListener('pointerdown', (e) => {
   if (busy) return;
   const p = pick(e);
   setHover(p);
-  const onModel = p?.ui.drag || (!p && ray.ray.intersectsSphere(modelBall));
+  const onModel = active && (p?.ui.drag || (!p && ray.ray.intersectsSphere(modelBall)));
   drag = { x: e.clientX, y0: e.clientY, moved: 0, rotate: onModel, target: p };
   spin = 0;
   el.setPointerCapture(e.pointerId);
@@ -209,18 +266,23 @@ renderer.setAnimationLoop(() => {
   const real = clock.getDelta();
   const dt = Math.min(real, 0.05);
   book.update(Math.min(real, 0.12));
-  if (!drag && Math.abs(spin) > 1e-4) {
-    plexus.group.rotation.y += spin;
-    spin *= Math.exp(-dt * 5);
+  if (active) {
+    if (!drag && Math.abs(spin) > 1e-4) {
+      active.yaw += spin;
+      spin *= Math.exp(-dt * 5);
+    }
+    grow += (growTarget - grow) * (1 - Math.exp(-Math.min(real, 0.5) * (growTarget ? 6 : 16)));
+    // il modello si alza dalla pagina come un pop-up
+    active.grow = grow;
+    zoom += (zoomTarget - zoom) * (1 - Math.exp(-Math.min(real, 0.5) * 5));
+    active.group.scale.setScalar(MODEL_SCALE * zoom);
+    active.group.visible = grow > 0.01;
+    active.update(dt, camera, real);
   }
-  grow += (growTarget - grow) * (1 - Math.exp(-Math.min(real, 0.5) * (growTarget ? 6 : 16)));
-  // il modello si alza dalla pagina come un pop-up
-  plexus.group.scale.set(MODEL_SCALE, MODEL_SCALE * Math.max(0.001, grow), MODEL_SCALE);
-  plexus.group.visible = grow > 0.01;
-  plexus.update(dt, camera, real);
+  current?.update?.();
   renderer.render(scene, camera);
 });
 
-const start = Math.min(SPREAD_COUNT, Math.max(1, parseInt(location.hash.slice(1)) || 1)) - 1;
+const start = Math.min(PAGES.length, Math.max(1, parseInt(location.hash.slice(1)) || 1)) - 1;
 goTo(start, false);
-window.__book = { goTo, plexus, scene, camera };
+window.__book = { goTo, scene, camera, models, get model() { return active; } };

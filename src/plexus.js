@@ -155,10 +155,16 @@ export class Plexus {
     this.inner = new THREE.Group();
     this.inner.position.x = -0.1;
     // la base resta piatta sulla pagina; il modello è reclinato verso chi legge
+    // (tilt) e ruota attorno al proprio asse verticale (spin, flat per la base)
+    this.flat = new THREE.Group();
     this.tilt = new THREE.Group();
     this.tilt.rotation.x = -0.3;
-    this.tilt.add(this.inner);
-    this.group.add(this.tilt);
+    this.spin = new THREE.Group();
+    this.spin.add(this.inner);
+    this.tilt.add(this.spin);
+    this.group.add(this.flat, this.tilt);
+    this.yaw = 0;
+    this.grow = 1;
 
     this.segs = new Map();
     this.structs = new Map();
@@ -204,7 +210,7 @@ export class Plexus {
     rod.position.set(SPINE_X, rodH / 2 + 0.02, -0.02);
     rod.castShadow = true;
     base.position.x -= 0.1;
-    this.group.add(base);
+    this.flat.add(base);
     this.inner.add(rod);
   }
 
@@ -404,6 +410,18 @@ export class Plexus {
   }
 
   // --- stato ----------------------------------------------------------------
+  // Stato neutro all'ingresso in una pagina.
+  reset() {
+    this.hover = new Set();
+    this.setCut(null);
+    this.setVariant(0);
+    this.showEndLabels(false);
+    for (const [id, s] of this.structs) if (!s.always) this.setStructure(id, false);
+    this.lookFn = () => ({ color: NERVE });
+    this.labelFn = (n) => (ROOTS.includes(n) ? 0.75 : 0.22);
+    this.onClick = null;
+  }
+
   // Nome della radice i-esima nella conformazione corrente.
   rootLevel(i) {
     return LEVELS[i + 1 + Math.round(this.shiftTarget)];
@@ -481,6 +499,9 @@ export class Plexus {
   // --- aggiornamento per fotogramma -----------------------------------------
   update(dt, camera, realDt = dt) {
     this.time += realDt; // le accensioni progressive seguono il tempo reale
+    this.flat.rotation.y = this.spin.rotation.y = this.yaw;
+    // il modello si alza dalla pagina lungo il proprio asse (nessuna deformazione)
+    this.spin.scale.y = this.flat.scale.y = Math.max(0.001, this.grow);
     const k = 1 - Math.exp(-Math.min(realDt, 0.5) * 10);
 
     // variante anatomica: le radici scorrono lungo la colonna

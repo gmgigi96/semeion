@@ -1,17 +1,15 @@
 // Capitolo "Plesso brachiale": cinque doppie pagine, una sola idea ciascuna.
 // Testi ricavati dagli appunti di neuroanatomia (3. Plesso brachiale).
 import * as THREE from 'three';
-import { PAGE_H } from './book.js';
-import { makeText, ready, bounds, richText, chip, chipRow, quiz, FONT, INK, INK_SOFT, ACCENT } from './ui.js';
-import { ROOTS, ROOT_COLORS, LEVELS, NERVE, DIM, DEAD, LIT, TERMINALS } from './plexus.js';
+import { makeText, FONT, INK, ACCENT } from '../ui.js';
+import { W, chipsInto, infoText } from '../modes.js';
+import { ROOTS, ROOT_COLORS, LEVELS, NERVE, DIM, DEAD, LIT, TERMINALS } from '../plexus.js';
 
-const M = 0.09; // margine
-const W = 1 - 2 * M; // giustezza
 const lv = (...names) => names.map((n) => `lvl:${n}`);
 const DIVS_A = ['Ua', 'Ma', 'La'];
 const DIVS_P = ['Up', 'Mp', 'Lp'];
 
-const SPREADS = [
+const spreads = [
   {
     title: 'Cinque radici, da C5 a T1',
     body:
@@ -104,145 +102,8 @@ const SPREADS = [
   },
 ];
 
-export const SPREAD_COUNT = SPREADS.length;
-
-// ---------------------------------------------------------------------------
-export async function buildSpread(index, ctx) {
-  const def = SPREADS[index];
-  const { plexus } = ctx;
-  const left = new THREE.Group();
-  const right = new THREE.Group();
-  const small = { fontSize: 0.0155, font: FONT.bold, color: INK_SOFT, letterSpacing: 0.12 };
-
-  // --- pagina sinistra ------------------------------------------------------
-  const kicker = makeText('NEUROANATOMIA · PLESSO BRACHIALE', small);
-  kicker.position.set(M, -0.075, kicker.position.z);
-  const counter = makeText(`${index + 1} / ${SPREADS.length}`, { ...small, anchorX: 'right' });
-  counter.position.set(1 - M, -0.075, counter.position.z);
-  left.add(kicker, counter);
-
-  let y = -0.125;
-  const title = makeText(def.title, { font: FONT.bold, fontSize: 0.052, maxWidth: W, lineHeight: 1.12 });
-  title.position.set(M, y, title.position.z);
-  left.add(title);
-  await ready(title);
-  y -= bounds(title).h + 0.032;
-
-  // collegamento testo <-> modello
-  let modeApi = null;
-  const setHover = (ids) => {
-    plexus.hover = new Set(ids);
-    modeApi?.onHoverSet?.(ids);
-  };
-  const body = await richText(
-    def.body,
-    { fontSize: 0.031, lineHeight: 1.45, maxWidth: W },
-    (key, on) => {
-      setHover(on ? def.terms[key] : []);
-      for (const t of body.terms) t.setHot(on && t.key === key);
-    }
-  );
-  body.group.position.set(M, y, 0);
-  left.add(body.group);
-  y -= body.height + 0.04;
-
-  const rule = new THREE.Mesh(
-    new THREE.PlaneGeometry(W, 0.0015),
-    new THREE.MeshBasicMaterial({ color: INK, transparent: true, opacity: 0.25 })
-  );
-  rule.position.set(0.5, y, 0.001);
-  left.add(rule);
-  y -= 0.04;
-
-  const q = await quiz(def.quiz, W);
-  q.group.position.set(M, y, 0);
-  left.add(q.group);
-
-  // --- pagina destra --------------------------------------------------------
-  const fig = makeText(`FIG. ${index + 1}`, { ...small, anchorX: 'right' });
-  fig.position.set(1 - M, -0.075, fig.position.z);
-  right.add(fig);
-
-  const controls = new THREE.Group();
-  controls.position.set(M, -0.9, 0);
-  right.add(controls);
-
-  const caption = makeText(`Fig. ${index + 1} — ${def.caption}`, {
-    font: FONT.italic, fontSize: 0.0215, maxWidth: W, lineHeight: 1.35, anchorX: 'center', textAlign: 'center',
-  });
-  caption.position.set(0.5, -1.165, caption.position.z);
-  const instruction = makeText(def.instruction, {
-    fontSize: 0.0135, font: FONT.bold, color: ACCENT, letterSpacing: 0.1, anchorX: 'center', maxWidth: W, textAlign: 'center',
-  });
-  instruction.position.set(0.5, -1.25, instruction.position.z);
-  right.add(caption, instruction);
-
-  // --- numeri di pagina e navigazione ---------------------------------------
-  const navY = -PAGE_H + 0.055;
-  const pn = { fontSize: 0.018, color: INK_SOFT, anchorY: 'middle' };
-  const pl = makeText(String(index * 2 + 2), { ...pn, anchorX: 'left' });
-  pl.position.set(M, navY, pl.position.z);
-  const pr = makeText(String(index * 2 + 3), { ...pn, anchorX: 'right' });
-  pr.position.set(1 - M, navY, pr.position.z);
-  left.add(pl);
-  right.add(pr);
-  if (index > 0) {
-    const c = await chip('‹ indietro', { fontSize: 0.018, onClick: () => ctx.nav(-1) });
-    c.group.position.set(M + 0.05 + c.w / 2, navY, 0);
-    left.add(c.group);
-  }
-  if (index < SPREADS.length - 1) {
-    const c = await chip('avanti ›', { fontSize: 0.018, onClick: () => ctx.nav(1) });
-    c.group.position.set(1 - M - 0.05 - c.w / 2, navY, 0);
-    right.add(c.group);
-  }
-
-  // --- comportamento del modello --------------------------------------------
-  modeApi = await def.mode({ plexus, controls, def });
-  await Promise.all([ready(caption), ready(instruction), ready(kicker), ready(counter), ready(fig)]);
-
-  return {
-    left,
-    right,
-    enter() {
-      // stato neutro, poi la modalità della pagina
-      plexus.hover = new Set();
-      plexus.setCut(null);
-      plexus.setVariant(0);
-      plexus.showEndLabels(false);
-      for (const [id, s] of plexus.structs) if (!s.always) plexus.setStructure(id, false);
-      plexus.lookFn = () => ({ color: NERVE });
-      plexus.labelFn = (n) => (ROOTS.includes(n) ? 0.75 : 0.22);
-      plexus.onClick = null;
-      // modello -> testo: la struttura sotto il puntatore accende i termini collegati
-      plexus.onHover = (id) => {
-        setHover(id ? [id] : []);
-        for (const t of body.terms) t.setHot(!!id && def.terms[t.key].includes(id));
-      };
-      modeApi.enter?.();
-    },
-  };
-}
-
-async function chipsInto(controls, specs) {
-  const chips = [];
-  for (const s of specs) chips.push(await chip(s.label, { onClick: s.onClick }));
-  const row = chipRow(chips, W);
-  controls.add(row.group);
-  return { chips, height: row.height };
-}
-
-async function infoText(controls, y) {
-  const t = makeText('', {
-    fontSize: 0.0205, maxWidth: W, lineHeight: 1.36, anchorX: 'center', textAlign: 'center',
-  });
-  t.position.set(W / 2, y, t.position.z);
-  controls.add(t);
-  return t;
-}
-
 // 1 — conformazione classica, prefissata, postfissata
-async function originMode({ plexus, controls }) {
+async function originMode({ model: plexus, controls }) {
   const variants = [
     { label: 'Prefissato · C4–C8', shift: -1 },
     { label: 'Classico · C5–T1', shift: 0 },
@@ -271,7 +132,7 @@ async function originMode({ plexus, controls }) {
 }
 
 // 2 — le fibre di una radice lungo le anastomosi
-async function fibresMode({ plexus, controls }) {
+async function fibresMode({ model: plexus, controls }) {
   let sel = null;
   let t0 = 0;
   const { chips, height } = await chipsInto(
@@ -302,7 +163,7 @@ async function fibresMode({ plexus, controls }) {
 }
 
 // 3 — rapporti con clavicola, scaleni, arteria, piccolo pettorale
-async function relationsMode({ plexus, controls }) {
+async function relationsMode({ model: plexus, controls }) {
   const items = [
     { label: 'Clavicola e prima costa', ids: ['clavicle', 'rib1'], on: true },
     { label: 'Scaleni', ids: ['scalenes'], on: false },
@@ -338,7 +199,7 @@ const ORIGIN = {
   RAD: 'Prosecuzione del tronco secondario posteriore · fibre da C5 a T1',
   AX: 'Tronco secondario posteriore · fibre da C5, C6',
 };
-async function terminalsMode({ plexus, controls }) {
+async function terminalsMode({ model: plexus, controls }) {
   let sel = null;
   let path = new Set();
   let t0 = 0;
@@ -402,7 +263,7 @@ const LESION = {
 };
 const NAMED = ['SS', 'LT', 'AX', 'RAD', 'MCN', 'MED', 'ULN'];
 
-async function lesionMode({ plexus, controls }) {
+async function lesionMode({ model: plexus, controls }) {
   let fibres = null;
   const { chips, height } = await chipsInto(controls, [{ label: 'Ricuci il plesso', onClick: () => cut(null) }]);
   const head = makeText('', { font: FONT.bold, fontSize: 0.023, anchorX: 'center', color: 0xb3261e });
@@ -445,3 +306,12 @@ async function lesionMode({ plexus, controls }) {
     },
   };
 }
+
+export default {
+  id: 'plesso-brachiale',
+  title: 'Plesso brachiale',
+  blurb: "Dalle radici C5-T1 ai nervi dell'arto superiore, fino alle lesioni.",
+  model: 'plexus',
+  yaw: 0,
+  spreads,
+};
