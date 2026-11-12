@@ -1,0 +1,30 @@
+{
+ "source": "bodyparts3d",
+ "frame": { "origin": [-0.65, -101, 1520.5], "scale": 0.026 },
+ "parts": {
+  "hypAll": ["Hypothalamus"],
+  "tuberAll": ["Tuber cinereum"],
+  "mamAll": ["Mammillary body"],
+  "laminaAll": ["Lamina terminalis"],
+  "chiasmAll": ["Optic chiasm"],
+  "tractAll": ["Right optic tract"],
+  "commissureRaw": ["Anterior commissure"],
+  "fornixAll": ["Right fornix of forebrain"],
+  "v3All": ["Third ventricle"],
+  "pit": ["Pituitary gland"],
+  "thalAll": ["Right thalamus"],
+  "striaAll": ["Stria terminalis"]
+ },
+ "split": {
+  "hypAll": [["hyp", "x > 0"]],
+  "tuberAll": [["tuber", "x > 0"]],
+  "mamAll": [["mammillary", "x > 0"]],
+  "laminaAll": [["lamina", "x > 0"]],
+  "chiasmAll": [["chiasm", "x > 0"]],
+  "tractAll": [["tractRaw", "x < 0.44 && z > -0.3"]],
+  "fornixAll": [["fornixRaw", "ax < 0.26 && y < 1.1 && z > -0.26"]],
+  "v3All": [["v3", "y < 0.8 && z > -0.25"]],
+  "thalAll": [["thalamus", "x < 0.3 && y < 1.03 && z > -0.36"]],
+  "striaAll": [["stria", "x > 0 && x < 0.39 && y > 0.63 && y < 0.98 && z > -0.26"]]
+ }
+}
