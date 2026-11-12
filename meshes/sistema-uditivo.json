@@ -1,0 +1,246 @@
+{
+ "source": "zanatomy",
+ "frame": {
+  "origin": [
+   0,
+   8,
+   1575
+  ],
+  "scale": 0.01
+ },
+ "simplify": 0.5,
+ "parts": {
+  "cochleaR": [
+   "Cochlea.r"
+  ],
+  "cochleaL": [
+   "Cochlea.l"
+  ],
+  "stapes": [
+   "Stapes.r"
+  ],
+  "nerveL": [
+   "Cochlear nerve.l"
+  ],
+  "viiiRAll": [
+   "Vestibulocochlear nerve (VIII).r"
+  ],
+  "viiiLAll": [
+   "Vestibulocochlear nerve (VIII).l"
+  ],
+  "pons": [
+   "Pons.r",
+   "Pons.l"
+  ],
+  "midbrain": [
+   "Midbrain.r",
+   "Midbrain.l"
+  ],
+  "collSup": [
+   "Superior colliculus.r",
+   "Superior colliculus.l"
+  ],
+  "icR": [
+   "Inferior colliculus.r"
+  ],
+  "icL": [
+   "Inferior colliculus.l"
+  ],
+  "mgbR": [
+   "Medial geniculate body.r"
+  ],
+  "mgbL": [
+   "Medial geniculate body.l"
+  ],
+  "thalamus": [
+   "Thalamus.r",
+   "Thalamus.l"
+  ],
+  "lentiform": [
+   "Lentiform nucleus.r",
+   "Lentiform nucleus.l"
+  ],
+  "heschlR": [
+   "Transverse temporal gyri.r"
+  ],
+  "heschlL": [
+   "Transverse temporal gyri.l"
+  ],
+  "stgR": [
+   "Superior temporal gyrus (Lateral part).r",
+   "Temporal plane.r"
+  ],
+  "stgL": [
+   "Superior temporal gyrus (Lateral part).l",
+   "Temporal plane.l"
+  ],
+  "hemi": [
+   " Posterior transverse collateral sulcus.l",
+   " Posterior transverse collateral sulcus.r",
+   "Angular gyrus.l",
+   "Angular gyrus.r",
+   "Anterior occipital sulcus*.l",
+   "Anterior occipital sulcus*.r",
+   "Calcarine sulcus.l",
+   "Calcarine sulcus.r",
+   "Central sulcus.l",
+   "Central sulcus.r",
+   "Cingulate gyrus (Posteroventral part*).l",
+   "Cingulate gyrus (Posteroventral part*).r",
+   "Cingulate gyrus and sulcus (Middle anterior part).l",
+   "Cingulate gyrus and sulcus (Middle anterior part).r",
+   "Cingulate gyrus and sulcus (Middle posterior part).l",
+   "Cingulate gyrus and sulcus (Middle posterior part).r",
+   "Cingulate gyrus and sulcus (Posterior dorsal part).l",
+   "Cingulate gyrus and sulcus (Posterior dorsal part).r",
+   "Cingulate sulcus (Marginal part*).l",
+   "Cingulate sulcus (Marginal part*).r",
+   "Circular sulcus of insula.l",
+   "Circular sulcus of insula.r",
+   "Collateral sulcus.l",
+   "Collateral sulcus.r",
+   "Cuneus.l",
+   "Cuneus.r",
+   "Inferior frontal sulcus.l",
+   "Inferior frontal sulcus.r",
+   "Inferior occipital gyrus and sulcus*.l",
+   "Inferior occipital gyrus and sulcus*.r",
+   "Inferior temporal gyrus.l",
+   "Inferior temporal gyrus.r",
+   "Inferior temporal sulcus.l",
+   "Inferior temporal sulcus.r",
+   "Insula (Subcentral gyrus and ant. and post. sulci*).l",
+   "Insula (Subcentral gyrus and ant. and post. sulci*).r",
+   "Intraparietal sulcus.l",
+   "Intraparietal sulcus.r",
+   "Lat_Fis-ant-Horizont.l",
+   "Lat_Fis-ant-Horizont.r",
+   "Lat_Fis-ant-Vertical.l",
+   "Lat_Fis-ant-Vertical.r",
+   "Lat_Fis-post.l",
+   "Lat_Fis-post.r",
+   "Lateral occipital gyrus (Middle occipital gyrus*).l",
+   "Lateral occipital gyrus (Middle occipital gyrus*).r",
+   "Lateral occipitotemporal gyrus.l",
+   "Lateral occipitotemporal gyrus.r",
+   "Lingual gyrus.l",
+   "Lingual gyrus.r",
+   "Lunate sulcus.l",
+   "Lunate sulcus.r",
+   "Medial occipitotemporal gyrus (Parahippocampal*).l",
+   "Medial occipitotemporal gyrus (Parahippocampal*).r",
+   "Middle frontal gyrus.l",
+   "Middle frontal gyrus.r",
+   "Middle temporal gyrus.l",
+   "Middle temporal gyrus.r",
+   "Occipital pole.l",
+   "Occipital pole.r",
+   "Occipitotemporal sulcus (Lateral part*).l",
+   "Occipitotemporal sulcus (Lateral part*).r",
+   "Olfactory sulcus.l",
+   "Olfactory sulcus.r",
+   "Opercular part of inferior frontal gyrus.l",
+   "Opercular part of inferior frontal gyrus.r",
+   "Orbital gyri (Frontomarginal gyrus and sulcus*).l",
+   "Orbital gyri (Frontomarginal gyrus and sulcus*).r",
+   "Orbital gyri.l",
+   "Orbital gyri.r",
+   "Orbital part of  inferior frontal gyrus.l",
+   "Orbital part of  inferior frontal gyrus.r",
+   "Orbital sulci (H-shaped orbital sulci*).l",
+   "Orbital sulci (H-shaped orbital sulci*).r",
+   "Orbital sulci (Lateral Orbital sulcus*).l",
+   "Orbital sulci (Lateral Orbital sulcus*).r",
+   "Paracentral gyrus and sulcus*.l",
+   "Paracentral gyrus and sulcus*.r",
+   "Paracentral sulcus.l",
+   "Paracentral sulcus.r",
+   "Parieto-occipital sulcus.l",
+   "Parieto-occipital sulcus.r",
+   "Postcentral sulcus.l",
+   "Postcentral sulcus.r",
+   "Precentral sulcus (Superior part)*.l",
+   "Precentral sulcus (Superior part)*.r",
+   "Precentral sulcus (inferior part)*.l",
+   "Precentral sulcus (inferior part)*.r",
+   "Precuneus.l",
+   "Precuneus.r",
+   "Straight gyrus (Gyrus rectus).l",
+   "Straight gyrus (Gyrus rectus).r",
+   "Subparietal sulcus.l",
+   "Subparietal sulcus.r",
+   "Sulcus interm_prim-Jensen.l",
+   "Sulcus interm_prim-Jensen.r",
+   "Superior frontal gyrus.l",
+   "Superior frontal gyrus.r",
+   "Superior frontal sulcus.l",
+   "Superior frontal sulcus.r",
+   "Superior occipital gyri.l",
+   "Superior occipital gyri.r",
+   "Superior parietal lobule.l",
+   "Superior parietal lobule.r",
+   "Superior temporal sulcus.l",
+   "Superior temporal sulcus.r",
+   "Supramarginal gyrus.l",
+   "Supramarginal gyrus.r",
+   "Temporal pole.l",
+   "Temporal pole.r",
+   "Transverse frontopolar gyrus and sulcus*.l",
+   "Transverse frontopolar gyrus and sulcus*.r",
+   "Transverse occipital sulcus.l",
+   "Transverse occipital sulcus.r",
+   "Triangular part of inferior frontal gyrus.l",
+   "Triangular part of inferior frontal gyrus.r",
+   "Postcentral gyrus.r",
+   "Postcentral gyrus.l",
+   "Precentral gyrus.r",
+   "Precentral gyrus.l"
+  ],
+  "nerveRAll": [
+   "Cochlear nerve"
+  ],
+  "labyrinthAll": [
+   "Vestibule.r"
+  ],
+  "medullaAll": [
+   "Medulla oblongata.r",
+   "Medulla oblongata.l"
+  ]
+ },
+ "split": {
+  "viiiRAll": [
+   [
+    "viiiR",
+    "x > 0.128"
+   ]
+  ],
+  "viiiLAll": [
+   [
+    "viiiL",
+    "x < -0.128"
+   ]
+  ],
+  "nerveRAll": [
+   [
+    "nerveTip",
+    "x > 0.35"
+   ],
+   [
+    "nerveR",
+    "true"
+   ]
+  ],
+  "labyrinthAll": [
+   [
+    "labyrinth",
+    "(x-0.401)**2+(y-0.068)**2+(z-0.026)**2 < 0.0016"
+   ]
+  ],
+  "medullaAll": [
+   [
+    "medulla",
+    "y > -0.14"
+   ]
+  ]
+ }
+}
