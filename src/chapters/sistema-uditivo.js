@@ -4,7 +4,7 @@
 // appunti «Vie vestibolo-cocleari (3X)», paragrafo «Via cocleare».
 // Parti reali e ricostruite, con le fonti: vedi src/models/sistema-uditivo.js.
 import { chipsInto, infoText } from '../modes.js';
-import { AuditoryModel } from '../models/sistema-uditivo.js';
+import { AuditoryModel, STEM_VIEW } from '../models/sistema-uditivo.js';
 
 const DUCTS = ['ductBase', 'ductMid', 'ductApex'];
 const COCH = ['cochleaR', 'labyrinth', 'stapes', 'nerveTip', 'scalaV', 'scalaT', ...DUCTS, 'helico', 'modiolus', 'ganglion', 'roundWindow'];
@@ -21,8 +21,9 @@ const PATH = [...STEM, ...EARS, ...NUCLEI, ...TRACTS, 'stgR', 'stgL', 'hemi'];
 const SHELL = { cochleaR: { opacity: 0.24, litOpacity: 0.5 } };
 
 // Come `selector` (opzioni statiche o a passi), con in più per ogni opzione:
-// l'inquadratura (`focus`), lo stato del modello (`scene`, anche per singolo
-// passo), le parti da togliere (`hide`). `rest`: parti mostrate con `base`
+// la posa del modello (`focus`, vedi FOCUS nel modello), il primo piano del
+// motore (`zoom`, vedi AnatomyModel.zoomTo), lo stato del modello (`scene`, anche per
+// singolo passo), le parti da togliere (`hide`). `rest`: parti mostrate con `base`
 // quando nessuna opzione è scelta. `keep`: parti che non si attenuano.
 function stage({ focus, base = [], rest = [], options, looks = {}, pick = {}, idle = '', initial = null, keep = [] }) {
   const never = new Set(keep);
@@ -46,6 +47,7 @@ function stage({ focus, base = [], rest = [], options, looks = {}, pick = {}, id
       const ids = o ? [...base, ...(o.show ?? []), ...(o.lit ?? []), ...(o.steps?.flatMap((s) => s.ids) ?? [])] : [...base, ...rest];
       model.show(ids.filter((id) => !hidden.has(id)));
       model.setFocus(o?.focus ?? focus);
+      model.zoomTo(o?.zoom ?? null);
       model.setLabels(o?.labels ?? {});
       model.setScene(o?.scene);
       if (!o?.steps) {
@@ -263,12 +265,12 @@ const spreads = [
       pick: { dcnR: 1, vcnR: 2, heschlR: 3, heschlL: 3, stgR: 3, stgL: 3, socR: 5 },
       options: [
         {
-          label: 'Stazioni', focus: 'path', hide: ['hemi'], lit: NUCLEI,
+          label: 'Stazioni', zoom: STEM_VIEW, hide: ['hemi'], lit: NUCLEI,
           labels: { vcnR: 'nuclei cocleari', nllL: 'nuclei del lemnisco', icR: 'collicolo inferiore', heschlL: 'aree 41-42' },
           info: 'Nuclei cocleari, olivare superiore e nucleo del corpo trapezoide, nuclei del lemnisco laterale, collicolo inferiore, genicolato mediale, corteccia.',
         },
         {
-          label: 'Dal nucleo dorsale', focus: 'path', hide: ['hemi'], stepTime: 2.6,
+          label: 'Dal nucleo dorsale', zoom: STEM_VIEW, hide: ['hemi'], stepTime: 2.6,
           steps: [
             { ids: ['cochleaR', 'nerveR', 'viiiR'], links: ['p-nerve'], text: 'Dal ganglio del Corti il nervo cocleare destro raggiunge i nuclei cocleari.' },
             { ids: ['dcnR'], links: ['p-dcn'], text: 'Nucleo cocleare dorsale: il più evoluto e meno frammentato.' },
@@ -279,7 +281,7 @@ const spreads = [
           ],
         },
         {
-          label: 'Dal nucleo ventrale', focus: 'path', hide: ['hemi'], stepTime: 2.6,
+          label: 'Dal nucleo ventrale', zoom: STEM_VIEW, hide: ['hemi'], stepTime: 2.6,
           steps: [
             { ids: ['cochleaR', 'nerveR', 'viiiR', 'vcnR'], links: ['p-nerve'], text: 'Nucleo cocleare ventrale: più arcaico e frammentato.' },
             { ids: ['trapezoid', 'ntbR', 'ntbL', 'socR', 'socL'], links: ['p-tb-x', 'p-tb-i'], text: 'Strie ventrali: in parte incrociate, in parte ipsilaterali; nucleo del corpo trapezoide e olivare superiore.' },
@@ -293,11 +295,11 @@ const spreads = [
           info: 'Giro di Heschl (41, 42): tonotopia medio-laterale, toni alti mediali e bassi laterali. Attorno, a cintura, l’area 22 associativa.',
         },
         {
-          label: 'Lesione 41-42', focus: 'path', hide: ['hemi'], dead: ['heschlL'], lit: ['cochleaR', 'nerveR', 'viiiR', 'heschlR', 'radR', 'mgbR', 'icR'], links: ['p-nerve', 'p-tb-i', 'p-ll-R', 'p-bic-R', 'p-rad-R'],
+          label: 'Lesione 41-42', zoom: STEM_VIEW, hide: ['hemi'], dead: ['heschlL'], lit: ['cochleaR', 'nerveR', 'viiiR', 'heschlR', 'radR', 'mgbR', 'icR'], links: ['p-nerve', 'p-tb-i', 'p-ll-R', 'p-bic-R', 'p-rad-R'],
           info: "Lesa la corteccia primaria di un emisfero resta la via dell'altro lato: solo ipoacusia. La lesione dell'area 22 impedisce invece di riconoscere i suoni.",
         },
         {
-          label: 'Fascio di Rasmussen', focus: 'path', hide: ['hemi'], lit: ['socR', 'viiiR', 'nerveR', 'cochleaR'], links: ['p-ocb'], labels: { socR: 'olivare superiore' },
+          label: 'Fascio di Rasmussen', zoom: STEM_VIEW, hide: ['hemi'], lit: ['socR', 'viiiR', 'nerveR', 'cochleaR'], links: ['p-ocb'], labels: { socR: 'olivare superiore' },
           info: 'Fibre efferenti dal nucleo olivare superiore alle cellule recettoriali: decorrono nella componente vestibolare, poi passano alla cocleare (anastomosi di Oort).',
         },
       ],

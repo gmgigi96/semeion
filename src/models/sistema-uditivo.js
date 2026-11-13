@@ -109,17 +109,23 @@ const MOD = P(39.68, -0.94, 1579.85);
 const DOME = P(39.36, -1.56, 1580.68);
 const COCHLEA = P(39.9, -1.2, 1580.2);
 
-// Inquadrature: il punto `at` del modello va nel punto `to` della pagina,
-// ingrandito `k`; `rot` = [inclinazione verso chi legge, rotazione attorno alla
+// Pose del modello: il punto `at` va nel punto `to` della pagina, ingrandito
+// `k`; `rot` = [inclinazione verso chi legge, rotazione attorno alla
 // verticale]; `up`: porta l'asse della chiocciola in verticale (apice in alto).
 // `to` è dentro il ribaltamento del motore: x positivo = sinistra di chi guarda.
+// Restano del modello perché il primo piano del motore non ruota il modello
+// attorno a un asse qualsiasi (`cochlea`) e inquadra un solo punto al centro
+// della pagina (`section` e `corti` mettono la chiocciola in un angolo, accanto
+// allo schema ingrandito). `head` è il modello intero.
 export const FOCUS = {
   cochlea: { at: COCHLEA, to: [0, 0.36, 0], k: 6.2, rot: [0.05, 0.5], up: true, rod: 0.12 },
   section: { at: COCHLEA, to: [0.4, 0.6, 0], k: 1.6, rot: [0.05, 0.5], up: true, rod: 0.03 },
   corti: { at: COCHLEA, to: [0.36, 0.62, 0], k: 1.7, rot: [0.05, 0.5], up: true, rod: 0.03 },
-  path: { at: P(0, 10, 1603), to: [0, 0.31, 0], k: 0.62, rot: [0, 0], rod: 0.05 },
   head: { at: P(0, 14, 1618), to: [0, 0.34, 0], k: 0.44, rot: [0, 0], rod: 0.06 },
 };
+// Primo piano del motore sul tronco encefalico, a partire dalla posa `head`
+// (vedi AnatomyModel.zoomTo).
+export const STEM_VIEW = { at: P(0, 10, 1603).toArray(), scale: 1.3, height: 0.27 };
 
 function merge(geos) {
   const pos = [];
@@ -193,6 +199,7 @@ export class AuditoryModel extends AnatomyModel {
     );
     this.rod.castShadow = true;
     this.mirror.add(this.rod);
+    this.standRod = this.rod; // il motore la nasconde nei primi piani
     // le sezioni ingrandite stanno fuori dall'inquadratura e dal ribaltamento:
     // x verso la destra di chi guarda, y in alto, z verso chi guarda
     this.side = new THREE.Group();
