@@ -63,6 +63,8 @@ export async function cordInto(controls, y, spec, onChange) {
 //             focus: { at, scale } primo piano (vedi AnatomyModel.zoomTo); anche per passo
 //             steps: [{ ids, links, text }] si accendono uno dopo l'altro
 //   pick      { idParte: indiceOpzione } per scegliere cliccando il modello
+//             act(model): facoltativa, nell'opzione o in un passo: un gesto del modello
+//             quando l'opzione è scelta o il passo comincia (per esempio un colpo di martelletto)
 //   initial   opzione attiva all'ingresso (null = nessuna)
 //   cord      { label, ends, min, max, value, spring, format, react }: un comando continuo
 //             sotto i pulsanti (vedi `cord` in ui.js). Quando chi legge lo muove,
@@ -102,6 +104,8 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
         model.showLinks(o?.links ?? []);
         info.text = o?.info ?? idle;
       }
+      o?.act?.(model);
+      o?.steps?.[0].act?.(model);
     };
     const select = (i) => {
       sel = i;
@@ -131,6 +135,8 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
     return {
       // la previsione verificata sul modello vale come aver provato quell'opzione
       choose: (i) => (explore(controls).found(options[i]?.label), select(i)),
+      // una riga di commento da un comportamento che avvolge questo (vedi `strikeMode` in riflessi.js)
+      say: (text) => (info.text = text),
       enter() {
         select(initial);
         // scegliere un'opzione toccando il modello vale come provarla
@@ -163,6 +169,7 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
         if (k === shownStep) return;
         shownStep = k;
         focus(o.steps[k].focus, o.focus);
+        if (k > 0) o.steps[k].act?.(model); // il primo passo lo fa già `apply`
         info.text = `${k + 1}/${o.steps.length} · ${o.steps[k].text}`;
         const done = o.steps.slice(0, k + 1);
         model.showLinks(done.flatMap((s) => s.links ?? []));

@@ -284,6 +284,11 @@ sceglierne uno accende parti, vie e indicatori.
   - **A passi**: `steps: [{ ids, links, activity, text }]` e `stepTime` in secondi; i passi
     si accendono uno dopo l'altro e il commento mostra `k/n · text`.
 - `cord`: una corda da tirare sotto i pulsanti, per una quantità continua (vedi sotto).
+- `act(model)`, in un'opzione o in un passo: un gesto del modello quando l'opzione è scelta
+  o il passo comincia (in `src/chapters/riflessi.js`, pagina 2: il colpo del martelletto
+  e l'estensione della gamba).
+- Oltre a `choose(i)`, `selector` ritorna `say(testo)`, che scrive nella riga di commento:
+  serve a un comportamento che lo avvolge (vedi `strikeMode` in `riflessi.js`).
 
 ### Corde e cursori: comandi continui
 
@@ -419,6 +424,26 @@ async function mioModo({ model, controls, def, quiz }) {
 ```
 
 Per una quantità continua usare `cordInto` (vedi «Corde e cursori»).
+
+### Oggetti da trascinare sul modello
+
+Un oggetto del modello (una mesh in `this.inner`) si fa trascinare dandogli
+`userData.ui = { id, tip, cursor: 'grab', grab: { start(raggio), move(raggio), end(sotto) } }`:
+`src/main.js` lo afferra al posto di ruotare il modello e gli passa il raggio del puntatore
+(nel mondo: portarlo nel modello con l'inversa di `this.inner.matrixWorld` e intersecarlo con
+un piano); `end(sotto)` riceve una funzione che dice che cosa c'è sotto il puntatore (nascondere
+prima l'oggetto stesso). Funziona con il mouse e al tocco; rotazione e clic restano quelli di sempre.
+Per prenderlo bene anche con un dito, la presa può essere una mesh invisibile più grande
+(`MeshBasicMaterial({ colorWrite: false, depthWrite: false })`), nascosta (`visible = false`)
+nelle pagine che non la usano e in `reset()`. Esempi:
+- la mosca di `src/models/nervi-oculomotori.js` (`#fly`, `onFly`, `gazeAt`): gli occhi la
+  seguono, il comportamento `gazeSelector` del capitolo accende i muscoli che lavorano;
+- il martelletto di `src/models/riflessi.js` (`setHammer({ onStrike, onMiss })`): al contatto con
+  il legamento rotuleo il riflesso parte, lasciato altrove la pagina dice che cosa si è colpito.
+
+Un tocco su una parte arriva a `model.onClick(id, hit)` con `hit.point` (nel mondo) e `hit.face`:
+`src/chapters/nervo-trigemino.js`, pagina 4, lo usa per piantare uno spillo nel punto toccato
+(`model.pin`) e chiedere di quale branca è.
 
 `src/chapters/brachial.js` contiene esempi (taglio in un punto, percorso a ritroso).
 

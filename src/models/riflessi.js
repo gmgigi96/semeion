@@ -78,7 +78,9 @@
 //    SEMPLIFICAZIONE: tutti i neuroni stanno su un'unica sezione; nel vero i motoneuroni
 //    dei muscoli posteriori della coscia stanno più in basso (L5-S2) di quelli del
 //    quadricipite (L2-L4). Partition cells e CPG vengono dai soli appunti (non verificati).
-//  - martelletto: oggetto di scena.
+//  - martelletto: oggetto di scena, da trascinare sul legamento rotuleo (setHammer).
+//  - estensione della gamba nel riflesso: tibia e legamento rotuleo ruotano attorno a un
+//    asse trasversale del ginocchio posto a stima (KNEE); ampiezza esagerata a vista.
 //
 // Coordinate: x laterale (destra +), y craniale, z anteriore; 1 mm = 0,0009 unità.
 import * as THREE from 'three';
@@ -293,12 +295,26 @@ export const FOCUS = {
   spindle: { at: at(FU.r, FU.b, FU.u), scale: 8.5, height: 0.3, stand: false },
   gto: { at: at(...GT.c), scale: 10, height: 0.22, stand: false },
   thigh: { at: at(70, 0, 330), scale: 1.5, height: 0, stand: false },
+  knee: { at: at(83, -10, 425), scale: 2.4, height: 0.1, stand: false },
 };
+
+// Martelletto da trascinare (vedi setHammer): a riposo sta davanti al ginocchio,
+// spostato di HAMMER_HOME rispetto al colpo; colpisce quando la testa arriva a
+// HIT dal legamento rotuleo (o quando lo si lascia sopra il legamento). Il colpo che
+// non va a segno lo dice la pagina, nominando la parte sotto il puntatore.
+const HAMMER_HOME = V(0.004, 0.03, 0.06);
+const HIT = 0.012;
+// Estensione della gamba nel riflesso: rotazione di tibia e legamento rotuleo attorno
+// all'asse trasversale del ginocchio (punto STIMATO tra condili e piatto tibiale).
+const KNEE = Q(95, 12, 428);
+const KICK = { angle: -0.55, time: 1.2 };
 
 export class Riflessi extends AnatomyModel {
   constructor() {
     super({ tilt: -0.5 });
     this.addStand({ radius: 0.17, z: 0 });
+    this.hammer = { off: HAMMER_HOME.clone(), held: false, swing: -1, handlers: null };
+    this.kickAt = -Infinity;
     this.ready = this.#build();
   }
 
@@ -436,10 +452,135 @@ export class Riflessi extends AnatomyModel {
   }
 
   #hammer() {
-    this.addPart('hammer', 'martelletto', 0xc0563a, [
+    const part = this.addPart('hammer', 'martelletto', 0xc0563a, [
       blob([83, -21, 404], [7, 13, 9], 16),
       tube([[83, -27, 404], [88, -70, 440], [95, -128, 492]], 1.9, { seg: 12 }),
     ]);
+    const h = this.hammer;
+    h.homes = part.meshes.map((m) => m.position.clone());
+    h.strike = part.meshes[0].position.clone(); // la testa, nel punto del colpo
+    // presa invisibile, più grande del martelletto: si afferra bene anche al tocco
+    const grip = new THREE.Group();
+    const ghost = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 8), ghost);
+    head.position.copy(h.strike);
+    const a = Q(83, -27, 404), b = Q(95, -128, 492);
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, a.distanceTo(b), 8), ghost);
+    handle.position.copy(a).lerp(b, 0.5);
+    handle.quaternion.setFromUnitVectors(V(0, 1, 0), b.clone().sub(a).normalize());
+    grip.add(head, handle);
+    grip.visible = false;
+    this.inner.add(grip);
+    h.grip = grip;
+    const plane = new THREE.Plane();
+    const offset = new THREE.Vector3();
+    const local = (ray) => {
+      this.inner.updateWorldMatrix(true, false);
+      return ray.clone().applyMatrix4(this.inner.matrixWorld.clone().invert());
+    };
+    const headAt = () => h.strike.clone().add(h.off);
+    const ui = {
+      id: 'hammer', tip: 'martelletto: portalo sul legamento rotuleo', cursor: 'grab',
+      grab: {
+        // il martelletto si porta nel piano frontale che passa davanti al legamento
+        // (se chi guarda lo vede di taglio, in un piano rivolto a chi guarda)
+        start: (ray) => {
+          const r = local(ray);
+          const lig = this.parts.get('patLig').center.clone();
+          lig.z += 0.006;
+          const front = V(0, 0, 1);
+          plane.setFromNormalAndCoplanarPoint(Math.abs(front.dot(r.direction)) > 0.25 ? front : r.direction.clone().negate(), lig);
+          const p = r.intersectPlane(plane, new THREE.Vector3());
+          if (!p) return;
+          offset.copy(headAt()).sub(p);
+          offset.addScaledVector(plane.normal, -offset.dot(plane.normal));
+          h.held = true;
+          h.swing = -1;
+        },
+        move: (ray) => {
+          if (!h.held) return;
+          const p = local(ray).intersectPlane(plane, new THREE.Vector3());
+          if (!p) return;
+          h.off.copy(p.add(offset).sub(h.strike));
+          // la testa tocca il legamento rotuleo: il colpo è dato
+          if (this.nearestPart(headAt(), ['patLig']).d < HIT) strike();
+        },
+        // lasciato: conta ciò che sta sotto il puntatore (la presa, invisibile, si toglie)
+        end: (pickUnder) => {
+          if (!h.held) return;
+          h.held = false;
+          grip.visible = false;
+          const id = pickUnder?.()?.ui?.id;
+          grip.visible = true;
+          if (id === 'patLig') return strike();
+          h.handlers?.onMiss?.(id && id !== 'hammer' ? id : null);
+        },
+      },
+    };
+    const strike = () => {
+      h.held = false;
+      this.swingHammer();
+      h.handlers?.onStrike?.();
+    };
+    for (const m of grip.children) m.userData.ui = ui;
+  }
+
+  // Martelletto da trascinare: onStrike() quando colpisce il legamento rotuleo,
+  // onMiss(idParte | null) quando lo si lascia altrove (la parte sotto il puntatore, se c'è).
+  // setHammer(null) lo rimette com'era: un oggetto di scena da toccare.
+  setHammer(handlers) {
+    this.hammer.handlers = handlers;
+    this.hammer.held = false;
+  }
+
+  // il colpo: la testa va sul legamento e torna a riposo
+  swingHammer() {
+    this.hammer.swing = 0;
+    this.hammer.from = this.hammer.off.clone();
+  }
+
+  // la gamba si estende sulla coscia, e torna
+  kickLeg() {
+    this.kickAt = this.time;
+  }
+
+  reset() {
+    super.reset();
+    this.setHammer(null);
+    this.hammer.swing = -1;
+    this.kickAt = -Infinity;
+  }
+
+  update(dt, camera, realDt = dt) {
+    const h = this.hammer;
+    const part = this.parts.get('hammer');
+    if (part) {
+      // il colpo: in 0,12 s sul legamento, poi indietro
+      if (h.swing >= 0) {
+        h.swing += realDt;
+        const t = h.swing;
+        if (t < 0.12) h.off.copy(h.from).lerp(V(0, 0, 0), t / 0.12);
+        else if (t < 0.3) h.off.set(0, 0, 0);
+        else h.off.lerp(HAMMER_HOME, 1 - Math.exp(-realDt * 5));
+        if (t > 2.5) h.swing = -1;
+      } else if (!h.held) h.off.lerp(HAMMER_HOME, 1 - Math.exp(-Math.min(realDt, 0.5) * 6));
+      part.meshes.forEach((m, i) => m.position.copy(h.homes[i]).add(h.off));
+      h.grip.position.copy(h.off);
+      h.grip.visible = !!h.handlers && part.shown > 0.5;
+      // la gamba: un calcio breve, avanti e indietro
+      const k = (this.time - this.kickAt) / KICK.time;
+      const angle = k >= 0 && k < 1 ? KICK.angle * Math.sin(Math.PI * k) ** 2 : 0;
+      const q = new THREE.Quaternion().setFromAxisAngle(V(1, 0, 0), angle);
+      for (const id of ['tibiaR', 'patLig']) {
+        const p = this.parts.get(id);
+        p.homes ??= p.meshes.map((m) => m.position.clone());
+        p.meshes.forEach((m, i) => {
+          m.position.copy(p.homes[i]).sub(KNEE).applyQuaternion(q).add(KNEE);
+          m.quaternion.copy(q);
+        });
+      }
+    }
+    super.update(dt, camera, realDt);
   }
 
   #section() {
