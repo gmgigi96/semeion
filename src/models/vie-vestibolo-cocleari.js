@@ -113,6 +113,8 @@ const S = 0.0048; // unità per mm (come nel manifesto)
 const O = [0, 15, 1492]; // origine del manifesto, in mm
 // punto in mm: [distanza dal piano mediano verso DESTRA, y (indietro), z (alto)]
 const mm = ([a, b, h]) => new THREE.Vector3(a * S, (h - O[2]) * S, -(b - O[1]) * S);
+// lo stesso punto come `at` di un primo piano del motore (vedi AnatomyModel.zoomTo)
+export const at = (c) => mm(c).toArray();
 const scaled = (r) => (Array.isArray(r) ? r.map((v) => v * S) : r * S);
 const tube = (pts, r, opts) => taperTube(pts.map(mm), scaled(r), { radial: 12, ...opts });
 // ellissoide: semiassi in mm (laterale, antero-posteriore, verticale)
@@ -182,21 +184,7 @@ const INFLATE = { viiiCist: 0.5, vnTrunk: 0.25, vnStem: 0.25, vnAmp: 0.14, vnUtr
 export class VieVestiboloCocleari extends AnatomyModel {
   constructor() {
     super({ tilt: -0.5 });
-    this.addStand({ radius: 0.2, z: 0 });
-    // l'asta sta nel gruppo che ruota, non in quello che scorre (vedi setFocus)
-    const rod = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.007, 0.007, 0.09, 12),
-      new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: 1, roughness: 0.25 })
-    );
-    rod.position.set(0, 0.06, -0.055);
-    rod.castShadow = true;
-    this.spin.add(rod);
-    this.rod = rod;
-    this.focusScale = 1;
-    this.focus = new THREE.Vector3();
-    this.focusTarget = new THREE.Vector3();
-    this.focusRule = null; // (parti visibili, vie visibili) => [centro mm, scala, altezza]
-    this.shownLinks = new Set();
+    this.addStand({ radius: 0.2, z: 0, rod: [0, 0.015, 0.105, -0.055] });
     this.ready = this.#build();
   }
 
@@ -342,59 +330,5 @@ export class VieVestiboloCocleari extends AnatomyModel {
     this.addPart('cut45', 'lesione dei nuclei interposti o del collicolo inferiore', CUT, [ring([-9.4, 13.4, 1595], [0.2, 0.25, 1], 5.5)]);
     this.addPart('cut6', 'blocco al corpo genicolato mediale', CUT, [ring([-14.2, 13.4, 1612], [0, 0.3, 1], 5)]);
     this.addPart('cut7', 'lesione della corteccia uditiva primaria', CUT, [ring([-46, 12, 1632.5], [0.25, 0, 1], 15)]);
-  }
-
-  // Ingrandisce una regione del modello e la porta sopra la base: `center` (mm
-  // Z-Anatomy, lato destro positivo) finisce sull'asse della base all'altezza
-  // `height`, `scale` è l'ingrandimento. Senza argomenti: modello intero.
-  setFocus(center = null, scale = 1, height = 0.36) {
-    this.focusScale = scale;
-    if (center) {
-      const p = mm(center).multiplyScalar(scale);
-      this.focusTarget.set(-p.x, height - p.y, -p.z);
-    } else this.focusTarget.set(0, 0, 0);
-  }
-
-  // La pagina può legare l'inquadratura a ciò che è visibile: la regola è
-  // richiamata a ogni cambio di parti o di vie mostrate.
-  #applyRule() {
-    const f = this.focusRule?.(this.visible, this.shownLinks);
-    if (f) this.setFocus(...f);
-  }
-
-  show(ids) {
-    super.show(ids);
-    this.#applyRule();
-  }
-
-  showLinks(ids) {
-    super.showLinks(ids);
-    this.shownLinks = new Set(ids);
-    this.#applyRule();
-  }
-
-  reset() {
-    this.focusRule = null;
-    super.reset();
-    this.setFocus();
-  }
-
-  update(dt, camera, realDt = dt) {
-    const k = 1 - Math.exp(-Math.min(realDt, 0.5) * 5);
-    this.focus.lerp(this.focusTarget, k);
-    this.inner.position.copy(this.focus);
-    this.inner.scale.setScalar(this.inner.scale.x + (this.focusScale - this.inner.scale.x) * k);
-    this.rod.visible = this.focusScale === 1; // l'asta regge solo il modello intero
-    super.update(dt, camera, realDt);
-    // nei primi piani non si disegna ciò che cade fuori dalla pagina (per
-    // esempio la corteccia quando l'inquadratura è sul ponte)
-    if (this.focusScale === 1) return;
-    for (const part of this.parts.values())
-      for (const m of part.meshes) {
-        if (!m.visible) continue;
-        const x = m.position.x * this.focusScale + this.focusTarget.x;
-        const y = m.position.y * this.focusScale + this.focusTarget.y;
-        if (Math.abs(x) > 0.6 || y > 0.7) m.visible = false;
-      }
   }
 }

@@ -1,7 +1,7 @@
 // Capitolo "Vie vestibolo-cocleari". Testi dagli appunti di neuroanatomia
 // (Vie vestibolo-cocleari): nervo VIII, nuclei, via cocleare, potenziali evocati.
 import { selector } from '../modes.js';
-import { VieVestiboloCocleari } from '../models/vie-vestibolo-cocleari.js';
+import { VieVestiboloCocleari, at } from '../models/vie-vestibolo-cocleari.js';
 
 const CANALS = ['canalSup', 'canalLat', 'canalPost'];
 const LAB = ['vestibule', ...CANALS];
@@ -16,24 +16,20 @@ const INTER = ['ntb', 'son', 'nll'];
 const HEAR = [...STEM, 'viiiCist', ...CN, 'cochlea', 'corti', 'rootCoch', ...CNUC, ...INTER, 'll', 'ic', 'mgb',
   'thalamus', 'heschl', 'stg'];
 
-// Inquadrature: [centro in mm Z-Anatomy (destra positiva, indietro, alto), ingrandimento, altezza]
-const ANGLE = [[24, 7, 1580], 4, 0.26];
-const EAR = [[37.4, 5.2, 1581.8], 8, 0.34];
-const NUCLEI = [[0, 17, 1578], 3.9, 0.38];
-const CORD = [[0, 21, 1552], 2.2, 0.32];
-const CEREB = [[0, 28, 1579], 2.1, 0.3];
-const OCULO = [[0, 14, 1590], 3.2, 0.34];
-const CORTEX = [[0, 12, 1598], 2.2, 0.36];
-const WIDE = [[0, 10, 1600], 1.5, 0.29];
-const STEMVIEW = [[0, 14, 1593], 3.2, 0.33];
-const PERIPH = [[22, 9, 1581], 2.5, 0.28];
-const CNVIEW = [[9, 16, 1582], 3.2, 0.3];
-
-// La pagina sceglie l'inquadratura in base a ciò che è visibile (parti e vie).
-const framed = (rule, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return { ...api, enter() { ctx.model.focusRule = rule; api.enter(); } };
-};
+// Primi piani del motore: centro in mm Z-Anatomy (destra positiva, indietro, alto),
+// ingrandimento, quota a cui il centro viene portato.
+const frame = (c, scale, height, more) => ({ at: at(c), scale, height, ...more });
+const ANGLE = frame([24, 7, 1580], 4, 0.26);
+const EAR = frame([37.4, 5.2, 1581.8], 8, 0.29, { stand: false });
+const NUCLEI = frame([0, 17, 1578], 3.9, 0.38);
+const CORD = frame([0, 21, 1562], 1.9, 0.33);
+const CEREB = frame([0, 28, 1579], 2.1, 0.3);
+const OCULO = frame([0, 14, 1590], 3.2, 0.34);
+const CORTEX = frame([0, 12, 1598], 2.2, 0.36);
+const WIDE = frame([0, 10, 1600], 1.5, 0.29);
+const STEMVIEW = frame([0, 14, 1593], 3.2, 0.33);
+const PERIPH = frame([22, 9, 1581], 2.5, 0.28);
+const CNVIEW = frame([9, 16, 1582], 3.2, 0.3);
 
 const UP = ['cnIn', 'striaD', 'striaV', 'striaVi']; // vie fino ai nuclei interposti
 
@@ -54,8 +50,8 @@ const spreads = [
     },
     caption: 'Lato destro: nervo, chiocciola, vestibolo, ponte, flocculo e rocca sono mesh reali (Z-Anatomy); i due gangli sono ricostruiti.',
     instruction: 'SCEGLI UNA COMPONENTE · TRASCINA IL MODELLO PER RUOTARLO',
-    view: { yaw: 0.35 },
-    mode: framed(() => ANGLE, selector({
+    view: { yaw: 0.35, focus: ANGLE },
+    mode: selector({
       base: ['ponsR', 'medR', 'petrous', 'flocculus', 'viiiCist', ...CN, ...VN, 'fn', 'cochlea', ...LAB, 'scarpa', 'corti'],
       looks: { cochlea: { opacity: 0.5 }, petrous: { opacity: 0.12 } },
       pick: { cnTrunk: 0, cnEnd: 0, cochlea: 0, corti: 0, vnTrunk: 1, vnStem: 1, scarpa: 1, vestibule: 1, canalSup: 1, canalLat: 1, canalPost: 1, fn: 2, viiiCist: 3, flocculus: 3 },
@@ -66,7 +62,7 @@ const spreads = [
         { label: 'Nervo faciale', lit: ['fn', ...CN], info: 'Il faciale si appoggia sopra la componente cocleare, disposta a doccia.' },
         { label: 'Angolo ponto-cerebellare', lit: ['viiiCist', 'flocculus', 'ponsR', 'petrous'], labels: { flocculus: 'flocculo', viiiCist: 'VIII' }, info: 'Dietro il lobulo flocculo-nodulare, medialmente la superficie laterale del ponte, davanti la piramide del temporale.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Il ganglio dello Scarpa',
@@ -84,8 +80,8 @@ const spreads = [
     },
     caption: 'Labirinto destro ingrandito. Vestibolo, canali e rami del nervo sono mesh reali; ganglio e nervo del canale posteriore sono ricostruiti.',
     instruction: 'SCEGLI UNA DIVISIONE E SEGUI I RAMI FINO AL LABIRINTO',
-    view: { yaw: 0.6 },
-    mode: framed(() => EAR, selector({
+    view: { yaw: 0.6, focus: EAR },
+    mode: selector({
       base: ['cochlea', ...LAB, 'scarpa', 'vnStem', 'vnHilum', 'nAmp', 'vnUtr', 'vnSac', 'nPost', 'cnEnd'],
       looks: { cochlea: { opacity: 0.25 }, vestibule: { opacity: 0.7 } },
       pick: { nAmp: 0, vnUtr: 0, canalSup: 0, canalLat: 0, vnSac: 1, nPost: 1, canalPost: 1, scarpa: 2, vnStem: 2, vnHilum: 2, cnEnd: 2 },
@@ -95,7 +91,7 @@ const spreads = [
         { label: 'Divisione inferiore', lit: ['vnSac', 'nPost', 'canalPost'], labels: { canalPost: 'canale posteriore' }, info: 'Nervo sacculare e nervo del canale semicircolare posteriore (forame singolare del Morgagni).' },
         { label: 'Ganglio e nervo', lit: ['scarpa', 'vnHilum', 'vnStem', 'cnEnd'], labels: { scarpa: 'ganglio dello Scarpa' }, info: 'Le due divisioni si fondono nel ganglio; la componente vestibolare si unisce alla cocleare nel meato acustico interno.' },
       ],
-    })),
+    }),
   },
   {
     title: 'I nuclei e le proiezioni vestibolari',
@@ -113,24 +109,21 @@ const spreads = [
     },
     caption: 'Tronco encefalico visto da dietro, in trasparenza. I nuclei sono ricostruiti sotto il pavimento del IV ventricolo della mesh reale.',
     instruction: 'SCEGLI I NUCLEI O UNA PROIEZIONE: L’INQUADRATURA SI SPOSTA SUL BERSAGLIO',
-    view: { yaw: 2.75 },
-    mode: framed(
-      (v) => (v.has('cord') ? CORD : v.has('cerebellum') ? CEREB : v.has('nucIII') ? OCULO : v.has('thalamus') ? CORTEX : NUCLEI),
-      selector({
-        base: [...PM, 'viiiCist', 'rootVest', 'rootCoch', ...VNUC, ...CNUC],
-        looks: { cerebellum: { opacity: 0.08 }, nodule: { opacity: 0.8 } },
-        pick: { dcn: 0, vcn: 0, vnSup: 1, vnLat: 1, vnMed: 1, vnInf: 1 },
-        idle: 'Azzurro e blu: nuclei cocleari, laterali. Rosso, arancio, giallo e viola: i quattro nuclei vestibolari.',
-        options: [
-          { label: 'Nuclei cocleari', lit: [...CNUC, 'rootCoch', 'viiiCist'], labels: { dcn: 'dorsale', vcn: 'ventrale' }, info: 'Nel ponte caudale: il nucleo dorsale determina il tubercolo acustico.' },
-          { label: 'Nuclei vestibolari', lit: [...VNUC, 'rootVest', 'viiiCist'], labels: { vnSup: 'superiore', vnLat: 'laterale', vnMed: 'mediale', vnInf: 'inferiore' }, info: 'Inferiore, mediale e laterale nel bulbo rostrale; il superiore è l’unico a sede bulbo-pontina.' },
-          { label: 'Al midollo', lit: ['vnLat', 'vst'], show: ['cord', 'medullaLow'], links: ['vsp'], info: 'I nuclei vestibolari proiettano al midollo spinale.' },
-          { label: 'Al cervelletto', lit: ['rootVest', 'vnInf', 'vnMed', 'vnLat', 'flocculus', 'nodule'], show: ['cerebellum', 'flocculusL'], links: ['vcbPrim', 'vcbNod', 'vcbFloc'], labels: { flocculus: 'flocculo', nodule: 'nodulo' }, info: 'Afferenze primarie (blu, direttamente dal nervo), secondarie (verde, dai nuclei) e terziarie.' },
-          { label: 'Ai nuclei oculomotori', lit: [...VNUC, 'flm', 'nucVI', 'nucIV', 'nucIII'], show: ['midbrain', 'ponsUp'], links: ['mlfVI', 'mlfIV', 'mlfIII', 'mlfX'], labels: { nucIII: 'III', nucIV: 'IV', nucVI: 'VI' }, info: 'Proiezioni ai nuclei oculomotori (III, IV e VI), paramediane sotto il pavimento del IV ventricolo.' },
-          { label: 'Alla corteccia', lit: ['vnSup', 'vnLat', 'thalamus'], show: ['midbrain', 'ponsUp'], links: ['vThal'], info: 'Attraverso il lemnisco mediale: aree 3, 1, 2, area 6 e area 43.' },
-        ],
-      })
-    ),
+    view: { yaw: 2.75, focus: NUCLEI },
+    mode: selector({
+      base: [...PM, 'viiiCist', 'rootVest', 'rootCoch', ...VNUC, ...CNUC],
+      looks: { cerebellum: { opacity: 0.08 }, nodule: { opacity: 0.8 } },
+      pick: { dcn: 0, vcn: 0, vnSup: 1, vnLat: 1, vnMed: 1, vnInf: 1 },
+      idle: 'Azzurro e blu: nuclei cocleari, laterali. Rosso, arancio, giallo e viola: i quattro nuclei vestibolari.',
+      options: [
+        { label: 'Nuclei cocleari', lit: [...CNUC, 'rootCoch', 'viiiCist'], labels: { dcn: 'dorsale', vcn: 'ventrale' }, info: 'Nel ponte caudale: il nucleo dorsale determina il tubercolo acustico.' },
+        { label: 'Nuclei vestibolari', lit: [...VNUC, 'rootVest', 'viiiCist'], labels: { vnSup: 'superiore', vnLat: 'laterale', vnMed: 'mediale', vnInf: 'inferiore' }, info: 'Inferiore, mediale e laterale nel bulbo rostrale; il superiore è l’unico a sede bulbo-pontina.' },
+        { label: 'Al midollo', focus: CORD, lit: ['vnLat', 'vst'], show: ['cord', 'medullaLow'], links: ['vsp'], info: 'I nuclei vestibolari proiettano al midollo spinale.' },
+        { label: 'Al cervelletto', focus: CEREB, lit: ['rootVest', 'vnInf', 'vnMed', 'vnLat', 'flocculus', 'nodule'], show: ['cerebellum', 'flocculusL'], links: ['vcbPrim', 'vcbNod', 'vcbFloc'], labels: { flocculus: 'flocculo', nodule: 'nodulo' }, info: 'Afferenze primarie (blu, direttamente dal nervo), secondarie (verde, dai nuclei) e terziarie.' },
+        { label: 'Ai nuclei oculomotori', focus: OCULO, lit: [...VNUC, 'flm', 'nucVI', 'nucIV', 'nucIII'], show: ['midbrain', 'ponsUp'], links: ['mlfVI', 'mlfIV', 'mlfIII', 'mlfX'], labels: { nucIII: 'III', nucIV: 'IV', nucVI: 'VI' }, info: 'Proiezioni ai nuclei oculomotori (III, IV e VI), paramediane sotto il pavimento del IV ventricolo.' },
+        { label: 'Alla corteccia', focus: CORTEX, lit: ['vnSup', 'vnLat', 'thalamus'], show: ['midbrain', 'ponsUp'], links: ['vThal'], info: 'Attraverso il lemnisco mediale: aree 3, 1, 2, area 6 e area 43.' },
+      ],
+    }),
   },
   {
     title: 'La via cocleare',
@@ -147,41 +140,38 @@ const spreads = [
     },
     caption: 'Dall’orecchio destro alla corteccia dei due lati. Collicoli, genicolati e giri di Heschl sono mesh reali; nuclei e fasci del ponte sono ricostruiti.',
     instruction: 'SEGUI UNA STRIA PASSO PER PASSO, OPPURE IL FASCIO EFFERENTE',
-    view: { yaw: 0.3 },
-    mode: framed(
-      (v, l) => (l.has('radL') ? WIDE : l.has('rasm') || (l.has('cnIn') && l.size === 1) ? PERIPH : l.size ? STEMVIEW : WIDE),
-      selector({
-        base: [...HEAR, ...VTR],
-        looks: { thalamus: { opacity: 0.3 }, cochlea: { opacity: 0.6 } },
-        idle: 'Le stazioni della via cocleare, dalla chiocciola destra ai giri di Heschl dei due lati.',
-        options: [
-          {
-            label: 'Stria dorsale', stepTime: 2.4,
-            steps: [
-              { ids: ['corti', ...CN], links: ['cnIn'], text: 'Ganglio del Corti e nervo cocleare' },
-              { ids: ['dcn', 'rootCoch'], text: 'Nucleo cocleare dorsale, più evoluto e meno frammentato' },
-              { ids: [], links: ['striaD'], text: 'Strie acustiche dorsali: si incrociano interamente' },
-              { ids: ['ll'], links: ['llL'], text: 'Ascendono come lemnisco laterale' },
-              { ids: ['ic'], text: 'Collicolo inferiore' },
-              { ids: ['mgb'], links: ['bicL'], text: 'Braccio quadrigeminale inferiore › corpo genicolato mediale' },
-              { ids: ['heschl'], links: ['radL'], text: 'Braccio sottolenticolare della capsula interna › corteccia uditiva primaria' },
-            ],
-          },
-          {
-            label: 'Stria ventrale', stepTime: 2.4,
-            steps: [
-              { ids: ['corti', ...CN], links: ['cnIn'], text: 'Ganglio del Corti e nervo cocleare' },
-              { ids: ['vcn', 'rootCoch'], text: 'Nucleo cocleare ventrale, più arcaico e frammentato' },
-              { ids: ['ntb'], links: ['striaV', 'striaVi'], text: 'Strie acustiche ventrali, crociate e ipsilaterali: nucleo del corpo trapezoide' },
-              { ids: ['son'], text: 'Nucleo olivare superiore, più rostrale' },
-              { ids: ['nll', 'll'], links: ['llL', 'llR'], text: 'Ancora più rostrale il nucleo del lemnisco laterale' },
-              { ids: ['ic', 'mgb', 'heschl'], links: ['bicL', 'bicR', 'radL', 'radR'], text: 'Collicolo inferiore, genicolato mediale e corteccia: dei due lati' },
-            ],
-          },
-          { label: 'Fascio di Rasmussen', lit: ['son', ...VTR, 'cnEnd', 'cochlea', 'corti'], links: ['rasm'], labels: { son: 'olivare superiore' }, info: 'Fascio olivo-cocleare, efferente: decorre nella componente vestibolare e con l’anastomosi di Oort raggiunge la cocleare.' },
-        ],
-      })
-    ),
+    view: { yaw: 0.3, focus: WIDE },
+    mode: selector({
+      base: [...HEAR, ...VTR],
+      looks: { thalamus: { opacity: 0.3 }, cochlea: { opacity: 0.6 } },
+      idle: 'Le stazioni della via cocleare, dalla chiocciola destra ai giri di Heschl dei due lati.',
+      options: [
+        {
+          label: 'Stria dorsale', stepTime: 2.4, focus: STEMVIEW,
+          steps: [
+            { ids: ['corti', ...CN], links: ['cnIn'], focus: PERIPH, text: 'Ganglio del Corti e nervo cocleare' },
+            { ids: ['dcn', 'rootCoch'], focus: PERIPH, text: 'Nucleo cocleare dorsale, più evoluto e meno frammentato' },
+            { ids: [], links: ['striaD'], text: 'Strie acustiche dorsali: si incrociano interamente' },
+            { ids: ['ll'], links: ['llL'], text: 'Ascendono come lemnisco laterale' },
+            { ids: ['ic'], text: 'Collicolo inferiore' },
+            { ids: ['mgb'], links: ['bicL'], text: 'Braccio quadrigeminale inferiore › corpo genicolato mediale' },
+            { ids: ['heschl'], links: ['radL'], focus: WIDE, text: 'Braccio sottolenticolare della capsula interna › corteccia uditiva primaria' },
+          ],
+        },
+        {
+          label: 'Stria ventrale', stepTime: 2.4, focus: STEMVIEW,
+          steps: [
+            { ids: ['corti', ...CN], links: ['cnIn'], focus: PERIPH, text: 'Ganglio del Corti e nervo cocleare' },
+            { ids: ['vcn', 'rootCoch'], focus: PERIPH, text: 'Nucleo cocleare ventrale, più arcaico e frammentato' },
+            { ids: ['ntb'], links: ['striaV', 'striaVi'], text: 'Strie acustiche ventrali, crociate e ipsilaterali: nucleo del corpo trapezoide' },
+            { ids: ['son'], text: 'Nucleo olivare superiore, più rostrale' },
+            { ids: ['nll', 'll'], links: ['llL', 'llR'], text: 'Ancora più rostrale il nucleo del lemnisco laterale' },
+            { ids: ['ic', 'mgb', 'heschl'], links: ['bicL', 'bicR', 'radL', 'radR'], focus: WIDE, text: 'Collicolo inferiore, genicolato mediale e corteccia: dei due lati' },
+          ],
+        },
+        { label: 'Fascio di Rasmussen', focus: PERIPH, lit: ['son', ...VTR, 'cnEnd', 'cochlea', 'corti'], links: ['rasm'], labels: { son: 'olivare superiore' }, info: 'Fascio olivo-cocleare, efferente: decorre nella componente vestibolare e con l’anastomosi di Oort raggiunge la cocleare.' },
+      ],
+    }),
   },
   {
     title: "Dove si interrompe l'impulso?",
@@ -196,23 +186,20 @@ const spreads = [
     },
     caption: 'Anello rosso: punto del blocco. Le frecce mostrano fin dove arriva l’impulso; la stazione interessata si scurisce.',
     instruction: 'SCEGLI UN’ONDA ALTERATA E TROVA IL PUNTO DEL BLOCCO',
-    view: { yaw: 0.3 },
-    mode: framed(
-      (v) => (v.has('cut1') ? PERIPH : v.has('cut3') ? CNVIEW : v.has('cut45') ? STEMVIEW : WIDE),
-      selector({
-        base: HEAR,
-        looks: { thalamus: { opacity: 0.3 } },
-        pick: { cochlea: 0, cnTrunk: 0, cnEnd: 0, dcn: 1, vcn: 1, ntb: 2, son: 2, nll: 2, ic: 2, mgb: 3, heschl: 4 },
-        idle: 'Nessun blocco: l’impulso sale dalla chiocciola alla corteccia uditiva primaria.',
-        options: [
-          { label: 'Onde I-II', show: ['cut1'], dead: CN, labels: { cut1: 'onde I o II' }, info: 'Blocco della trasmissione dello stimolo alla coclea o al nervo cocleare.' },
-          { label: 'Onda III', show: ['cut3'], dead: CNUC, links: ['cnIn'], labels: { cut3: 'onda III' }, info: 'La lesione interessa i nuclei cocleari ventrale e dorsale.' },
-          { label: 'Onde IV-V', show: ['cut45'], dead: [...INTER, 'ic'], links: UP, labels: { cut45: 'onde IV e V' }, info: 'Nuclei interposti (olivare superiore, del corpo trapezoide, del lemnisco laterale) o collicolo inferiore.' },
-          { label: 'Onda VI', show: ['cut6'], dead: ['mgb'], links: [...UP, 'llL', 'llR'], labels: { cut6: 'onda VI' }, info: 'Blocco della trasmissione dello stimolo al corpo genicolato mediale.' },
-          { label: 'Onda VII', show: ['cut7'], dead: ['heschl'], links: [...UP, 'llL', 'llR', 'bicL', 'bicR'], labels: { cut7: 'onda VII' }, info: 'La lesione interessa la corteccia uditiva primaria (giro di Heschl, aree 41 e 42).' },
-        ],
-      })
-    ),
+    view: { yaw: 0.3, focus: WIDE },
+    mode: selector({
+      base: HEAR,
+      looks: { thalamus: { opacity: 0.3 } },
+      pick: { cochlea: 0, cnTrunk: 0, cnEnd: 0, dcn: 1, vcn: 1, ntb: 2, son: 2, nll: 2, ic: 2, mgb: 3, heschl: 4 },
+      idle: 'Nessun blocco: l’impulso sale dalla chiocciola alla corteccia uditiva primaria.',
+      options: [
+        { label: 'Onde I-II', focus: PERIPH, show: ['cut1'], dead: CN, labels: { cut1: 'onde I o II' }, info: 'Blocco della trasmissione dello stimolo alla coclea o al nervo cocleare.' },
+        { label: 'Onda III', focus: CNVIEW, show: ['cut3'], dead: CNUC, links: ['cnIn'], labels: { cut3: 'onda III' }, info: 'La lesione interessa i nuclei cocleari ventrale e dorsale.' },
+        { label: 'Onde IV-V', focus: STEMVIEW, show: ['cut45'], dead: [...INTER, 'ic'], links: UP, labels: { cut45: 'onde IV e V' }, info: 'Nuclei interposti (olivare superiore, del corpo trapezoide, del lemnisco laterale) o collicolo inferiore.' },
+        { label: 'Onda VI', show: ['cut6'], dead: ['mgb'], links: [...UP, 'llL', 'llR'], labels: { cut6: 'onda VI' }, info: 'Blocco della trasmissione dello stimolo al corpo genicolato mediale.' },
+        { label: 'Onda VII', show: ['cut7'], dead: ['heschl'], links: [...UP, 'llL', 'llR', 'bicL', 'bicR'], labels: { cut7: 'onda VII' }, info: 'La lesione interessa la corteccia uditiva primaria (giro di Heschl, aree 41 e 42).' },
+      ],
+    }),
   },
 ];
 

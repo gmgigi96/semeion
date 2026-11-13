@@ -4,7 +4,7 @@
 // coclea né l'organo del Corti: il capitolo segue ciò che contengono.
 // Parti reali e ricostruite, con le fonti: vedi src/models/orecchio-interno.js.
 import { chipsInto, infoText } from '../modes.js';
-import { InnerEarModel } from '../models/orecchio-interno.js';
+import { InnerEarModel, SKULL_VIEW, SKULL_YAW } from '../models/orecchio-interno.js';
 
 const BONY = ['vestibule', 'canalLat', 'canalAnt', 'canalPost', 'cochlea'];
 const DUCTS = ['ductLat', 'ductAnt', 'ductPost', 'crus', 'cristae'];
@@ -19,8 +19,8 @@ const TWO_EARS = ['rBody', 'rCoch', 'rLat', 'rAnt', 'rPost', 'lBody', 'lCoch', '
 const GREEN = 0x1f9d57, BLUE = 0x2f6fe0;
 const glass = (ids, opacity, litOpacity = opacity) => Object.fromEntries(ids.map((id) => [id, { opacity, litOpacity }]));
 
-// Come `selector` (opzioni statiche o a passi), con in più l'inquadratura
-// (`focus`), lo stato del modello (`scene`, vedi setScene) e il colore di
+// Come `selector` (opzioni statiche o a passi), con in più la posa del modello
+// (`focus`, vedi FOCUS nel modello), lo stato del modello (`scene`, vedi setScene) e il colore di
 // alcune parti (`tint`) per ogni opzione. `keep`: parti che non si attenuano.
 function labMode({ focus, base, options, looks = {}, pick = {}, idle = '', initial = null, keep = [], labels = {} }) {
   const never = new Set(keep);
@@ -271,9 +271,9 @@ const spreads = [
     },
     caption: 'Base cranica reale dall’alto, la fronte verso chi legge. Labirinti reali ingranditi 2,5 volte, sollevati sopra le rocche e riorientati.',
     instruction: 'SCEGLI UNA COPPIA DI CANALI',
-    view: { yaw: 0, zoom: 1.15 },
+    view: { yaw: SKULL_YAW, zoom: 1.15, focus: SKULL_VIEW },
     mode: labMode({
-      focus: 'skull',
+      focus: 'lab',
       base: [...SKULL, ...TWO_EARS, 'midline'],
       looks: glass(['rBody', 'lBody', 'rCoch', 'lCoch'], 0.75),
       idle: 'Stesso colore, stessa coppia: verde i laterali, arancio anteriore destro e posteriore sinistro, blu gli altri due.',

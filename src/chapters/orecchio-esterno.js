@@ -4,7 +4,7 @@
 // Non sono negli appunti, e compaiono solo nei commenti ai pulsanti: i territori
 // cutanei dei singoli nervi sul padiglione e il decorso dei nervi e dell'arteria.
 import { chipsInto, infoText } from '../modes.js';
-import { OuterEarModel, AURICLE, DRUM, TEMPORAL } from '../models/orecchio-esterno.js';
+import { OuterEarModel, AURICLE, DRUM, TEMPORAL, FOCUS } from '../models/orecchio-esterno.js';
 
 const TENSA = ['tmAS', 'tmPS', 'tmPI', 'tmAI'];
 const MALLEUS = ['manubrium', 'malleusHead'];
@@ -13,11 +13,11 @@ const MUSCLES = ['aurAnt', 'aurSup', 'aurPost'];
 const ENTRY = ['concha', 'tragus', 'antitragus', 'incisure', 'notch']; // attorno al poro acustico
 const all = (ids, look) => Object.fromEntries(ids.map((id) => [id, look]));
 
-// Come `selector` (opzioni statiche), con in più l'inquadratura della pagina
-// (`focus`) e, per ogni opzione: `state` ({ pull, bulge }, vedi setState nel
+// Come `selector` (opzioni statiche), con in più, per ogni opzione: `state` ({ pull, bulge }, vedi setState nel
 // modello), `tint` (colore di alcune parti), `looks` (aspetto di alcune parti),
 // `hide` (parti di base da togliere). `keep`: parti che non si attenuano mai.
-function earMode({ focus, base, options, looks = {}, pick = {}, idle = '', initial = null, keep = [] }) {
+// L'inquadratura è quella della pagina (`view.focus`, primo piano del motore).
+function earMode({ base, options, looks = {}, pick = {}, idle = '', initial = null, keep = [] }) {
   const never = new Set(keep);
   return async ({ model, controls }) => {
     let sel = null;
@@ -38,7 +38,6 @@ function earMode({ focus, base, options, looks = {}, pick = {}, idle = '', initi
     };
     return {
       enter() {
-        model.setFocus(focus);
         select(initial);
         model.onClick = (id) => id in pick && select(pick[id]);
         model.lookFn = (part) => {
@@ -72,9 +71,8 @@ const spreads = [
     },
     caption: 'Padiglione destro reale (Z-Anatomy) visto di lato, sul temporale in trasparenza: il davanti è a destra. Il disco scuro segna il poro acustico esterno.',
     instruction: 'SCEGLI UN RILIEVO DEL PADIGLIONE',
-    view: { yaw: -1.4, zoom: 1.15 },
+    view: { yaw: -1.4 },
     mode: earMode({
-      focus: 'pinna',
       base: [...AURICLE, 'porus', ...TEMPORAL],
       idle: 'I rilievi irregolari del padiglione danno ai suoni angolature e inflessioni: così si capisce da dove arrivano.',
       pick: { helix: 0, tubercle: 0, antihelix: 1, scapha: 1, fossa: 1, concha: 2, porus: 2, tragus: 3, antitragus: 3, incisure: 3, lobule: 4 },
@@ -100,9 +98,8 @@ const spreads = [
     },
     caption: 'Orecchio destro dal davanti: conca, trago e temporale reali in trasparenza; condotto ricostruito tra conca e membrana reali (qui 21 mm).',
     instruction: 'SCEGLI UN TRATTO DEL MEATO, POI STIRA IL PADIGLIONE',
-    view: { yaw: 0.2, zoom: 1.15 },
+    view: { yaw: 0.2, focus: FOCUS.canal },
     mode: earMode({
-      focus: 'canal',
       base: [...ENTRY, 'temporalMeatus', ...MEATUS, 'cerumen', ...DRUM, ...MALLEUS],
       looks: { ...all(ENTRY, { opacity: 0.3 }), meatusCart: { opacity: 0.62, litOpacity: 0.9 }, meatusBone: { opacity: 0.62, litOpacity: 0.9 } },
       keep: [...ENTRY, ...DRUM, ...MALLEUS],
@@ -130,9 +127,8 @@ const spreads = [
     },
     caption: 'Membrana destra reale vista dal meato, come all’otoscopio: il davanti è a destra. Orletto, pliche e ombelico sono ricostruiti sulla membrana.',
     instruction: 'SCEGLI UNA PARTE DELLA MEMBRANA',
-    view: { yaw: -1.85, zoom: 1.15 },
+    view: { yaw: -1.81, focus: FOCUS.drum },
     mode: earMode({
-      focus: 'drum',
       base: [...DRUM, ...MALLEUS, 'umbo', 'annulus', 'folds'],
       looks: all(DRUM, { opacity: 0.62, litOpacity: 0.8 }),
       keep: MALLEUS,
@@ -160,9 +156,8 @@ const spreads = [
     },
     caption: 'La stessa membrana destra: il davanti è a destra. La linea «verticale» segue il manico del martello reale. Nell’otite la sporgenza è esagerata.',
     instruction: 'SCEGLI UN QUADRANTE, POI GUARDA UN’OTITE',
-    view: { yaw: -1.85, zoom: 1.15 },
+    view: { yaw: -1.81, focus: FOCUS.drum },
     mode: earMode({
-      focus: 'drum',
       base: [...DRUM, ...MALLEUS, 'umbo', 'annulus', 'cross', 'cone'],
       looks: all(DRUM, { opacity: 0.66, litOpacity: 0.9 }),
       keep: [...MALLEUS, 'cross', 'annulus'],
@@ -196,9 +191,8 @@ const spreads = [
     },
     caption: 'Reali: padiglione, ossa, carotide, temporale superficiale, auricolotemporale, faciale. Ricostruiti: gli altri nervi, l’altra arteria, i muscoli.',
     instruction: 'SCEGLI UN NERVO, I MUSCOLI O LE ARTERIE',
-    view: { yaw: -1.3, zoom: 1.15 },
+    view: { yaw: -1.3, focus: FOCUS.region },
     mode: earMode({
-      focus: 'region',
       base: [...AURICLE, ...TEMPORAL, 'mandible', 'scm', 'parotid', 'gan', 'atn', 'arnold', 'facial', 'pan', 'sta', 'paa', 'eca', ...MUSCLES],
       looks: all(AURICLE, { opacity: 0.7, litOpacity: 1 }),
       keep: ['scm'],

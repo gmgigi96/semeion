@@ -145,13 +145,21 @@ export const AURICLE = [
 export const TEMPORAL = ['temporal', 'temporalFar', 'temporalMeatus'];
 export const DRUM = ['tmFlac', 'tmAS', 'tmPS', 'tmPI', 'tmAI'];
 
-// Inquadrature: il punto `at` (mm) va sopra la base all'altezza `y`, ingrandito
-// `k`; `face` gira il modello finché la membrana del timpano guarda di lato.
+// Il modello intero è il padiglione: `HOME` (mm) sta sopra il centro della base,
+// alla quota HOME_Y, con il modello ingrandito HOME_K (spostamento fisso di `inner`).
+const HOME = [-72, 6, 1579];
+const HOME_Y = 0.37;
+const HOME_K = 0.98;
+// Primi piani del motore (vedi AnatomyModel.zoomTo) e, con scala < 1, la veduta
+// larga della regione. Nel primo piano della membrana il modello è reclinato
+// finché la faccia laterale guarda chi legge (con view.yaw = -1.81); il punto
+// inquadrato sta 4 mm dietro la membrana, così il suo margine inferiore non
+// finisce sotto la pagina.
+const at = (x, y, z) => P(x, y, z).toArray();
 export const FOCUS = {
-  pinna: { at: [-72, 6, 1579], y: 0.345, k: 0.92, rod: 0.08 },
-  canal: { at: [-59, 4, 1576.5], y: 0.34, k: 1.9, rod: 0.22 },
-  drum: { at: [-47.8, 4, 1577.9], y: 0.33, k: 4.3, rod: 0.1, face: true },
-  region: { at: [-62, 3, 1579], y: 0.39, k: 0.64, rod: 0.07 },
+  canal: { at: at(-59, 4, 1576.5), scale: 2.24, height: 0.39 },
+  drum: { at: at(-44.3, 4.25, 1579.9), scale: 5.2, height: 0.345, tilt: -1.31 },
+  region: { at: at(-62, 3, 1579), scale: 0.6, height: 0.31, stand: false },
 };
 
 // ---- membrana del timpano reale: centro, normale (verso la cassa) e assi nel
@@ -255,17 +263,12 @@ function sheet(rows) {
 export class OuterEarModel extends AnatomyModel {
   constructor() {
     super({ tilt: -0.45 });
-    this.addStand({ radius: 0.22, z: 0 });
-    // l'asta non segue l'ingrandimento: sta fuori da `inner`
-    this.rod = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.007, 0.007, 1, 12),
-      new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: 1, roughness: 0.25 })
-    );
-    this.rod.castShadow = true;
-    this.mirror.add(this.rod);
-    const blank = () => ({ pos: V(0, 0, 0), q: new THREE.Quaternion(), k: 1, rod: 0.08 });
-    this.focusNow = blank();
-    this.focusTarget = blank();
+    // spostamento fisso: il padiglione sopra il centro della base
+    this.inner.scale.setScalar(HOME_K);
+    this.inner.position.copy(P(...HOME)).multiplyScalar(-HOME_K).add(V(0, HOME_Y, 0));
+    // l'asta è data nelle coordinate di `inner`: dalla base fin sotto il padiglione
+    const foot = (y) => (y - this.inner.position.y) / HOME_K;
+    this.addStand({ radius: 0.25, z: 0, rod: [-this.inner.position.x / HOME_K, foot(0.02), foot(0.085), -this.inner.position.z / HOME_K] });
     this.state = { pull: 0, bulge: 0 };
     this.stateTarget = { ...this.state };
     this.ready = this.#build();
@@ -318,7 +321,6 @@ export class OuterEarModel extends AnatomyModel {
     this.#nervesAndVessels();
     this.moved = [...AURICLE, 'porus'].flatMap((id) => this.parts.get(id).meshes.map((mesh) => ({ mesh, rest: mesh.position.clone(), w: 1 })));
     this.moved.push(...this.parts.get('cerumen').meshes.map((mesh, i) => ({ mesh, rest: mesh.position.clone(), w: 1, d: this.cerumenShift[i] })));
-    this.setFocus('pinna', true);
   }
 
   // Normali comuni ai vertici coincidenti di più parti: i frammenti del
@@ -613,27 +615,6 @@ export class OuterEarModel extends AnatomyModel {
     this.addPart('aurPost', 'muscolo auricolare posteriore', 0x96403a, [fan([[36, 1590.5], [35, 1584]], [[23.5, 1588], [23, 1584]], 1.2, -70, 5)], { double: true });
   }
 
-  // name: una delle inquadrature di FOCUS
-  setFocus(name, now = false) {
-    const f = FOCUS[name];
-    const t = this.focusTarget;
-    t.k = f.k;
-    t.rod = f.rod;
-    t.q.identity();
-    if (f.face) {
-      // la faccia laterale della membrana verso il lato, e un poco verso l'alto
-      const out = TM_N.clone().negate();
-      t.q.setFromUnitVectors(out, V(1, 0.32, 0).normalize());
-    }
-    t.pos.copy(P(...f.at)).applyQuaternion(t.q).multiplyScalar(-f.k).add(V(0, f.y, 0));
-    if (now) {
-      this.focusNow.pos.copy(t.pos);
-      this.focusNow.q.copy(t.q);
-      this.focusNow.k = t.k;
-      this.focusNow.rod = t.rod;
-    }
-  }
-
   // pull: padiglione stirato in alto e indietro (0-1); bulge: membrana sporgente (0-1)
   setState(state = {}) {
     Object.assign(this.stateTarget, { pull: 0, bulge: 0 }, state);
@@ -642,7 +623,6 @@ export class OuterEarModel extends AnatomyModel {
   reset() {
     super.reset();
     this.setState();
-    this.setFocus('pinna');
   }
 
   #pose() {
@@ -677,16 +657,6 @@ export class OuterEarModel extends AnatomyModel {
   update(dt, camera, realDt = dt) {
     const step = Math.min(realDt, 0.5);
     const k = 1 - Math.exp(-step * 5);
-    const f = this.focusNow, t = this.focusTarget;
-    f.pos.lerp(t.pos, k);
-    f.q.slerp(t.q, k);
-    f.k += (t.k - f.k) * k;
-    f.rod += (t.rod - f.rod) * k;
-    this.inner.position.copy(f.pos);
-    this.inner.quaternion.copy(f.q);
-    this.inner.scale.setScalar(f.k);
-    this.rod.scale.y = Math.max(0.01, f.rod - 0.02);
-    this.rod.position.set(0, 0.02 + (f.rod - 0.02) / 2, 0);
     for (const key of Object.keys(this.state)) {
       this.state[key] += (this.stateTarget[key] - this.state[key]) * k;
       if (Math.abs(this.stateTarget[key] - this.state[key]) < 1e-3) this.state[key] = this.stateTarget[key];

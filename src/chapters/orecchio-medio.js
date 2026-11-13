@@ -3,7 +3,7 @@
 // descrivono le pareti della cassa: il capitolo segue ciò che contengono.
 // Parti reali e ricostruite, con le fonti: vedi src/models/orecchio-medio.js.
 import { chipsInto, infoText } from '../modes.js';
-import { MiddleEarModel } from '../models/orecchio-medio.js';
+import { MiddleEarModel, FOCUS } from '../models/orecchio-medio.js';
 
 const MALLEUS = ['malleusHead', 'manubrium'];
 const INCUS = ['incusBody', 'incusLong'];
@@ -15,11 +15,11 @@ const TUBE_MUSCLES = ['tvp', 'lvp', 'sp'];
 const WINDOWS = ['oval', 'round'];
 const EAR_MUSCLES = ['tt', 'cochleariform', 'stapedius', 'pyramid'];
 
-// Come `selector` (opzioni statiche), con in più l'inquadratura (`focus`) e lo
-// stato dell'orecchio di ogni opzione: ear: { sound, tt, st, press, open }
-// (vedi setEar nel modello). `swallow` apre la tuba per qualche secondo e
-// intanto riporta a zero la differenza di pressione.
-function earMode({ focus, base, options, looks = {}, pick = {}, idle = '', rest = {}, initial = null, keep = [] }) {
+// Come `selector` (opzioni statiche), con in più lo stato dell'orecchio di ogni
+// opzione: ear: { sound, tt, st, press, open } (vedi setEar nel modello).
+// `swallow` apre la tuba per qualche secondo e intanto riporta a zero la
+// differenza di pressione. L'inquadratura è quella della pagina (`view.focus`).
+function earMode({ base, options, looks = {}, pick = {}, idle = '', rest = {}, initial = null, keep = [] }) {
   const never = new Set(keep);
   return async ({ model, controls }) => {
     let sel = null;
@@ -43,7 +43,6 @@ function earMode({ focus, base, options, looks = {}, pick = {}, idle = '', rest 
     };
     return {
       enter() {
-        model.setFocus(focus);
         select(initial);
         model.onClick = (id) => id in pick && select(pick[id]);
         model.lookFn = (part) => {
@@ -85,9 +84,8 @@ const spreads = [
     },
     caption: 'Orecchio destro visto dal davanti. Ossa, ossicini, labirinto e palato reali (Z-Anatomy); tuba ricostruita tra i loro punti di repere.',
     instruction: 'SCEGLI UNA PARTE DELLA TUBA',
-    view: { yaw: -0.5, zoom: 1.15 },
+    view: { yaw: -0.5, focus: FOCUS.wide },
     mode: earMode({
-      focus: 'wide',
       base: ['temporal', 'sphenoid', 'nasopharynx', 'palate', 'tm', ...CHAIN, ...LABYRINTH, ...TUBE],
       idle: 'Dalla cassa del timpano, a sinistra, la tuba scende in avanti e medialmente fino alla rinofaringe.',
       pick: { tubeBone: 0, isthmus: 1, lamMed: 2, lamLat: 2, lumen: 2, ostium: 3 },
@@ -112,9 +110,8 @@ const spreads = [
     },
     caption: 'La parte cartilaginea vista dal davanti e di lato: la cartilagine fa da tetto al lume, i muscoli scendono verso il palato molle e la faringe.',
     instruction: 'SCEGLI UNA LAMINA O UN MUSCOLO',
-    view: { yaw: -0.5, zoom: 1.15 },
+    view: { yaw: -0.5, focus: FOCUS.wide },
     mode: earMode({
-      focus: 'wide',
       base: ['sphenoid', 'nasopharynx', 'palate', 'tm', ...CHAIN, ...TUBE, ...TUBE_MUSCLES],
       idle: 'Azzurro chiaro: lamina mediale. Azzurro scuro: lamina laterale. In rosso i tre muscoli.',
       pick: { lamLat: 0, lamMed: 1, tvp: 2, lvp: 3, sp: 4 },
@@ -140,9 +137,8 @@ const spreads = [
     },
     caption: 'Membrana, ossicini e tuba visti dal davanti, con la cartilagine in trasparenza. La deformazione della membrana è esagerata.',
     instruction: 'CAMBIA LA PRESSIONE ESTERNA, POI DEGLUTISCI',
-    view: { yaw: -0.5, zoom: 1.22 },
+    view: { yaw: -0.5, focus: FOCUS.tube },
     mode: earMode({
-      focus: 'tube',
       base: ['tm', ...CHAIN, 'cochlea', ...TUBE],
       looks: { lamMed: { opacity: 0.5 }, lamLat: { opacity: 0.5 } },
       keep: [...TUBE, ...CHAIN, 'cochlea'],
@@ -169,9 +165,8 @@ const spreads = [
     },
     caption: 'La catena degli ossicini reale, vista dal davanti: a sinistra la membrana, a destra coclea e vestibolo. Oscillazioni esagerate.',
     instruction: 'SEGUI LA VIBRAZIONE DALLA MEMBRANA ALLA FINESTRA OVALE',
-    view: { yaw: 0.05, zoom: 1.15 },
+    view: { yaw: 0.05, focus: FOCUS.ear },
     mode: earMode({
-      focus: 'ear',
       base: ['tm', ...CHAIN, ...LABYRINTH, ...WINDOWS],
       rest: { sound: 0.6 },
       keep: LABYRINTH,
@@ -201,9 +196,8 @@ const spreads = [
     },
     caption: 'I due muscoli ricostruiti sulla catena reale, con il nervo faciale reale. Movimenti esagerati.',
     instruction: 'FAI ARRIVARE UN SUONO FORTE, POI CONTRAI I MUSCOLI',
-    view: { yaw: -0.8, zoom: 1.15 },
+    view: { yaw: -0.8, focus: FOCUS.ear },
     mode: earMode({
-      focus: 'ear',
       base: ['tm', ...CHAIN, ...LABYRINTH, ...WINDOWS, ...EAR_MUSCLES, 'facial'],
       looks: { tm: { opacity: 0.3 }, malleusHead: { opacity: 0.6 }, incusBody: { opacity: 0.6 } },
       keep: [...LABYRINTH, ...CHAIN, 'tm'],
