@@ -24,8 +24,8 @@
 //     del decorso; che il bianco lasci il nervo più lontano dal foro è verificato;
 //   - muscoli multifido, rotatori e semispinale del torace; lunghissimo e
 //     ileocostale del torace (tra le quote 1226 e 1281, in trasparenza).
-//   Tagli: il libro non nasconde ciò che scende sotto la pagina, e le vertebre
-//   intere coprirebbero i nervi. Perciò il midollo è un tratto isolato, tagliato
+//   Tagli: le vertebre intere coprirebbero i nervi (il ritaglio del motore toglie
+//   solo ciò che esce dalla pagina). Perciò il midollo è un tratto isolato, tagliato
 //   di netto (la faccia superiore è il contorno reale delle mesh a quella quota:
 //   sostanza bianca, corna, sostanza intermedia), e le ossa compaiono come
 //   blocchi ritagliati dalle mesh reali: `BLOCK` attorno al foro intervertebrale
@@ -138,6 +138,8 @@ const BLOCK = { x: [-34, 9], y: [50, 90], z: [1243, 1278] };
 const AXIAL = { x: [-40, 13], y: [36, 101], z: [1226, 1281] };
 const WALL = { x: [-72, 40], y: [0, 200], z: AXIAL.z }; // coste, muscoli e ramo anteriore: fin dove arrivano
 export const FLOOR = { cord: CUT[0], block: BLOCK.z[0], axial: AXIAL.z[0] };
+// Un punto dato in millimetri Z-Anatomy, per i primi piani del capitolo (`focus.at`).
+export const atMm = (x, y, z) => mm(x, y, z).toArray();
 
 // Reperi (mm Z-Anatomy, lato destro: x negativo).
 const SULCUS_P = [3.9, 4.2]; // solco laterale posteriore: a destra e dietro l'asse
@@ -202,26 +204,7 @@ export class NerviSpinali extends AnatomyModel {
     super({ tilt: -0.3 });
     const body = mm(0, 42, 1219);
     this.addStand({ radius: 0.27, z: 0, rod: [body.x, 0.02, body.y, body.z] });
-    this.rod = this.inner.children.at(-1);
     this.ready = this.#build();
-  }
-
-  // Primo piano: l'asse di rotazione passa per il punto `c` (mm: x, y), il
-  // modello è ingrandito di `k` e la quota `c[2]` poggia sulla pagina (vedi FLOOR).
-  focus(c, k) {
-    const p = mm(...c).multiplyScalar(k);
-    this.inner.scale.setScalar(k);
-    this.inner.position.set(-p.x, 0.004 - p.y, -p.z);
-    this.rod.visible = false;
-    this.flat.visible = false;
-  }
-
-  reset() {
-    super.reset();
-    this.inner.position.set(0, 0, 0);
-    this.inner.scale.setScalar(1);
-    this.rod.visible = true;
-    this.flat.visible = true;
   }
 
   async #build() {
