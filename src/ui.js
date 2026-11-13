@@ -215,6 +215,43 @@ const bezier = ([x0, y0], [x1, y1], [x2, y2], n = 14) =>
     return [u * u * x0 + 2 * u * t * x1 + t * t * x2, u * u * y0 + 2 * u * t * y1 + t * t * y2];
   });
 
+// Casella da quaderno con la spunta rossa tracciata a mano, che ne esce come
+// fatta con la penna. Il bordo alto della casella sta a y = -0.006; ritorna il
+// gruppo, il fondo della casella (`inner`, da colorare) e la spunta (nascosta).
+export const BOX = 0.026;
+export function checkbox(color = ACCENT) {
+  const group = new THREE.Group();
+  const sq = layer(new THREE.Mesh(roundedRect(BOX, BOX, 0.005), flat(INK, 0.5)), 2);
+  sq.position.set(BOX / 2, -BOX / 2 - 0.006, Z_FILL / 2);
+  const inner = layer(new THREE.Mesh(roundedRect(BOX - 0.006, BOX - 0.006, 0.003), flat(0xfffdf6)), 3);
+  inner.position.set(BOX / 2, -BOX / 2 - 0.006, Z_FILL);
+  const tick = handTick(color);
+  tick.visible = false;
+  group.add(sq, inner, tick);
+  return { group, inner, tick };
+}
+
+// La sola spunta, senza casella: alta circa 0.032, con l'angolo a (0.013, -0.031).
+export function handTick(color = ACCENT) {
+  const tick = layer(
+    new THREE.Mesh(
+      stroke([[0.004, -0.019], [0.009, -0.025], [0.013, -0.031], ...bezier([0.013, -0.031], [0.02, -0.012], [0.036, 0.001], 8)], 0.0038),
+      flat(color)
+    ),
+    5
+  );
+  tick.position.z = Z_TEXT;
+  return tick;
+}
+
+// Sottolineatura a penna sotto un tratto di testo, appena ondulata: da x0 a x1 a quota y.
+export function underline(x0, x1, y, color = ACCENT) {
+  const m = (x0 + x1) / 2;
+  const line = layer(new THREE.Mesh(stroke(bezier([x0, y + 0.002], [m, y - 0.004], [x1, y + 0.001], 10), 0.0026), flat(color, 0.85)), 3);
+  line.position.z = Z_FILL;
+  return line;
+}
+
 // --- Domanda a risposta multipla ---------------------------------------------
 //   { question, options, correct, explain }       domanda classica: si riprova fino alla risposta giusta
 //   why: ['…', null, …]                            facoltativo: perché ogni opzione sbagliata non lo è
@@ -226,11 +263,14 @@ const bezier = ([x0, y0], [x1, y1], [x2, y2], n = 14) =>
 // nome di una parte e onReveal(ids) la indica dopo tre tentativi sbagliati.
 //   tags: [{ label, ids }]                         etichette da trascinare sulle parti `ids`
 //                                                  del modello; why: { idParte: '…' }
+// onSolved() viene chiamata una volta, quando la domanda è risolta: risposta giusta,
+// aletta sollevata dopo la previsione, struttura indicata (o accesa dopo tre tentativi),
+// tutte le etichette a posto. È ciò che il riepilogo del capitolo spunta.
 export async function quiz(def, width, hooks = {}) {
   if (def.point) return pointQuiz(def, width, hooks);
   if (def.tags) return tagQuiz(def, width, hooks);
   const { question, options, correct, explain, why = [], predict = false } = def;
-  const { onPredict } = hooks;
+  const { onPredict, onSolved } = hooks;
   const group = new THREE.Group();
   let y = 0;
   const kicker = makeText(predict ? 'PREDICI' : 'DOMANDA', {
@@ -257,29 +297,15 @@ export async function quiz(def, width, hooks = {}) {
   let solved = false;
   let chosen = null;
   let flap = null;
-  const box = 0.026;
   for (const [i, label] of options.entries()) {
     const row = new THREE.Group();
     row.position.y = y;
-    const sq = layer(new THREE.Mesh(roundedRect(box, box, 0.005), flat(INK, 0.5)), 2);
-    sq.position.set(box / 2, -box / 2 - 0.006, Z_FILL / 2);
-    const inner = layer(new THREE.Mesh(roundedRect(box - 0.006, box - 0.006, 0.003), flat(0xfffdf6)), 3);
-    inner.position.set(box / 2, -box / 2 - 0.006, Z_FILL);
-    // spunta a mano, che esce dalla casella come in un quaderno
-    const tick = layer(
-      new THREE.Mesh(
-        stroke([[0.004, -0.019], [0.009, -0.025], [0.013, -0.031], ...bezier([0.013, -0.031], [0.02, -0.012], [0.036, 0.001], 8)], 0.0038),
-        flat(ACCENT)
-      ),
-      5
-    );
-    tick.position.z = Z_TEXT;
-    tick.visible = false;
+    const { group: cb, inner, tick } = checkbox();
     const t = makeText(label, { fontSize: 0.026, maxWidth: width - 0.05, lineHeight: 1.3 });
     t.position.x = 0.045;
-    row.add(sq, inner, tick, t);
+    row.add(cb, t);
     await ready(t);
-    const h = Math.max(bounds(t).h, box) + 0.016;
+    const h = Math.max(bounds(t).h, BOX) + 0.016;
     const hit = layer(new THREE.Mesh(new THREE.PlaneGeometry(width, h), flat(MARKER, 0)), 1);
     hit.position.set(width / 2, -h / 2 + 0.008, Z_FILL / 4);
     hit.userData.ui = {
@@ -303,6 +329,7 @@ export async function quiz(def, width, hooks = {}) {
         if (ok) {
           solved = true;
           hit.material.opacity = 0;
+          onSolved?.();
         }
       },
     };
@@ -404,6 +431,7 @@ export async function quiz(def, width, hooks = {}) {
   const OPEN = 1.15;
   const reveal = () => {
     solved = true;
+    onSolved?.();
     [verdict.text, answer.text] = verdictFor(chosen);
     verdict.color = chosen === correct ? GOOD : BAD;
     ready(verdict).then(() => answer.position.set(pad, top - pad - bounds(verdict).h - 0.008, Z_TEXT));
@@ -462,7 +490,7 @@ export async function quiz(def, width, hooks = {}) {
 // La risposta è una struttura: chi legge la tocca sul modello. Ogni tocco
 // sbagliato dice che cosa si è indicato e, se c'è, perché non è quella giusta;
 // dopo tre tentativi la struttura giusta si accende da sola.
-async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf = (id) => id, onReveal } = {}) {
+async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf = (id) => id, onReveal, onSolved } = {}) {
   const group = new THREE.Group();
   let y = 0;
   const kicker = makeText('INDICA SUL MODELLO', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
@@ -506,6 +534,7 @@ async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf
       if (solved) return;
       if (point.includes(id)) {
         solved = true;
+        onSolved?.();
         feedback.color = GOOD;
         feedback.text = `Esatto: ${nameOf(id)}. ${explain}`;
         hint.text = 'trovata';
@@ -521,6 +550,7 @@ async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf
         return;
       }
       solved = true;
+      onSolved?.();
       feedback.text = `${said} La risposta giusta ora è accesa sul modello: ${answer}. ${explain}`;
       hint.text = '';
       arrowMat.opacity = 0;
@@ -534,7 +564,7 @@ async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf
 // Al posto giusto il cartellino torna nella sua casella e un cordino rosso lo lega
 // alla struttura, come le etichette a mano di una tavola anatomica.
 const CORD = 0x9c2f22;
-async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = (id) => id } = {}) {
+async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = (id) => id, onSolved } = {}) {
   const group = new THREE.Group();
   let y = 0;
   const kicker = makeText('TRASCINA LE ETICHETTE', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
@@ -618,6 +648,7 @@ async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = 
             done += 1;
             feedback.color = GOOD;
             feedback.text = done === tags.length ? `Tutte al loro posto. ${explain ?? ''}` : `«${tag.label}»: esatto.`;
+            if (done === tags.length) onSolved?.();
             return;
           }
           feedback.color = BAD;

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Text } from 'troika-three-text';
 import { Book, PAGE_H } from './book.js';
-import { buildSpread, buildToc } from './spread.js';
+import { buildSpread, buildToc, buildSummary } from './spread.js';
 import { CHAPTERS, PARTS } from './chapters/index.js';
 import { FONT, FONT_SCALE } from './ui.js';
 import { createBar } from './bar.js';
@@ -69,10 +69,14 @@ function modelFor(chapter) {
 }
 
 // Sequenza piatta delle doppie pagine: indice, poi i capitoli uno dopo l'altro.
+// Ogni capitolo finisce con il riepilogo «Da scoprire», dopo le sue doppie pagine:
+// così i numeri nell'indirizzo delle pagine esistenti non cambiano.
 const PAGES = [{ toc: true }];
 for (const chapter of CHAPTERS) {
   chapter.first = PAGES.length;
   chapter.spreads.forEach((def, index) => PAGES.push({ chapter, def, index }));
+  chapter.summary = PAGES.length;
+  PAGES.push({ chapter, summary: true, index: chapter.spreads.length });
 }
 
 // etichetta che segue il puntatore sul modello
@@ -136,8 +140,8 @@ function refreshBar() {
       hasNext: index < PAGES.length - 1,
       num: n,
       title: page.toc ? 'Indice' : page.chapter.title,
-      sub: page.toc ? `${CHAPTERS.length} capitoli` : `${page.index + 1} di ${page.chapter.spreads.length}`,
-      hasModel: !!page.chapter,
+      sub: page.toc ? `${CHAPTERS.length} capitoli` : page.summary ? 'da scoprire' : `${page.index + 1} di ${page.chapter.spreads.length}`,
+      hasModel: !!page.def,
       focus: leanTarget > 0.3,
     });
 }
@@ -231,7 +235,8 @@ function pageFromKey(key) {
   const [id, n] = (key ?? '').split('/');
   const chapter = CHAPTERS.find((c) => c.id === id);
   if (!chapter) return 0;
-  return chapter.first + Math.min(chapter.spreads.length, Math.max(1, parseInt(n) || 1)) - 1;
+  // il riepilogo è la pagina dopo l'ultima (n = numero di doppie pagine + 1)
+  return chapter.first + Math.min(chapter.spreads.length + 1, Math.max(1, parseInt(n) || 1)) - 1;
 }
 function bookmark() {
   try {
@@ -263,8 +268,10 @@ function build(i) {
     nav: (d) => goTo(index + d),
     toc: () => goTo(0),
     openChapter: (c) => goTo(CHAPTERS[c].first),
+    go: (k) => goTo(k),
   };
   if (page.toc) return buildToc(CHAPTERS, PARTS, ctx);
+  if (page.summary) return buildSummary(page.chapter, { ...ctx, number: CHAPTERS.indexOf(page.chapter) + 1 });
   return buildSpread(page.def, {
     ...ctx,
     model: modelFor(page.chapter),
@@ -284,7 +291,7 @@ async function goTo(i, animate = true) {
   const dir = i > index ? 1 : -1;
   const page = PAGES[i];
   const next = await build(i);
-  const model = modelFor(page.chapter);
+  const model = page.def ? modelFor(page.chapter) : null; // indice e riepiloghi sono senza modello
   await model?.ready; // i modelli con mesh reali si caricano in modo asincrono
   if (current && animate) {
     growTarget = 0;

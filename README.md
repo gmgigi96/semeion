@@ -31,7 +31,7 @@ pubblica su GitHub Pages (`.github/workflows/deploy.yml`).
 - `src/models/` — un modello 3D per capitolo (`src/brain.js` è l'encefalo condiviso da tre capitoli).
 - `meshes/` — manifesti delle mesh reali; `tools/mesh.mjs` ne ricava i file in `public/meshes/`.
 - `src/model.js` — modello anatomico generico: parti con un nome da mostrare, accendere, spegnere, dilatare; vie orientate.
-- `src/spread.js`, `src/modes.js`, `src/ui.js` — doppia pagina, comportamenti della pagina destra, testo e pulsanti come geometria.
+- `src/spread.js`, `src/modes.js`, `src/ui.js` — doppia pagina, comportamenti della pagina destra, testo e pulsanti come geometria. `src/spread.js` costruisce anche l'indice e il riepilogo «Da scoprire» che chiude ogni capitolo (domande risolte e comandi provati, ricordati dal browser).
 - `src/book.js`, `src/main.js` — il libro, lo sfoglio, la scena, la navigazione.
 - `docs/AUTHORING.md` — come aggiungere un capitolo; `tools/shot.mjs` — screenshot di verifica.
 

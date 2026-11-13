@@ -159,6 +159,33 @@ a un'interazione che fa ragionare (una via da seguire, una lesione, un blocco).
   c'è lì e di quale cartellino è il posto. 3-5 etichette, strutture grandi e ben separate.
   `explain` compare quando sono tutte a posto.
 
+### Il riepilogo «Da scoprire»
+
+Il motore aggiunge in fondo a ogni capitolo una doppia pagina di riepilogo, senza modello,
+all'indirizzo `#<id>/<n+1>` (con `n` doppie pagine: gli indirizzi delle pagine non cambiano).
+Non si scrive nulla a mano: è costruita da `buildSummary` in `src/spread.js` con ciò che il
+capitolo ha già.
+
+- **Sinistra**: una voce per doppia pagina, con il titolo e la domanda. La casella prende la
+  spunta rossa quando la domanda è risolta: risposta giusta, previsione verificata sotto
+  l'aletta, struttura indicata (anche dopo i tre tentativi), tutte le etichette al loro posto.
+- **Destra**: per ogni figura i comandi della pagina del modello (pulsanti e corde), quelli
+  provati in rosso e sottolineati a penna, con il conto «2 di 5». I comandi di una pagina si
+  conoscono dopo averla aperta almeno una volta.
+- Ogni voce si tocca per tornare a quella pagina. Nell'indice, accanto a ogni capitolo
+  cominciato, c'è «2/5» (domande risolte) in rosso, o la spunta a capitolo finito; toccarlo
+  apre il riepilogo.
+- Lo stato sta in `localStorage` (`semeion:scoperte`), con ogni accesso in try/catch: senza
+  storage il libro ricorda le scoperte solo finché la pagina resta aperta.
+
+Nei comportamenti della pagina destra non serve nulla di speciale: `chipsInto` e `cordInto`
+annotano da sé i loro comandi e ogni volta che chi legge li usa; `selector` conta anche le
+opzioni scelte toccando il modello (`pick`) e quella avviata da una previsione. Un pulsante che
+rimette solo a posto (per esempio «Ricuci il plesso») si esclude con `explore: false` nella sua
+descrizione. Per una scoperta che non passa da un pulsante o da una corda, un comportamento su
+misura può usare `explore(controls)` di `src/modes.js`: `offer('etichetta')` mentre costruisce i
+controlli (la mette nell'elenco), `found('etichetta')` quando chi legge la scopre.
+
 ## Il file del capitolo
 
 ```js

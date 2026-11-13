@@ -6,9 +6,22 @@ import { makeText, chip, chipRow, cord } from './ui.js';
 export const M = 0.09; // margine di pagina
 export const W = 1 - 2 * M; // giustezza
 
+// Scoperte: la doppia pagina mette in `controls.userData.explore` le funzioni
+// `offer(etichetta)` (un comando che c'è) e `found(etichetta)` (un comando provato),
+// che il riepilogo del capitolo elenca. Pulsanti e corde le chiamano da sé; un
+// comportamento su misura chiama `found` per scoperte che non passano di qui.
+export const explore = (controls) => controls.userData.explore ?? { offer() {}, found() {} };
+
+// Ogni pulsante conta come comando da provare, salvo `explore: false` (per esempio
+// un pulsante che rimette a posto).
 export async function chipsInto(controls, specs) {
   const chips = [];
-  for (const s of specs) chips.push(await chip(s.label, { onClick: s.onClick }));
+  const ex = explore(controls);
+  for (const s of specs) {
+    const counts = s.explore !== false;
+    if (counts) ex.offer(s.label);
+    chips.push(await chip(s.label, { onClick: () => (counts && ex.found(s.label), s.onClick?.()) }));
+  }
   const row = chipRow(chips, W);
   controls.add(row.group);
   return { chips, height: row.height };
@@ -25,8 +38,14 @@ export async function infoText(controls, y) {
 
 // Corda con manico (vedi `cord` in src/ui.js) sotto i pulsanti, a quota y.
 // `onChange(v)` riceve i valori che vengono da chi legge.
+// La corda conta come comando da provare con il suo titoletto, in minuscolo
+// (il titoletto è in maiuscoletto).
 export async function cordInto(controls, y, spec, onChange) {
-  const c = await cord({ ...spec, width: W, onChange });
+  const ex = explore(controls);
+  const label = spec.label ?? '';
+  const name = label ? label.charAt(0) + label.slice(1).toLowerCase() : spec.ends?.join(' / ') || 'corda';
+  ex.offer(name);
+  const c = await cord({ ...spec, width: W, onChange: (v) => (ex.found(name), onChange?.(v)) });
   c.group.position.y = y;
   controls.add(c.group);
   return c;
@@ -105,10 +124,12 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
     };
 
     return {
-      choose: (i) => select(i),
+      // la previsione verificata sul modello vale come aver provato quell'opzione
+      choose: (i) => (explore(controls).found(options[i]?.label), select(i)),
       enter() {
         select(initial);
-        model.onClick = (id) => id in pick && select(pick[id]);
+        // scegliere un'opzione toccando il modello vale come provarla
+        model.onClick = (id) => id in pick && (explore(controls).found(options[pick[id]]?.label), select(pick[id]));
         model.lookFn = (part) => {
           const o = current();
           const look = { ...looks[part.id] };
