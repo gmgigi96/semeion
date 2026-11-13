@@ -257,19 +257,7 @@ const X = new THREE.Vector3(1, 0, 0), Y = new THREE.Vector3(0, 1, 0);
 export class IpotalamoModel extends AnatomyModel {
   constructor() {
     super({ tilt: -0.75 });
-    this.addStand({ radius: 0.2, z: 0.05 });
-    // l'asta sta nel gruppo che ruota, non in quello che scorre (vedi setFocus)
-    const rod = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.007, 0.007, 0.05, 12),
-      new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: 1, roughness: 0.25 })
-    );
-    rod.position.set(-0.05, 0.04, 0.125); // sotto la metà destra dell'ipofisi (x è ribaltata)
-    rod.castShadow = true;
-    this.spin.add(rod);
-    this.rod = rod;
-    this.focusScale = 1;
-    this.focus = new THREE.Vector3();
-    this.focusTarget = new THREE.Vector3();
+    this.addStand({ radius: 0.2, z: 0.05, rod: [0.05, 0.015, 0.065, 0.125] }); // l'asta sta sotto la metà destra dell'ipofisi
     this.ready = this.#build();
   }
 
@@ -320,27 +308,5 @@ export class IpotalamoModel extends AnatomyModel {
     const p = mm(s.c);
     g.translate(p.x, p.y, p.z);
     return g;
-  }
-
-  // Primo piano: `center` (coordinate del modello) finisce sull'asse della base
-  // all'altezza `height`, ingrandito di `scale`. Senza argomenti: modello intero.
-  setFocus(center = null, scale = 1, height = 0.3) {
-    this.focusScale = scale;
-    if (center) this.focusTarget.set(-center[0] * scale, height - center[1] * scale, 0.05 - center[2] * scale);
-    else this.focusTarget.set(0, 0, 0);
-  }
-
-  reset() {
-    super.reset();
-    this.setFocus();
-  }
-
-  update(dt, camera, realDt = dt) {
-    const k = 1 - Math.exp(-Math.min(realDt, 0.5) * 6);
-    this.focus.lerp(this.focusTarget, k);
-    this.inner.position.copy(this.focus);
-    this.inner.scale.setScalar(this.inner.scale.x + (this.focusScale - this.inner.scale.x) * k);
-    this.rod.visible = this.focusScale === 1; // l'asta regge solo il modello intero
-    super.update(dt, camera, realDt);
   }
 }
