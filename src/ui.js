@@ -224,8 +224,11 @@ const bezier = ([x0, y0], [x1, y1], [x2, y2], n = 14) =>
 //                                                  modello (niente opzioni); why: { idParte: '…' }
 // onPredict(i) viene chiamata a ogni scelta in modalità previsione; nameOf(id) dà il
 // nome di una parte e onReveal(ids) la indica dopo tre tentativi sbagliati.
+//   tags: [{ label, ids }]                         etichette da trascinare sulle parti `ids`
+//                                                  del modello; why: { idParte: '…' }
 export async function quiz(def, width, hooks = {}) {
   if (def.point) return pointQuiz(def, width, hooks);
+  if (def.tags) return tagQuiz(def, width, hooks);
   const { question, options, correct, explain, why = [], predict = false } = def;
   const { onPredict } = hooks;
   const group = new THREE.Group();
@@ -522,6 +525,142 @@ async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf
       hint.text = '';
       arrowMat.opacity = 0;
       onReveal?.(point);
+    },
+  };
+}
+
+// --- Etichette da trascinare ----------------------------------------------------
+// Cartellini sulla pagina: si afferrano e si lasciano sulla struttura del modello.
+// Al posto giusto il cartellino torna nella sua casella e un cordino rosso lo lega
+// alla struttura, come le etichette a mano di una tavola anatomica.
+const CORD = 0x9c2f22;
+async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = (id) => id } = {}) {
+  const group = new THREE.Group();
+  let y = 0;
+  const kicker = makeText('TRASCINA LE ETICHETTE', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
+  group.add(kicker);
+  y -= 0.03;
+  const q = makeText(question, { fontSize: 0.027, font: FONT.semi, maxWidth: width, lineHeight: 1.35 });
+  q.position.y = y;
+  group.add(q);
+  await ready(q);
+  y -= bounds(q).h + 0.024;
+
+  const feedback = makeText('', { fontSize: 0.022, font: FONT.italic, maxWidth: width, lineHeight: 1.35 });
+  const cordGeo = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true);
+  const cordMat = new THREE.MeshStandardMaterial({ color: CORD, roughness: 0.7 });
+  const items = [];
+  const colW = width / 2;
+  const tagH = 0.044;
+  let done = 0;
+  for (const [i, tag] of tags.entries()) {
+    const col = i % 2;
+    const home = new THREE.Vector3(col * colW + 0.004, y - Math.floor(i / 2) * (tagH + 0.016), 0);
+    const g = new THREE.Group();
+    g.position.copy(home);
+    const t = makeText(tag.label, { fontSize: 0.024, font: FONT.italic, color: CORD, anchorY: 'middle' });
+    t.position.set(0.04, -tagH / 2, 0.0006);
+    await ready(t);
+    const w = Math.min(colW - 0.02, bounds(t).w + 0.082);
+    const card = layer(new THREE.Mesh(roundedRect(w, tagH, 0.008), flat(0xfaf5e8)), 6);
+    card.position.set(w / 2, -tagH / 2, 0.0003);
+    const rim = layer(new THREE.Mesh(roundedRect(w + 0.004, tagH + 0.004, 0.009), flat(INK, 0.3)), 5);
+    rim.position.set(w / 2, -tagH / 2, 0.0001);
+    // occhiello a cui si lega il cordino
+    const eye = layer(new THREE.Mesh(new THREE.RingGeometry(0.006, 0.0095, 20), flat(CORD)), 7);
+    eye.position.set(0.019, -tagH / 2, 0.0006);
+    t.renderOrder = 8;
+    const tick = layer(new THREE.Mesh(stroke([[0, -0.006], [0.006, -0.012], ...bezier([0.006, -0.012], [0.011, 0.0], [0.02, 0.006], 6)], 0.0032), flat(GOOD)), 8);
+    tick.position.set(w - 0.03, -tagH / 2 + 0.002, 0.0006);
+    tick.visible = false;
+    g.add(rim, card, eye, t, tick);
+    const cord = new THREE.Mesh(cordGeo, cordMat);
+    cord.visible = false;
+    group.add(g, cord);
+    const it = { tag, g, home, card, eye, cord, tick, placed: null, pin: null, held: false, offset: new THREE.Vector3() };
+    // il piano della pagina, nel mondo, per seguire il puntatore
+    const plane = new THREE.Plane();
+    const planeHit = (ray) => {
+      const n = new THREE.Vector3(0, 0, 1).transformDirection(group.matrixWorld);
+      plane.setFromNormalAndCoplanarPoint(n, group.getWorldPosition(new THREE.Vector3()));
+      const p = ray.intersectPlane(plane, new THREE.Vector3());
+      return p && group.worldToLocal(p);
+    };
+    card.userData.ui = {
+      cursor: 'grab',
+      hover: (on) => (rim.material.opacity = on && !it.placed ? 0.6 : 0.3),
+      grab: {
+        start(ray) {
+          if (it.placed) return;
+          it.held = true;
+          const p = planeHit(ray);
+          if (p) it.offset.copy(g.position).sub(p);
+          g.position.z = 0.012; // sollevato dalla carta mentre lo si porta
+        },
+        move(ray) {
+          if (!it.held) return;
+          const p = planeHit(ray);
+          if (p) g.position.set(p.x + it.offset.x, p.y + it.offset.y, 0.012);
+        },
+        end(pickUnder) {
+          if (!it.held) return;
+          it.held = false;
+          g.visible = false;
+          const under = pickUnder();
+          g.visible = true;
+          const id = under?.ui?.id;
+          if (!id) return; // lasciato nel vuoto: torna a posto
+          if (tag.ids.includes(id)) {
+            it.placed = id;
+            // il cordino si appunta dove è stato lasciato il cartellino, e segue il modello
+            it.pin = { object: under.object, local: under.object.worldToLocal(under.hit.point.clone()) };
+            tick.visible = true;
+            done += 1;
+            feedback.color = GOOD;
+            feedback.text = done === tags.length ? `Tutte al loro posto. ${explain ?? ''}` : `«${tag.label}»: esatto.`;
+            return;
+          }
+          feedback.color = BAD;
+          const right = items.find((o) => o.tag.ids.includes(id));
+          feedback.text = `Lì c'è ${nameOf(id)}${right && right !== it ? `: è il posto di «${right.tag.label}»` : ''}. ${why[id] ?? 'Riprova.'}`;
+        },
+      },
+    };
+    items.push(it);
+  }
+  y -= Math.ceil(tags.length / 2) * (tagH + 0.016) + 0.006;
+  feedback.position.y = y;
+  group.add(feedback);
+
+  const up = new THREE.Vector3(0, 1, 0);
+  const a = new THREE.Vector3();
+  const b = new THREE.Vector3();
+  let last = performance.now();
+  return {
+    group,
+    height: -y + 0.08,
+    update() {
+      const now = performance.now();
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      for (const it of items) {
+        // il cartellino non afferrato torna nella sua casella
+        if (!it.held) it.g.position.lerp(it.home, 1 - Math.exp(-dt * 12));
+        let w = null;
+        if (it.pin) {
+          w = it.pin.object.localToWorld(it.pin.local.clone());
+          for (let o = it.pin.object; o; o = o.parent) if (!o.visible) w = null;
+        }
+        it.cord.visible = !!w;
+        if (!w) continue;
+        // cordino dall'occhiello alla struttura, in coordinate della domanda
+        a.copy(it.eye.position).add(it.g.position);
+        b.copy(group.worldToLocal(w.clone()));
+        const len = a.distanceTo(b);
+        it.cord.position.copy(a).add(b).multiplyScalar(0.5);
+        it.cord.quaternion.setFromUnitVectors(up, b.sub(a).normalize());
+        it.cord.scale.set(0.0022, len, 0.0022);
+      }
     },
   };
 }

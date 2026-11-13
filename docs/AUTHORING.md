@@ -153,6 +153,11 @@ a un'interazione che fa ragionare (una via da seguire, una lesione, un blocco).
   Il clic arriva anche al comportamento della pagina destra, quindi un `pick` mostra
   l'informazione della parte toccata. Le parti indicate devono essere solide (non `ghost`),
   visibili nella pagina e abbastanza grandi da colpire: niente solchi o fili sottili.
+- **Etichette da trascinare** (`tags: [{ label, ids }]`, senza `options`): cartellini da
+  portare sulle strutture del modello. Al posto giusto il cartellino prende la spunta e un
+  cordino rosso lo lega al punto in cui è stato lasciato; altrove la pagina dice che cosa
+  c'è lì e di quale cartellino è il posto. 3-5 etichette, strutture grandi e ben separate.
+  `explain` compare quando sono tutte a posto.
 
 ## Il file del capitolo
 
@@ -170,6 +175,7 @@ const spreads = [
     // oppure una previsione, verificata dall'opzione 2 della pagina destra:
     // quiz: { predict: true, question: '…?', options: […], correct: 1, why: ['…', null, '…', '…'], explain: '…', reveal: 2 },
     // oppure da indicare sul modello: quiz: { question: 'Indica …', point: ['idParte'], why: { altraParte: '…' }, explain: '…' },
+    // oppure etichette da trascinare: quiz: { question: 'Porta …', tags: [{ label: 'elice', ids: ['helix'] }, …], explain: '…' },
     caption: 'Didascalia della figura.',
     instruction: 'ISTRUZIONE DI UNA RIGA, IN MAIUSCOLO',
     view: { yaw: 0.3, zoom: 1.15 },      // facoltativo: vista propria di questa pagina

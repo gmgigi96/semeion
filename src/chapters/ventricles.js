@@ -42,10 +42,14 @@ const spreads = [
       thal: ['thalamus'], hippo: ['hippocampus'], occ: ['lvOcc'], trig: ['lvTrig'],
     },
     quiz: {
-      question: 'Quale struttura forma il pavimento del corno temporale?',
-      options: ['La testa del nucleo caudato', "L'ippocampo", 'Il corpo calloso', 'Il talamo'],
-      correct: 1,
-      explain: "Con l'alveus e la fimbria; la volta è data da tapetum e coda del caudato.",
+      question: 'Porta ogni parte del ventricolo laterale al suo posto.',
+      tags: [
+        { label: 'corno frontale', ids: ['lvFront'] },
+        { label: 'cella media', ids: ['lvBody'] },
+        { label: 'corno temporale', ids: ['lvTemp'] },
+        { label: 'corno occipitale', ids: ['lvOcc'] },
+      ],
+      explain: "Nel corno temporale il pavimento è l'ippocampo, con l'alveus e la fimbria.",
     },
     caption: 'Scegliendo una porzione compaiono le strutture che ne formano le pareti.',
     instruction: 'SCEGLI UNA PORZIONE E GUARDA CHE COSA LA DELIMITA',

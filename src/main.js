@@ -426,6 +426,12 @@ el.addEventListener('pointermove', (e) => {
     if (touches.size === 2) setLean(pinch.lean + Math.log2(spread() / pinch.d) * 1.3);
     return;
   }
+  // un oggetto afferrato (un'etichetta) segue il puntatore
+  if (drag?.grab) {
+    aim(e);
+    drag.grab.move(ray.ray);
+    return;
+  }
   if (drag) {
     const dx = e.clientX - drag.x;
     const dy = e.clientY - drag.y0;
@@ -457,6 +463,14 @@ el.addEventListener('pointerdown', (e) => {
     }
   }
   const p = pick(e);
+  if (p?.ui.grab) {
+    clearHover();
+    drag = { grab: p.ui.grab };
+    p.ui.grab.start(ray.ray);
+    el.style.cursor = 'grabbing';
+    el.setPointerCapture(e.pointerId);
+    return;
+  }
   setHover(p);
   const onModel = p?.ui.drag || (!p && (overModel() || (isOpen && active && leanTarget > 0.3)));
   drag = { x: e.clientX, y0: e.clientY, moved: 0, rotate: !!onModel, target: p };
@@ -477,12 +491,19 @@ el.addEventListener('pointerup', (e) => {
   const d = drag;
   drag = null;
   if (!d) return;
+  // al rilascio l'oggetto si nasconde un istante: conta ciò che c'è sotto
+  if (d.grab) {
+    d.grab.end(() => pick(e));
+    setHover(pick(e));
+    return;
+  }
   if (d.moved <= 5 && d.target) d.target.ui.click?.(d.target.hit);
   // al tocco non c'è passaggio: il termine resta acceso finché non si tocca altrove
   if (e.pointerType === 'mouse' || !d.target?.ui.sticky) setHover(e.pointerType === 'mouse' ? pick(e) : null);
 });
 el.addEventListener('pointercancel', (e) => {
   release(e);
+  drag?.grab?.end(() => null);
   drag = null;
 });
 el.addEventListener('pointerleave', () => !drag && clearHover());
