@@ -24,6 +24,10 @@ const FOCUS = {
   plexus: { at: [-0.04, 0.5, 0], scale: 1.5, height: 0.37, stand: false },
   clavicle: { at: [-0.03, 0.46, 0.03], scale: 1.15, height: 0.38, stand: false },
   arm: { at: [-0.02, 0.39, 0], scale: 1.15, height: 0.34, stand: false },
+  // radici e tronchi primari, un po' più in basso perché le vertebre non escano dal libro
+  wiring: { at: [-0.12, 0.6, 0], scale: 1.7, height: 0.29, stand: false },
+  cords: { at: [0, 0.48, 0], scale: 1.9, height: 0.26, stand: false },
+  nerves: { at: [0.02, 0.42, 0], scale: 1.2, height: 0.25, stand: false },
 };
 
 const spreads = [
@@ -59,8 +63,8 @@ const spreads = [
       correct: 3,
       explain: 'Vi confluiscono i rami posteriori di tutti e tre i tronchi primari.',
     },
-    caption: 'Le fibre di ogni radice si distribuiscono a più tronchi secondari attraverso le anastomosi.',
-    instruction: 'SCEGLI UNA RADICE E SEGUI LE SUE FIBRE',
+    caption: 'Ricostruisci il plesso: radici, tronchi primari, tronchi secondari, nervi. Ogni radice dà fibre a più tronchi secondari.',
+    instruction: 'TENDI UN CAVO DA UNA RADICE AL SUO TRONCO · POI SCEGLI UNA RADICE',
     view: { yaw: -0.3, focus: FOCUS.plexus },
     mode: fibresMode,
   },
@@ -172,38 +176,214 @@ async function originMode({ model, controls }) {
   };
 }
 
-// 2 — le fibre di una radice lungo le anastomosi
+// 2 — «Ricostruisci il plesso»: un rompicapo a cavi, in tre tappe. Chi legge afferra
+// una parte del plesso e tende un cavo fino alla parte in cui le sue fibre proseguono
+// (vedi `setCables` nel modello): radici › tronchi primari, tronchi primari ›
+// tronchi secondari (il collegamento accende il ramo anteriore o posteriore che lo
+// realizza), tronchi secondari › nervi terminali. Un cavo sbagliato torna indietro
+// e la riga di commento dice perché. A plesso completo le fibre di ogni radice
+// corrono, del loro colore, fino ai nervi. I pulsanti delle radici mostrano poi le
+// fibre di una radice lungo le anastomosi.
+const LINKS = {
+  // tronco primario + tronco secondario -> ramo di divisione che li unisce
+  U: { LC: 'Ua', PC: 'Up' }, M: { LC: 'Ma', PC: 'Mp' }, L: { MC: 'La', PC: 'Lp' },
+  // tronco secondario + nervo -> tratto che si accende
+  LC: { MCN: 'MCN', MED: 'MedL' }, MC: { ULN: 'ULN', MED: 'MedM' }, PC: { AX: 'AX', RAD: 'RAD' },
+};
+const TRUNK_NAME = { U: 'superiore', M: 'medio', L: 'inferiore' };
+const CORD_NAME = { LC: 'laterale', PC: 'posteriore', MC: 'mediale' };
+const STAGES = [
+  {
+    name: 'Radici e tronchi primari', from: ROOTS, to: TRUNKS, focus: FOCUS.wiring, yaw: -0.9,
+    pairs: { C5: ['U'], C6: ['U'], C7: ['M'], C8: ['L'], T1: ['L'] },
+    hint: 'Afferra una radice e tendi il cavo fino al tronco primario in cui confluisce.',
+    aim: 'un tronco primario',
+    why: {
+      U: 'il tronco superiore nasce dalla confluenza di C5 e C6.',
+      M: 'il tronco medio è la continuazione del solo C7.',
+      L: "il tronco inferiore riunisce C8 e T1.",
+    },
+    labels: { ...Object.fromEntries(ROOTS.map((r) => [r, r])), ...TRUNK_NAME },
+  },
+  {
+    name: 'Tronchi secondari', from: TRUNKS, to: CORDS, focus: FOCUS.cords, yaw: -0.9,
+    pairs: { U: ['LC', 'PC'], M: ['LC', 'PC'], L: ['MC', 'PC'] },
+    hint: 'Ogni tronco si divide in due rami: collegalo ai suoi due tronchi secondari.',
+    aim: 'un tronco secondario',
+    why: {
+      LC: 'il laterale nasce dai rami anteriori dei soli tronchi superiore e medio.',
+      MC: "il mediale continua il ramo anteriore del solo tronco inferiore.",
+    },
+    labels: { ...TRUNK_NAME, ...CORD_NAME },
+  },
+  {
+    name: 'Nervi terminali', from: CORDS, to: ['MCN', 'MedL', 'MedM', 'MED', 'ULN', 'AX', 'RAD'], focus: FOCUS.nerves, yaw: 0.3,
+    pairs: { LC: ['MCN', 'MED'], MC: ['ULN', 'MED'], PC: ['AX', 'RAD'] },
+    hint: 'Dai tronchi secondari ai nervi: ognuno ne dà due, il mediano nasce da due.',
+    aim: 'un nervo terminale',
+    why: {
+      MCN: 'il muscolocutaneo nasce dal tronco secondario laterale (C5-C7).',
+      MED: 'il mediano nasce con due radici, dal laterale e dal mediale.',
+      ULN: "l'ulnare nasce dal tronco secondario mediale (C8-T1).",
+      AX: "l'ascellare nasce dal tronco secondario posteriore (C5-C6).",
+      RAD: 'il radiale prosegue il tronco secondario posteriore (C5-T1).',
+    },
+    labels: { ...CORD_NAME, MCN: 'muscolocutaneo', MED: 'mediano', ULN: 'ulnare', AX: 'ascellare', RAD: 'radiale' },
+  },
+];
+const PUZZLE = 'Ricostruisci';
+const DONE_INFO = 'Plesso completo: le fibre di ogni radice corrono, del suo colore, fino ai nervi. Scegli una radice per seguirla.';
+
 async function fibresMode({ model, controls }) {
-  let sel = null;
+  let sel = null; // radice scelta (fuori dal rompicapo)
   let t0 = 0;
-  const { chips, height } = await chipsInto(
-    controls,
-    ROOTS.map((r) => ({ label: r, onClick: () => select(sel === r ? null : r) }))
-  );
+  let stage = -1; // tappa del rompicapo; -1: nessuna; STAGES.length: plesso completo
+  let made = new Set(); // collegamenti fatti, «da>a»
+  let lit = new Set(); // segmenti già ricostruiti
+  let tDone = 0;
+  let lastT = null;
+  let yawTo = null; // ogni tappa gira il modello verso la veduta in cui le parti si separano
+  const ex = explore(controls);
+  for (const s of STAGES) ex.offer(s.name);
+  const { chips, height } = await chipsInto(controls, [
+    { label: PUZZLE, explore: false, onClick: () => start() },
+    ...ROOTS.map((r) => ({ label: r, onClick: () => select(sel === r ? null : r) })),
+  ]);
+  const roots = chips.slice(1);
   const info = await infoText(controls, -height - 0.03);
   const reach = (r) =>
     CORDS.filter((c) => model.segs.get(c).roots.includes(r)).map((c) => model.segs.get(c).name.replace('tronco secondario ', ''));
+  const nameOf = (id) => model.segs.get(id).name;
+  const target = (id) => (id === 'MedL' || id === 'MedM' ? 'MED' : id);
+  const count = (k) => Object.values(STAGES[k].pairs).flat().length;
+  const progress = () => {
+    const s = STAGES[stage];
+    const n = [...made].filter((m) => s.from.includes(m.split('>')[0])).length;
+    return `${s.name}: ${n} di ${count(stage)} collegamenti.`;
+  };
+
+  // la tappa k: che cosa si vede, che cosa si afferra, dove si tende il cavo
+  const enterStage = (k) => {
+    stage = k;
+    if (k >= STAGES.length) {
+      model.setCables(null);
+      model.show([...SPINE, 'rib1', 'clavicleG', ...PLEXUS]);
+      model.setLabels(rootLabels());
+      model.showLinks(model.fibres);
+      model.zoomTo(FOCUS.nerves);
+      tDone = model.time;
+      info.text = DONE_INFO;
+      ex.found(STAGES.at(-1).name);
+      return;
+    }
+    const s = STAGES[k];
+    const shown = [...SPINE, 'rib1', 'clavicleG', ...ROOTS];
+    if (k >= 1) shown.push(...TRUNKS, ...DIVS_A, ...DIVS_P, ...CORDS);
+    if (k >= 2) shown.push('MCN', 'MedL', 'MedM', 'MED', 'ULN', 'AX', 'RAD');
+    if (k === 0) shown.push(...TRUNKS);
+    model.show(shown);
+    model.showLinks([]);
+    model.setLabels(s.labels);
+    model.zoomTo(s.focus);
+    yawTo = s.yaw;
+    model.setCables({ from: s.from, to: s.to, drop });
+    info.text = `${s.hint}\n${progress()}`;
+  };
+  // il cavo lasciato: giusto o sbagliato, e perché
+  const drop = (from, to) => {
+    const s = STAGES[stage];
+    if (!to) {
+      info.text = `Tendi il cavo da ${s.labels[from] === from ? from : `il ${nameOf(from)}`} fino a ${s.aim}, poi lascialo.\n${progress()}`;
+      return false;
+    }
+    const t = target(to);
+    const key = `${from}>${t}`;
+    if (!s.pairs[from].includes(t)) {
+      info.text = `No, ${ROOTS.includes(from) ? from : `il ${s.labels[from]}`} non va lì: ${s.why[t] ?? ''}\n${progress()}`;
+      return false;
+    }
+    if (made.has(key)) {
+      info.text = `Questo collegamento c'è già.\n${progress()}`;
+      return false;
+    }
+    made.add(key);
+    // si ricostruisce il tratto che porta le fibre: il tronco, il ramo e il tronco secondario, il nervo
+    if (stage === 0) lit.add(t);
+    else {
+      lit.add(LINKS[from][t]);
+      if (stage === 1) lit.add(t);
+      if (lit.has('MedL') && lit.has('MedM')) lit.add('MED');
+    }
+    const n = [...made].filter((m) => s.from.includes(m.split('>')[0])).length;
+    if (n < count(stage)) {
+      const way = stage === 0 ? [from, nameOf(t)] : stage === 1 ? [nameOf(LINKS[from][t]), nameOf(t)] : [nameOf(from), nameOf(LINKS[from][t])];
+      info.text = `Sì: ${way.join(' › ')}.\n${progress()}`;
+      return true;
+    }
+    ex.found(s.name);
+    enterStage(stage + 1);
+    return true;
+  };
+
+  const start = () => {
+    sel = null;
+    made = new Set();
+    lit = new Set(ROOTS);
+    roots.forEach((c) => c.setActive(false));
+    chips[0].setActive(true);
+    enterStage(0);
+  };
   const select = (r) => {
     sel = r;
     t0 = model.time;
-    chips.forEach((c, i) => c.setActive(ROOTS[i] === r, LEVEL_COLORS[ROOTS[i]]));
+    stage = -1;
+    model.setCables(null);
+    model.showLinks([]);
+    model.zoomTo(FOCUS.nerves);
+    yawTo = STAGES.at(-1).yaw;
+    model.show([...SPINE, 'rib1', 'clavicleG', ...PLEXUS]);
+    model.setLabels(rootLabels());
+    chips[0].setActive(false);
+    roots.forEach((c, i) => c.setActive(ROOTS[i] === r, LEVEL_COLORS[ROOTS[i]]));
     info.text = r
       ? `Le fibre di ${r} raggiungono i tronchi secondari: ${reach(r).join(' e ')}.`
       : 'Radici, tronchi primari, rami di divisione, tronchi secondari, nervi: ogni tratto è un segmento distinto.';
   };
   return {
     enter() {
-      select(null);
-      model.show([...SPINE, 'rib1', 'clavicleG', ...PLEXUS]);
-      model.setLabels(rootLabels());
+      start();
       model.lookFn = (part) => {
         const seg = model.segs.get(part.id);
-        if (!seg || !sel) return {};
+        if (!seg) return {};
+        // il rompicapo: le radici del loro colore, i tratti ricostruiti accesi, quelli da
+        // ricostruire in grigio; ciò che si può afferrare respira appena
+        if (stage >= 0 && stage < STAGES.length) {
+          const s = STAGES[stage];
+          if (part.id === model.cableTarget) return { color: LIT, glow: 0.5 };
+          const breath = s.from.includes(part.id) ? 0.12 + 0.1 * Math.sin(model.time * 3) : 0;
+          if (ROOTS.includes(part.id)) return { color: LEVEL_COLORS[part.id], glow: breath };
+          if (lit.has(part.id)) return { color: NERVE, glow: breath };
+          return { color: DIM, opacity: 0.5 };
+        }
+        // plesso completo: un'onda di luce scende dalle radici ai nervi, tre volte
+        if (stage === STAGES.length) {
+          const t = model.time - tDone;
+          const wave = t < 4.5 && Math.abs(((t * 1.4) % 1.5) * 4 - seg.depth) < 0.6;
+          return wave ? { color: LIT, glow: 0.6 } : {};
+        }
+        if (!sel) return {};
         const on = seg.roots.includes(sel) && model.time - t0 > seg.depth * 0.14;
         return on ? { color: LEVEL_COLORS[sel], glow: 0.4 } : { color: DIM };
       };
-      // toccare una radice sul modello vale come il suo pulsante
-      model.onClick = (id) => ROOTS.includes(id) && (picked(controls, id), select(id));
+      // fuori dal rompicapo, toccare una radice sul modello vale come il suo pulsante
+      model.onClick = (id) => stage < 0 && ROOTS.includes(id) && (picked(controls, id), select(id));
+    },
+    update() {
+      const dt = Math.min(0.5, model.time - (lastT ?? model.time));
+      lastT = model.time;
+      if (yawTo == null) return;
+      model.yaw += (yawTo - model.yaw) * (1 - Math.exp(-dt * 4));
+      if (Math.abs(yawTo - model.yaw) < 0.01) yawTo = null;
     },
   };
 }

@@ -440,6 +440,11 @@ nelle pagine che non la usano e in `reset()`. Esempi:
   seguono, il comportamento `gazeSelector` del capitolo accende i muscoli che lavorano;
 - il martelletto di `src/models/riflessi.js` (`setHammer({ onStrike, onMiss })`): al contatto con
   il legamento rotuleo il riflesso parte, lasciato altrove la pagina dice che cosa si è colpito.
+- i cavi del plesso brachiale (`setCables({ from, to, drop })` in `src/models/plesso-brachiale.js`,
+  pagina «Tronchi primari e secondari»): si afferra una parte `from` (la presa è un tubo invisibile
+  attorno al suo asse) e si tende un cavo rosso che si aggancia alla parte `to` più vicina al raggio;
+  `drop(da, a)` dice se il collegamento è giusto, altrimenti il cavo torna indietro. Il capitolo
+  ne fa un rompicapo a tappe (`fibresMode`) che a plesso completo fa correre gli impulsi delle fibre.
 
 Il trascinamento che fa ruotare il modello può anche diventare un gesto della pagina: il modello
 legge `this.yaw` nella propria `update`, ne prende la variazione e lo rimette alla vista della
