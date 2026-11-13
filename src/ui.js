@@ -278,6 +278,7 @@ export function underline(x0, x1, y, color = ACCENT) {
 // chiama onRedo() (la pagina rimette a posto il modello). Le parti che toccano il modello si
 // ridisegnano in `resume()`, che la pagina chiama dopo aver avviato il suo comportamento.
 // Altri ganci: meshes(id) le mesh di una parte (per i cordini delle etichette),
+// onPlace(id) un cartellino appena posato al suo posto, sulla parte `id`,
 // onReplay(at) rifà sul modello un taglio salvato (ritorna false se non sa farlo).
 export async function quiz(def, width, hooks = {}) {
   if (def.point) return pointQuiz(def, width, hooks);
@@ -690,7 +691,7 @@ async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf
 // Al posto giusto il cartellino torna nella sua casella e un cordino rosso lo lega
 // alla struttura, come le etichette a mano di una tavola anatomica.
 const CORD = 0x9c2f22;
-async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = (id) => id, onSolved, onRedo, saved = null, meshes = () => [] } = {}) {
+async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = (id) => id, onSolved, onRedo, onPlace, saved = null, meshes = () => [] } = {}) {
   const group = new THREE.Group();
   let y = 0;
   const kicker = makeText('TRASCINA LE ETICHETTE', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
@@ -771,6 +772,7 @@ async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = 
           if (tag.ids.includes(id)) {
             // il cordino si appunta dove è stato lasciato il cartellino, e segue il modello
             place(it, id, under.object, under.object.worldToLocal(under.hit.point.clone()));
+            onPlace?.(id);
             done += 1;
             feedback.color = GOOD;
             feedback.text = done === tags.length ? `Tutte al loro posto. ${explain ?? ''}` : `«${tag.label}»: esatto.`;

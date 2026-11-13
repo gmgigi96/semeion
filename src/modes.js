@@ -62,7 +62,8 @@ export async function cordInto(controls, y, spec, onChange) {
 //   options   [{ label, lit, show, links, info, activity, dead, scale, steps, focus }]
 //             focus: { at, scale } primo piano (vedi AnatomyModel.zoomTo); anche per passo
 //             steps: [{ ids, links, text }] si accendono uno dopo l'altro
-//   pick      { idParte: indiceOpzione } per scegliere cliccando il modello
+//   pick      { idParte: indiceOpzione } per scegliere cliccando il modello (o posando
+//             sulla parte il cartellino giusto di una domanda `tags`)
 //             act(model): facoltativa, nell'opzione o in un passo: un gesto del modello
 //             quando l'opzione è scelta o il passo comincia (per esempio un colpo di martelletto)
 //   initial   opzione attiva all'ingresso (null = nessuna)
@@ -137,6 +138,8 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
       choose: (i) => (explore(controls).found(options[i]?.label), select(i)),
       // una riga di commento da un comportamento che avvolge questo (vedi `strikeMode` in riflessi.js)
       say: (text) => (info.text = text),
+      // un cartellino della domanda `tags` posato al suo posto vale come toccare quella parte
+      onPlace: (id) => id in pick && (explore(controls).found(options[pick[id]]?.label), select(pick[id])),
       enter() {
         select(initial);
         // scegliere un'opzione toccando il modello vale come provarla

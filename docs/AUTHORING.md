@@ -157,7 +157,12 @@ a un'interazione che fa ragionare (una via da seguire, una lesione, un blocco).
   portare sulle strutture del modello. Al posto giusto il cartellino prende la spunta e un
   cordino rosso lo lega al punto in cui è stato lasciato; altrove la pagina dice che cosa
   c'è lì e di quale cartellino è il posto. 3-5 etichette, strutture grandi e ben separate.
-  `explain` compare quando sono tutte a posto.
+  `explain` compare quando sono tutte a posto. Un cartellino posato al suo posto arriva anche
+  al comportamento della pagina destra (`onPlace(id)`): in `selector` vale come toccare la
+  parte, quindi se la parte è in `pick` si sceglie la sua opzione (in `base-cranica.js`,
+  pagina 3, il cartellino del nervo posato sul foro accende il foro con ciò che lo attraversa).
+  Una struttura piccola (un foro segnato da un anello sottile) si prende meglio con una presa
+  invisibile più larga aggiunta alle mesh della parte (`#holes` in `src/models/base-cranica.js`).
 
 - **Taglia e prevedi** (`cut: { board }`, senza `options`, con il comportamento `cutter` nella
   pagina destra): chi legge taglia la via toccandola **in un punto qualsiasi** del suo decorso,

@@ -166,6 +166,8 @@ export async function buildSpread(def, ctx) {
     // un taglio salvato si rifà sul modello, se il comportamento della pagina lo sa fare
     onReplay: (at) => !!modeApi?.replay?.(at),
     meshes: (id) => model.parts.get(id)?.meshes ?? [],
+    // un cartellino posato al suo posto vale come toccare quella parte (vedi `selector`)
+    onPlace: (id) => modeApi?.onPlace?.(id),
     onPredict: () => def.quiz.reveal != null && modeApi?.choose?.(def.quiz.reveal),
     // «taglia e prevedi»: il confronto mostra sul modello l'esito del taglio
     onCompare: () => modeApi?.reveal?.(),
