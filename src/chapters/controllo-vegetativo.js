@@ -6,7 +6,15 @@
 // bersaglio; vedi le fonti in testa a src/models/controllo-vegetativo.js.
 // Degli appunti restano fuori mezzo interno, fegato, sistema locomotore,
 // sistema renina-angiotensina e PLGF.
-import { chipsInto, infoText } from '../modes.js';
+// Corda del riempimento della vescica (pagina 2). Gli appunti non danno numeri: la
+// soglia oltre la quale lo stiramento della parete fa partire lo stimolo è solo
+// qualitativa, e il gonfiarsi della vescica è una rappresentazione. DEDOTTO, non detto
+// esplicitamente dagli appunti: che durante il riempimento il detrusore resti rilasciato
+// e gli sfinteri contratti (gli appunti dicono che la via reticolo-spinale, per la
+// minzione, inibisce l'ortosimpatico che contrae lo sfintere interno e rilascia il
+// detrusore, e il nucleo di Onuf); che nella fase di areflessia dopo la lesione la
+// vescica continui a distendersi senza svuotarsi.
+import { chipsInto, infoText, cordInto, explore } from '../modes.js';
 import { ControlloVegetativo, mm } from '../models/controllo-vegetativo.js';
 
 const STEM = ['midbrain', 'pons', 'medulla', 'v4', 'aqueduct'];
@@ -47,16 +55,41 @@ const VIEWS = {
 // Come `selector` di src/modes.js, ma ogni opzione e ogni passo sceglie anche
 // la regione del modello da guardare (`view`): la via si segue spostandosi da
 // un primo piano all'altro. Opzioni: { label, view, ids, show, links, activity,
-// labels, dead, info } oppure { label, steps: [{ view, ids, …, text }], stepTime }.
-function stage({ home, options, idle = '', initial = null }) {
+// labels, dead, scale, info } oppure { label, steps: [{ view, ids, …, text }], stepTime }.
+// `cond` in un'opzione: la condizione che resta scelta per la corda.
+// `cord`: una corda sotto i pulsanti (vedi `cordInto`), con react(v, prima, { cond, held })
+// che ritorna uno stato come le opzioni statiche (più `release`: la corda sfugge di
+// mano e torna a riposo; `found`: una scoperta da segnare). La condizione è la `cond`
+// dell'ultimo pulsante scelto; tirare la corda ferma i passi ma lascia acceso il pulsante
+// della condizione.
+function stage({ home, options, idle = '', initial = null, cord: spec = null }) {
   return async ({ model, controls }) => {
     let sel = null, t0 = 0, shown = -1, state = home, lastView = null, yawTo = null, yawUntil = 0;
+    let cond = null, live = null, liveKey = '';
     const sign = model.mirror?.scale.x < 0 ? -1 : 1;
+    const ex = explore(controls);
+    for (const f of spec?.finds ?? []) ex.offer(f);
     const { chips, height } = await chipsInto(
       controls,
       options.map((o, i) => ({ label: o.label, onClick: () => select(sel === i && !o.steps ? null : i) }))
     );
-    const info = await infoText(controls, -height - 0.03);
+    const rope = spec && (await cordInto(controls, -height - 0.022, spec, (v) => pull(v)));
+    const info = await infoText(controls, -height - 0.03 - (rope ? rope.height + 0.012 : 0));
+    // la corda: lo stato viene da react; il modello cambia solo se cambia lo stato
+    const pull = (v) => {
+      const s = spec.react(v, live, { cond, held: rope.held });
+      if (sel !== null) {
+        sel = null;
+        chips.forEach((c, j) => c.setActive(!!cond && options[j].cond === cond));
+      }
+      live = s;
+      if (s.release) rope.release();
+      if (s.found) ex.found(s.found);
+      const key = JSON.stringify(s);
+      if (key === liveKey) return;
+      liveKey = key;
+      apply(s, s.info);
+    };
 
     const apply = (s, text) => {
       state = s;
@@ -78,6 +111,10 @@ function stage({ home, options, idle = '', initial = null }) {
       sel = i;
       t0 = model.time;
       shown = -1;
+      cond = options[i]?.cond ?? null;
+      live = null;
+      liveKey = '';
+      rope?.set(spec.rest ?? spec.value ?? 0);
       chips.forEach((c, j) => c.setActive(j === i));
       const o = options[i];
       if (!o) apply(home, idle);
@@ -93,12 +130,14 @@ function stage({ home, options, idle = '', initial = null }) {
           // il motore alleggerisce gli involucri in primo piano; qui tronco e midollo
           // sono il contesto in cui si leggono i nuclei, e restano densi come nell'insieme
           const look = part.ghost ? { opacity: part.opacity * Math.sqrt(model.lens.scale.x) } : {};
+          if (state.scale?.[part.id]) look.scale = state.scale[part.id];
           if (state === home || !state.ids?.length) return look;
-          if (state.ids.includes(part.id)) return part.ghost ? { ...look, glow: 0.5 } : { glow: 0.45, opacity: 1 };
+          if (state.ids.includes(part.id)) return part.ghost ? { ...look, glow: 0.5 } : { ...look, glow: 0.45, opacity: 1 };
           return { ...look, dim: true };
         };
       },
       update() {
+        rope?.update();
         if (yawTo != null) {
           model.yaw += (yawTo - model.yaw) * 0.07;
           if (model.time > yawUntil) yawTo = null;
@@ -111,6 +150,54 @@ function stage({ home, options, idle = '', initial = null }) {
         apply(o.steps[k], `${k + 1}/${o.steps.length} · ${o.steps[k].text}`);
       },
     };
+  };
+}
+
+// La corda della vescica (pagina 2): il riempimento gonfia la vescica; oltre la soglia,
+// qualitativa, lo stiramento della parete fa partire lo stimolo. Che cosa succede dipende
+// dalla condizione scelta: adulto (nessun pulsante, o «Segui lo stimolo»), «Bambino»
+// (il bambino piccolo), «Lesione» (la lesione midollare). I pulsanti stanno su una riga,
+// perché sotto c'è la corda.
+const FULL = 0.7;
+const FINDS = { adult: 'Vescica piena: adulto', child: 'Vescica piena: bambino', lesion: 'Vescica piena: lesione' };
+function bladderCord() {
+  return {
+    label: 'RIEMPIMENTO DELLA VESCICA',
+    ends: ['vuota', 'piena'],
+    min: 0, max: 1, value: 0,
+    marks: [{ at: FULL, label: 'soglia' }],
+    finds: Object.values(FINDS),
+    react(v, prev, { cond }) {
+      const scale = { bladder: 0.75 + 0.6 * v };
+      // svuotata per via riflessa: mentre la corda torna a riposo la vescica si sgonfia
+      if (prev?.voided && v <= prev.at + 1e-6) return { ...prev, at: v, scale, release: false, found: null };
+      if (v < FULL)
+        return {
+          view: 'pelvis', ids: ['bladder'], scale, labels: { bladder: 'vescica' },
+          activity: cond === 'lesion' ? {} : { bladder: -1, sphInt: 1, sphExt: 1 },
+          info: cond === 'lesion'
+            ? 'La vescica si riempie e la parete si stira, ma sotto la lesione lo stimolo non può salire.'
+            : 'La vescica si riempie: il detrusore resta rilasciato, gli sfinteri chiusi. La parete si stira.',
+        };
+      if (cond === 'child')
+        return {
+          view: 'whole', ids: ['bladder', 'pag', 'cordConus', 'sphExt', 'sphInt'], dead: ['mpfc', 'area4'], scale,
+          links: ['ascW', 'rsW'], activity: { bladder: 1, sphExt: -1, sphInt: -1 }, labels: { pag: 'PAG', bladder: 'minzione riflessa' },
+          release: true, voided: true, at: v, found: FINDS.child,
+          info: 'Le afferenze arrivano al PAG, che attiva il detrusore e inibisce gli sfinteri: la vescica si svuota da sola.',
+        };
+      if (cond === 'lesion')
+        return {
+          view: 'whole', ids: ['cut', 'bladder'], dead: ['cordLumb', 'cordConus'], scale: { bladder: 0.75 + 0.8 * v },
+          labels: { cut: 'lesione', bladder: 'nessun riflesso' }, found: FINDS.lesion,
+          info: 'Areflessia: lo stimolo non passa la lesione e nessun riflesso svuota la vescica. Serve il cateterismo continuo.',
+        };
+      return {
+        view: 'whole', ids: ['bladder', 'lc', 'mpfc'], show: ['pag', 'pmc'], scale, links: ['ascW'],
+        labels: { bladder: 'vescica piena', mpfc: 'prefrontale mediale' }, found: FINDS.adult,
+        info: 'Oltre la soglia lo stimolo sale al locus coeruleus e alla prefrontale mediale, che ci sveglia: decide la corteccia.',
+      };
+    },
   };
 }
 
@@ -184,11 +271,12 @@ const spreads = [
       explain: 'Fino a 2-3 anni le afferenze viscerali arrivano al PAG, che attiva il detrusore e inibisce gli sfinteri senza il controllo della corteccia.',
     },
     caption: 'Un solo corpo in proporzioni reali: la via si segue passando da un primo piano all’altro.',
-    instruction: 'SEGUI LO STIMOLO, POI PROVA LE LESIONI',
+    instruction: 'RIEMPI LA VESCICA CON LA CORDA · SEGUI LO STIMOLO, POI PROVA LE LESIONI',
     view: { yaw: -0.75, zoom: 1 },
     mode: stage({
       home: { view: 'whole', labels: { cortex: 'corteccia', medulla: 'tronco encefalico', cordConus: 'midollo sacrale', bladder: 'vescica' } },
       idle: 'Dalla vescica al ponte e alla corteccia, e ritorno: scegli «Segui lo stimolo».',
+      cord: bladderCord(),
       options: [
         {
           label: 'Segui lo stimolo',
@@ -212,7 +300,8 @@ const spreads = [
           info: 'Nucleo di Barrington: il core (PMC) è glutammatergico; lo shell (PSC), GABAergico, lo inibisce.',
         },
         {
-          label: 'Bambino piccolo',
+          label: 'Bambino',
+          cond: 'child',
           stepTime: 3.6,
           steps: [
             { view: 'brain', ids: ['pag'], dead: ['mpfc', 'area4'], text: 'Vie cortico-reticolo-spinali non ancora mielinizzate: la corteccia non controlla il PAG' },
@@ -221,7 +310,8 @@ const spreads = [
           ],
         },
         {
-          label: 'Lesione midollare',
+          label: 'Lesione',
+          cond: 'lesion',
           stepTime: 4,
           steps: [
             { view: 'whole', ids: ['cut'], dead: ['cordLumb', 'cordConus'], labels: { cut: 'lesione' }, text: 'Lesione sopra il tratto lombo-sacrale: prima una fase di areflessia, cateterismo continuo' },

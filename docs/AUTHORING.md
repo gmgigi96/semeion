@@ -331,6 +331,9 @@ mode: selector({
 - Esempi: `src/chapters/riflessi.js` (organo del Golgi, corda a molla con soglia),
   `src/chapters/basal.js`, pagina 4 (la dopamina nigro-striatale: abbassandola compaiono i coni
   delle vie indiretta e iperdiretta; la previsione con `reveal` continua a scegliere il pulsante),
+  `src/chapters/controllo-vegetativo.js`, pagina 2 (il riempimento della vescica nel comportamento
+  `stage` del capitolo: `scale` gonfia la vescica, oltre la soglia la risposta dipende dalla
+  condizione scelta con i pulsanti, `release` la svuota per via riflessa),
   `src/chapters/orecchio-medio.js` (pressione da -1 a 1 nel comportamento su misura
   `earMode`), `src/chapters/sistema-uditivo.js` (altezza del suono e punto di massima
   risonanza, con `setTone` nel modello).
