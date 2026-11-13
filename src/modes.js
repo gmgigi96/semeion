@@ -1,6 +1,7 @@
 // Comportamenti riutilizzabili della pagina destra: una fila di pulsanti, una
 // riga di commento e, per i modelli generici, la scelta di un'opzione che
 // accende parti, vie e passi in sequenza.
+import * as THREE from 'three';
 import { makeText, chip, chipRow, cord } from './ui.js';
 
 export const M = 0.09; // margine di pagina
@@ -162,6 +163,183 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
         const done = o.steps.slice(0, k + 1);
         model.showLinks(done.flatMap((s) => s.links ?? []));
         model.setActivity(Object.assign({}, o.activity, ...done.map((s) => s.activity ?? {})));
+      },
+    };
+  };
+}
+
+// «Taglia qui»: chi legge taglia una via toccandola in un punto qualsiasi del suo
+// decorso; l'esito resta nascosto finché la domanda `cut` della pagina sinistra (vedi
+// cutQuiz in src/ui.js) non chiede il confronto. Senza quella domanda l'esito si vede subito.
+//   base, looks, idle   come in `selector`
+//   paths     id di vie del modello (addLink) da tagliare: conta il punto della via più
+//             vicino al raggio del puntatore, entro `tolerance` (unità del modello), anche
+//             se davanti c'è altro
+//   parts     id di parti da tagliare (per esempio un'arteria): conta il loro vertice più
+//             vicino al raggio, sempre entro `tolerance`
+//   radius    raggio della lesione attorno al punto, o funzione del punto: le vie che vi
+//             passano sono interrotte. `lesion(punto, vie)` la sostituisce (vie: Map id ->
+//             punti campionati) e ritorna il Set delle vie interrotte
+//   outcome({ point, path, part, hits }, model) ritorna l'esito del taglio, oppure null (qui non
+//             si taglia) o { reason } (perché qui no):
+//             { label, site, truth, dead, links, labels, info, ring }
+//             label  dove si è tagliato, in minuscolo («tratto ottico destro»)
+//             site   la scoperta, una di `sites` («Tratto ottico»)
+//             truth  le chiavi del deficit vero, per il confronto con la previsione
+//             dead, links, labels, info   ciò che il modello mostra nel confronto (links
+//             predefinite: le vie di `links` non interrotte)
+//             ring   { at, normal, r }: dove disegnare l'anello del taglio, se non sul punto
+//   links     vie visibili con la via intatta (predefinite: `paths`)
+//   sites     etichette delle scoperte: il riepilogo le elenca, si spuntano al confronto
+//   marks     tavola «modello»: id delle parti che si toccano per la previsione, in ordine
+//             di precedenza (prima le piccole e profonde, che il raggio attraversa); un
+//             elemento può essere un gruppo di id di pari precedenza: vince la più vicina
+//   reset     etichetta del pulsante che ricuce la via
+//   miss      commento per un tocco che non trova nulla da tagliare
+//   onReveal(model, esito | null) ciò che il modello aggiunge al confronto (null: si ricuce)
+export function cutter({
+  base, looks = {}, idle = '', paths = [], parts = [], links = paths, tolerance = 0.012, radius = 0.01,
+  lesion = null, outcome, sites = [], marks = [], reset = 'Ricuci la via', onReveal = null,
+  miss = 'Qui non passa la via: tocca la via per tagliarla.',
+}) {
+  return async ({ model, controls, quiz }) => {
+    const ex = explore(controls);
+    for (const s of sites) ex.offer(s);
+    const { chips, height } = await chipsInto(controls, [{ label: reset, explore: false, onClick: () => apply(null) }]);
+    const info = await infoText(controls, -height - 0.03);
+    const asks = !!quiz?.cut; // c'è una previsione da fare prima di vedere l'esito
+    let cut = null;
+    let shown = false;
+
+    // vie campionate a passo fisso, nelle coordinate del modello
+    const samples = new Map();
+    const sampled = () => {
+      for (const id of paths)
+        if (!samples.has(id)) {
+          const c = model.links.get(id).curve;
+          samples.set(id, c.getSpacedPoints(Math.max(40, Math.ceil(c.getLength() / 0.0015))));
+        }
+      return samples;
+    };
+    const toLocal = (ray) => ray.clone().applyMatrix4(model.inner.matrixWorld.clone().invert());
+    // prima parte attraversata dal raggio; `tiers` è un elenco di gruppi di id: vince il
+    // primo gruppo che il raggio attraversa e, al suo interno, la parte più vicina
+    const caster = new THREE.Raycaster();
+    const through = (ray, tiers) => {
+      caster.ray.copy(ray);
+      for (const ids of tiers) {
+        const meshes = ids.flatMap((id) => model.parts.get(id)?.meshes.filter((m) => m.visible) ?? []);
+        const [h] = caster.intersectObjects(meshes, false);
+        if (h) return { id: ids.find((id) => model.parts.get(id).meshes.includes(h.object)), point: model.inner.worldToLocal(h.point.clone()) };
+      }
+      return null;
+    };
+    const markTiers = marks.map((m) => (Array.isArray(m) ? m : [m]));
+    const markIds = markTiers.flat();
+    // punti delle parti da tagliare: i loro vertici, nelle coordinate del modello
+    const vertices = new Map();
+    const partPoints = (id) => {
+      if (!vertices.has(id))
+        vertices.set(id, model.parts.get(id).meshes.flatMap((m) => {
+          const pos = m.geometry.attributes.position;
+          return Array.from({ length: pos.count }, (_, i) => new THREE.Vector3().fromBufferAttribute(pos, i).add(m.position));
+        }));
+      return vertices.get(id);
+    };
+    // il punto più vicino al raggio, entro `tolerance`; dove due vie si incrociano a
+    // schermo vince quella davanti, fra le più vicine al raggio
+    const nearest = (local, sets) => {
+      const near = [];
+      for (const [id, pts] of sets)
+        for (const [i, p] of pts.entries()) {
+          const d = Math.sqrt(local.distanceSqToPoint(p));
+          if (d <= tolerance) near.push({ d, id, i, pts, depth: p.clone().sub(local.origin).dot(local.direction) });
+        }
+      const dmin = Math.min(...near.map((n) => n.d));
+      return near.filter((n) => n.d <= dmin + 0.002).sort((a, b) => a.depth - b.depth)[0];
+    };
+    const locate = (ray) => {
+      const local = toLocal(ray);
+      const best = nearest(local, sampled());
+      if (best) {
+        const { pts, i } = best;
+        const normal = pts[Math.min(pts.length - 1, i + 1)].clone().sub(pts[Math.max(0, i - 1)]);
+        return { point: pts[i].clone(), path: best.id, normal };
+      }
+      const on = parts.length && nearest(local, parts.filter((id) => model.parts.get(id).shown > 0.5).map((id) => [id, partPoints(id)]));
+      return on ? { point: on.pts[on.i].clone(), part: on.id, normal: local.direction.clone() } : null;
+    };
+    const sphere = (p) => {
+      const r = typeof radius === 'function' ? radius(p) : radius;
+      return new Set([...sampled()].filter(([, pts]) => pts.some((q) => q.distanceTo(p) < r)).map(([id]) => id));
+    };
+
+    const say = (c) =>
+      c ? `${c.out.label[0].toUpperCase()}${c.out.label.slice(1)}.${asks ? ' Prevedi il deficit sulla pagina di sinistra, poi confronta.' : ''}` : idle;
+    const apply = (c) => {
+      cut = c;
+      shown = false;
+      chips[0].group.visible = !!c;
+      const ring = c?.out.ring;
+      const r0 = typeof radius === 'function' && c ? radius(c.point) : radius;
+      model.markCut(c ? ring?.at ?? c.point : null, ring?.normal ?? c?.normal, ring?.r ?? Math.max(0.01, r0 * 1.5));
+      model.showLinks(links);
+      model.setLabels({});
+      onReveal?.(model, null);
+      info.text = say(c);
+      quiz?.cut?.(c && { label: c.out.label, truth: c.out.truth });
+      if (c && !asks) reveal();
+    };
+    // il confronto: il modello mostra l'esito vero
+    const reveal = () => {
+      if (!cut || shown) return;
+      shown = true;
+      const o = cut.out;
+      model.showLinks(o.links ?? links.filter((id) => !cut.hits.has(id)));
+      const said = { ...o.labels };
+      // tavola sul modello: accanto alle parti, che cosa coincide, che cosa mancava, che cosa era di troppo
+      if (markIds.length && quiz?.marks) {
+        const truth = new Set(o.truth);
+        for (const id of new Set([...truth, ...quiz.marks]))
+          said[id] = truth.has(id) ? (quiz.marks.has(id) ? 'coincide' : 'mancava') : 'di troppo';
+      }
+      model.setLabels(said);
+      info.text = o.info ?? '';
+      onReveal?.(model, o);
+      ex.found(o.site);
+    };
+
+    return {
+      reveal,
+      enter() {
+        model.show(base);
+        apply(null);
+        model.lookFn = (part) => {
+          const look = { ...looks[part.id] };
+          if (shown && cut.out.dead?.includes(part.id)) return { ...look, dead: true };
+          if (!shown && quiz?.marks?.has(part.id)) return { ...look, color: 0xc2402b, glow: 0.3 };
+          return look;
+        };
+        // anche un tocco che non prende nessuna parte: la via può passare dentro un involucro
+        model.onMiss = (ray) => model.onClick(null, { ray });
+        model.onClick = (id, hit) => {
+          if (!hit?.ray) return;
+          // mentre si segna la previsione sul modello, i tocchi segnano e non tagliano
+          if (markIds.length && quiz?.state === 'mark') {
+            const m = through(hit.ray, markTiers);
+            if (m) quiz.toggle(m.id);
+            else info.text = 'Ora tocca le parti che prevedi colpite. Per tagliare altrove, ricuci.';
+            return;
+          }
+          const c = locate(hit.ray);
+          if (c) c.hits = lesion ? lesion(c.point, sampled()) : c.path ? sphere(c.point) : new Set();
+          const out = c && outcome(c, model);
+          if (!out || out.reason) {
+            info.text = out?.reason ?? miss;
+            return;
+          }
+          apply({ ...c, out });
+        };
       },
     };
   };

@@ -1,6 +1,6 @@
 // Capitolo "Sistemi ascendenti". Testi dagli appunti di neuroanatomia (Sistemi ascendenti).
-import { selector } from '../modes.js';
-import { AscendingSystems } from '../models/sistemi-ascendenti.js';
+import { selector, cutter } from '../modes.js';
+import { AscendingSystems, MM, atlasU, cordAt, CORD } from '../models/sistemi-ascendenti.js';
 
 const LOW = ['cerebellum', 'vertebrae'];
 const SHELL = ['hemi', ...LOW];
@@ -18,6 +18,59 @@ const LOOKS = { postcentral: { litOpacity: 1 }, thalamus: { litOpacity: 0.5 } };
 const whole = (scale) => ({ at: [0, 0.066, 0], scale, height: 0.035 });
 // Solo il tronco encefalico, dal bulbo in su.
 const stem = (scale) => ({ at: [0, 0.363, 0.03], scale, height: 0.034 });
+
+// 5 — taglio delle vie in un punto qualsiasi. Nel midollo il taglio è un'emisezione: si
+// interrompe tutto ciò che passa nella metà del midollo toccata, a quella quota. Più in alto
+// è una lesione piccola (2,5 mm), che nel talamo e oltre si allarga a 4,5 mm: lì le due vie
+// sono riunite. Chiavi del deficit "lato:tipo", con il lato del corpo del paziente.
+const PATHS = ['touchR', 'touchL', 'painR', 'painL'];
+const LOSS = { touchR: 'R:touch', touchL: 'L:touch', painR: 'R:pain', painL: 'L:pain' };
+const inCord = (p) => p.y > CORD.bottom && p.y < CORD.top && Math.abs(p.x) < CORD.half;
+function ascendingLesion(p, paths) {
+  const hits = new Set();
+  const r = (atlasU(p.y) > 1612 ? 4.5 : 2.5) * MM;
+  for (const [id, pts] of paths) {
+    const cut = inCord(p)
+      ? pts.some((q) => Math.abs(q.y - p.y) < 1.5 * MM && Math.abs(q.x) < CORD.half && q.x * p.x > 0)
+      : pts.some((q) => q.distanceTo(p) < r);
+    if (cut) hits.add(id);
+  }
+  return hits;
+}
+// sede del taglio, dalla quota (mm dell'atlante) e dalla distanza dalla linea mediana
+const SITES = [
+  { site: 'Radice posteriore', name: 'radice posteriore', test: (p, u) => !inCord(p) && u < 1460, why: 'Prima del midollo le due vie corrono insieme nella radice posteriore.' },
+  { site: 'Midollo spinale', name: 'emisezione del midollo', test: (p) => inCord(p), why: 'Nel midollo il tatto fine sale dallo stesso lato da cui entra; il dolore ha già incrociato nella commessura bianca anteriore.' },
+  { site: 'Bulbo', name: 'bulbo', test: (p, u) => u < 1578, why: 'Nel bulbo il tatto fine incrocia con le fibre arciformi interne; il dolore sale già dal lato opposto.' },
+  { site: 'Ponte', name: 'ponte', test: (p, u) => u < 1602, why: 'Dal bulbo in su le due vie decorrono dallo stesso lato, ma separate: il lemnisco mediale presso la linea mediana, il lemnisco spinale più lateralmente.' },
+  { site: 'Mesencefalo', name: 'mesencefalo', test: (p, u) => u < 1615, why: 'Nel mesencefalo le due vie decorrono ancora separate, dallo stesso lato.' },
+  { site: 'Talamo', name: 'talamo', test: (p, u) => u < 1633, why: 'Nel VPL le due vie si riuniscono.' },
+  { site: 'Corteccia', name: 'via talamo-corticale', test: () => true, why: 'Dal VPL le due sensibilità raggiungono insieme la corteccia sensitiva primaria.' },
+];
+const KIND = { touch: 'tatto fine', pain: 'dolore' };
+function ascendingCut({ point: p, hits }) {
+  const u = atlasU(p.y);
+  const where = SITES.find((s) => s.test(p, u));
+  const side = p.x >= 0 ? 'destra' : 'sinistra';
+  const truth = [...hits].map((id) => LOSS[id]);
+  // etichette sui recettori dei due lati
+  const lost = (s) => truth.filter((k) => k.startsWith(s)).map((k) => KIND[k.slice(2)]);
+  const labels = {};
+  for (const [s, id] of [['R', 'bodyR'], ['L', 'bodyL']]) {
+    const l = lost(s);
+    if (l.length) labels[id] = l.length > 1 ? 'tatto e dolore persi' : `${l[0]} perso`;
+  }
+  const said = Object.entries(LOSS)
+    .filter(([id]) => hits.has(id))
+    .map(([, k]) => `${KIND[k.slice(2)]} a ${k[0] === 'R' ? 'destra' : 'sinistra'}`);
+  // nel midollo l'anello cinge metà della sezione
+  const c = cordAt(p.y);
+  const ring = inCord(p) ? { at: c.setX(Math.sign(p.x) * 3.6 * MM), normal: c.clone().set(0, 1, 0), r: 4.6 * MM } : undefined;
+  return {
+    label: `${where.name}, a ${side}`, site: where.site, truth, dead: [...hits], labels, ring,
+    info: `${where.why} ${said.length ? `Si perde: ${said.join(', ')}.` : 'Qui non passa nessuna delle quattro vie.'}`,
+  };
+}
 
 const spreads = [
   {
@@ -218,56 +271,29 @@ const spreads = [
     }),
   },
   {
-    title: 'Lesione: che cosa si perde, e da che lato',
+    title: 'Che cosa si perde, e da che lato',
     body:
       "Le due grandi vie della sensibilità incrociano a livelli diversi. La {via dei cordoni posteriori|touch} sale nel midollo dallo stesso lato da cui entra e incrocia solo nel bulbo, con le {fibre arciformi interne|arc}. Il {sistema antero-laterale|pain} incrocia invece subito, nella {commessura bianca anteriore|cba}, e sale nel cordone del lato opposto. Dal bulbo in su le due vie decorrono dallo stesso lato, ma separate: il {lemnisco mediale|lm} presso la linea mediana, il lemnisco spinale più lateralmente. Si riuniscono nel {VPL|vpl}, prima di raggiungere la {corteccia sensitiva primaria|s1}.",
     terms: {
       touch: ['touchR', 'touchL'], pain: ['painR', 'painL'], arc: ['arcuate'], cba: ['cba'], lm: LM, vpl: ['vpl'], s1: ['postcentral'],
     },
     quiz: {
-      predict: true,
-      question: 'Emisezione destra del midollo: dove si perde il dolore?',
-      options: ['A destra', 'A sinistra', 'Da entrambi i lati', 'Da nessun lato'],
-      correct: 1,
-      why: [
-        'A destra si perde il tatto fine, che sale dallo stesso lato da cui entra.',
-        null,
-        'Ogni via si perde da un lato solo: tatto fine a destra, dolore a sinistra.',
-        'Il cordone destro porta il dolore di sinistra.',
-      ],
-      explain: 'Le fibre del dolore di sinistra incrociano subito nella commessura bianca anteriore e salgono nel cordone di destra.',
-      reveal: 1,
+      question: 'Taglia una delle quattro vie dove vuoi. Da che lato si perdono tatto fine e dolore?',
+      cut: { board: 'corpo', kinds: [{ key: 'touch', label: 'tatto fine', color: 0x2f6fe0 }, { key: 'pain', label: 'dolore e temperatura', color: 0xd4374a }] },
+      explain: 'Il lato della perdita dipende da dove la via incrocia.',
     },
-    caption: 'Blu: tatto fine e propriocezione. Rosso: dolore e temperatura. La via interrotta si scurisce.',
-    instruction: 'SCEGLI DOVE CADE LA LESIONE',
+    caption: "Blu: tatto fine e propriocezione. Rosso: dolore e temperatura. Nel midollo il taglio è un'emisezione.",
+    instruction: 'TOCCA UNA VIA PER TAGLIARLA · COLORA LE SAGOME · CONFRONTA',
     view: { yaw: -0.3 },
-    mode: selector({
-      base: [...SHELL, ...STEM, 'postHorn', 'postcentral', 'thalamus', 'vpl', ...ROOT, 'ganglionL', 'rootL', 'bodyR', 'bodyL', 'touchR', 'touchL', 'painR', 'painL'],
+    mode: cutter({
+      base: [...SHELL, ...STEM, 'postHorn', 'postcentral', 'thalamus', 'vpl', ...ROOT, 'ganglionL', 'rootL', 'bodyR', 'bodyL', ...PATHS],
       looks: LOOKS,
-      initial: 0,
-      idle: 'Quattro vie: tatto fine e dolore, dal lato destro e dal lato sinistro del corpo.',
-      options: [
-        {
-          label: 'Vie integre', links: ['touchR', 'touchL', 'painR', 'painL'],
-          labels: { bodyR: 'lato destro', bodyL: 'lato sinistro' },
-          info: 'Il tatto fine incrocia nel bulbo, il dolore già nel midollo: ogni emisfero riceve dal lato opposto del corpo.',
-        },
-        {
-          label: 'Emisezione destra', show: ['lesCord'], dead: ['touchR', 'painL'], links: ['touchL', 'painR', 'touchR-cord', 'painL-cord'],
-          labels: { bodyR: 'tatto fine perso', bodyL: 'dolore perso' },
-          info: 'Sotto la lesione: a destra manca il tatto fine, che non ha ancora incrociato; a sinistra dolore e temperatura.',
-        },
-        {
-          label: 'Lemnisco mediale', show: ['lesPons'], dead: ['touchR'], links: ['touchL', 'painR', 'painL', 'touchR-pons'],
-          labels: { bodyR: 'tatto fine perso' },
-          info: 'Lesione a sinistra nel ponte: tatto fine perso a destra; il lemnisco spinale, più laterale, è risparmiato.',
-        },
-        {
-          label: 'VPL sinistro', show: ['lesThal'], dead: ['touchR', 'painR'], links: ['touchL', 'painL', 'touchR-thal', 'painR-thal'],
-          labels: { bodyR: 'tatto e dolore persi' },
-          info: 'Nel talamo le due vie sono riunite: si perde tutta la sensibilità somatica del lato destro.',
-        },
-      ],
+      paths: PATHS,
+      tolerance: 0.012,
+      lesion: ascendingLesion,
+      outcome: ascendingCut,
+      sites: SITES.map((s) => s.site),
+      idle: 'Quattro vie intere: tatto fine e dolore, dal lato destro e dal lato sinistro del corpo. Tocca una via per tagliarla.',
     }),
   },
 ];

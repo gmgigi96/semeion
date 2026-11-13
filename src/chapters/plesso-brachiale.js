@@ -4,7 +4,7 @@
 // le interazioni lavorano sul grafo dei segmenti del plesso.
 import * as THREE from 'three';
 import { makeText, FONT } from '../ui.js';
-import { W, chipsInto, infoText } from '../modes.js';
+import { W, chipsInto, infoText, explore } from '../modes.js';
 import { PlessoBrachiale, ROOTS, LEVEL_COLORS, VARIANTS, NERVE, DIM, DEAD, LIT, TERMINALS } from '../models/plesso-brachiale.js';
 
 const SPINE = ['vC3', 'vC4', 'vC5', 'vC6', 'vC7', 'vT1', 'vT2', 'vT3', 'discs'];
@@ -112,13 +112,12 @@ const spreads = [
       "Una lesione spegne tutto ciò che sta a valle: più è prossimale, più territori coinvolge. Il danno delle {radici alte|hi} (C5-C6) colpisce la spalla e la flessione del gomito; quello delle {radici basse|lo} (C8-T1) i muscoli intrinseci della mano. Più distalmente i quadri diventano tipici del singolo nervo: mano cadente per il {radiale|RAD}, mano ad uncino per l'{ulnare|ULN}, mano benedicente per il {mediano|MED}. Taglia il modello in un punto e osserva che cosa si spegne.",
     terms: { hi: ['C5', 'C6', 'U'], lo: ['C8', 'T1', 'L'], RAD: ['RAD'], ULN: ['ULN'], MED: ['MED'] },
     quiz: {
-      question: "Un paziente non riesce a estendere la mano sull'avambraccio (mano cadente). Quale nervo è compromesso?",
-      options: ['Nervo mediano', 'Nervo ulnare', 'Nervo radiale', 'Nervo muscolocutaneo'],
-      correct: 2,
-      explain: 'Il radiale innerva tutti gli estensori di polso e dita.',
+      question: 'Taglia il plesso in un punto. Quali nervi terminali perdono fibre?',
+      cut: { board: 'modello', hint: 'tocca il plesso sul modello per tagliarlo', again: 'Tocca il plesso per un altro taglio.' },
+      explain: 'Una lesione spegne tutto ciò che sta a valle.',
     },
     caption: 'Le fibre interrotte si spengono; i nervi che ricevono da più vie restano accesi in parte.',
-    instruction: 'CLICCA UN PUNTO DEL PLESSO PER TAGLIARLO',
+    instruction: 'TOCCA IL PLESSO PER TAGLIARLO · TOCCA I NERVI CHE PREVEDI SPENTI · CONFRONTA',
     view: { yaw: -0.2, focus: FOCUS.arm },
     mode: lesionMode,
   },
@@ -329,8 +328,18 @@ const LESION = {
 };
 const NAMED = ['SS', 'LT', 'AX', 'RAD', 'MCN', 'MED', 'ULN'];
 
-async function lesionMode({ model, controls }) {
+// I tagli contano come scoperte per tipo di segmento.
+const KINDS = { root: 'Radici', trunk: 'Tronchi primari', div: 'Divisioni', cord: 'Tronchi secondari', nerve: 'Nervi terminali' };
+
+// «Taglia e prevedi» (vedi cutQuiz in src/ui.js): dopo il taglio l'esito resta nascosto;
+// chi legge tocca sul modello i nervi terminali che prevede spenti, del tutto o in parte,
+// e la domanda chiede il confronto con `reveal`. Senza la domanda l'esito si vede subito.
+async function lesionMode({ model, controls, quiz }) {
   let fibres = null;
+  const asks = !!quiz?.cut;
+  let shown = !asks;
+  const ex = explore(controls);
+  for (const k of Object.values(KINDS)) ex.offer(k);
   const { chips, height } = await chipsInto(controls, [{ label: 'Ricuci il plesso', onClick: () => cut(null), explore: false }]);
   const head = makeText('', { font: FONT.bold, fontSize: 0.023, anchorX: 'center', color: 0xb3261e });
   head.position.set(W / 2, -height - 0.028, head.position.z);
@@ -343,35 +352,65 @@ async function lesionMode({ model, controls }) {
     if (f <= 0) return DEAD;
     return new THREE.Color(DEAD).lerp(new THREE.Color(NERVE), 0.12 + 0.55 * f).getHex();
   };
+  const named = (id) => (id === 'MedL' || id === 'MedM' ? 'MED' : id);
+  const down = () => NAMED.filter((n) => fibres.get(n).after.size < model.segs.get(n).roots.length);
+  const shortOf = (n) => model.segs.get(n).short;
+  const report = (id) => {
+    const list = down().map((n) => `${shortOf(n)} (${fibres.get(n).after.size ? 'in parte' : 'del tutto'})`);
+    return `${LESION[id]}\nSi spengono: ${list.join(', ')}.`;
+  };
+  const labels = () => model.setLabels(Object.fromEntries(TERMINALS.map((t) => [t, model.segs.get(t).short])));
   const cut = (id, t) => {
     model.setCut(id, t);
     fibres = model.aliveFibres();
+    shown = !asks;
     chips[0].group.visible = !!id;
+    labels();
+    quiz?.cut?.(id && { label: model.segs.get(id).name, truth: down() });
     if (!id) {
       head.text = '';
       info.text = 'Nessuna lesione: tutte le fibre conducono.';
       return;
     }
-    const seg = model.segs.get(id);
-    const down = NAMED.filter((n) => fibres.get(n).after.size < model.segs.get(n).roots.length).map((n) => {
-      const s = model.segs.get(n);
-      return `${s.short} (${fibres.get(n).after.size ? 'in parte' : 'del tutto'})`;
-    });
-    head.text = `Lesione: ${seg.name}`;
-    info.text = `${LESION[id]}\nSi spengono: ${down.join(', ')}.`;
+    head.text = `Lesione: ${model.segs.get(id).name}`;
+    if (shown) reveal();
+    else info.text = 'Tocca sul modello i nervi terminali che prevedi spenti, poi confronta sulla pagina di sinistra.';
   };
+  function reveal() {
+    const id = model.cut?.id;
+    if (!id) return;
+    shown = true;
+    info.text = report(id);
+    ex.found(KINDS[model.segs.get(id).kind]);
+    if (!asks) return;
+    // accanto al nome di ogni nervo, l'esito del confronto
+    const truth = new Set(down());
+    const said = Object.fromEntries(TERMINALS.map((t) => [t, shortOf(t)]));
+    for (const n of new Set([...truth, ...quiz.marks]))
+      said[n] = `${shortOf(n)}: ${truth.has(n) ? (quiz.marks.has(n) ? 'coincide' : 'mancava') : 'di troppo'}`;
+    model.setLabels(said);
+  }
   return {
+    reveal,
     enter() {
-      cut(null);
       model.show([...SPINE, 'rib1', 'clavicleG', 'scapula', 'humerus', ...PLEXUS]);
-      model.setLabels(Object.fromEntries(TERMINALS.map((t) => [t, model.segs.get(t).short])));
+      cut(null);
       model.lookFn = (part) => {
         const seg = model.segs.get(part.id);
         if (!seg) return {};
+        // prima del confronto il plesso resta acceso: si vede solo il segno del taglio
+        if (!shown) return quiz?.marks?.has(named(part.id)) ? { color: 0xc2402b, glow: 0.3 } : { color: NERVE };
         const f = fibres.get(seg.id);
         return { color: tone(seg, f.before), tail: { color: tone(seg, f.after) } };
       };
-      model.onClick = (id, hit) => model.segs.has(id) && cut(id, model.cutFromHit(id, hit));
+      model.onClick = (id, hit) => {
+        if (asks && quiz.state === 'mark') {
+          if (NAMED.includes(named(id))) quiz.toggle(named(id));
+          else info.text = 'Ora tocca i nervi terminali che prevedi spenti. Per tagliare altrove, ricuci.';
+          return;
+        }
+        if (model.segs.has(id)) cut(id, model.cutFromHit(id, hit));
+      };
     },
   };
 }

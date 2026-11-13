@@ -55,8 +55,8 @@
 //     https://www.statpearls.com/articlelibrary/viewarticle/890/
 //   Le posizioni dei due nuclei, che BodyParts3D non contiene, sono stimate
 //   rispetto alle mesh reali di collicolo superiore, acquedotto e mesencefalo.
-// - Macula, anelli che indicano i punti di lesione e i due dischi del campo
-//   visivo (schema, non anatomia).
+// - Macula e i due dischi del campo visivo (schema, non anatomia). L'anello del
+//   taglio, ovunque lo si faccia, è quello comune a tutti i modelli (markCut).
 //
 // Coordinate del modello: x laterale (destra del paziente +), y craniale,
 // z anteriore. Le misure a mano sono date in millimetri nella terna di
@@ -193,14 +193,6 @@ function slab(fn, v0, v1, { nu = 56, nv = 6, t = 0.0035 } = {}) {
   return g;
 }
 
-// Anello attorno a un punto della via, perpendicolare alla direzione data.
-function ring(center, dir, R, tube = 0.0038) {
-  const g = new THREE.TorusGeometry(R, tube, 10, 40);
-  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 0, 1), dir.clone().normalize()));
-  g.translate(center.x, center.y, center.z);
-  return g;
-}
-
 // --- fibre retino-genicolate (lato destro, mm) --------------------------------
 const DISC = [29.3, -142.3, 1519.8];
 const NERVE_T = [[27.9, -138, 1521.8], [24.6, -132, 1523.6], [19.7, -126, 1526], [14.3, -120, 1529.2], [9.9, -114, 1533.6], [6.7, -108, 1537.6]];
@@ -228,7 +220,6 @@ export class VisualSystem extends AnatomyModel {
     await this.loadMeshes('sistema-visivo.glb', REAL);
     this.#radiation();
     this.#reflexParts();
-    this.#cuts();
     this.#pathways();
     this.#fields();
   }
@@ -280,19 +271,6 @@ export class VisualSystem extends AnatomyModel {
     // tronco dell'oculomotore: fossa interpeduncolare › parete del seno cavernoso › fessura orbitaria superiore
     this.addPart('cn3', 'nervo oculomotore', NERVE,
       pair(taperTube(path([[3.6, -91.5, 1532], [7, -100, 1531], [11, -108, 1531], [14.6, -114.4, 1530.5]]), 0.005, { seg: 24, radial: 10 })));
-  }
-
-  // Punti di lesione, tutti sul lato destro.
-  #cuts() {
-    const RED = 0xd43d3d;
-    const at = (p) => mm(...p);
-    const dir = (a, b) => mm(...b).sub(mm(...a));
-    this.addPart('cutNerve', 'lesione del nervo ottico destro', RED, [ring(at([19, -126, 1526]), dir([24.6, -132, 1523.6], [14.3, -120, 1529.2]), 0.02)]);
-    this.addPart('cutChiasm', 'lesione mediana del chiasma', RED, [ring(V(MID, 0.27, 0.122), V(1, 0, 0), 0.03)]);
-    this.addPart('cutTract', 'lesione del tratto ottico destro', RED, [ring(at([22, -90, 1540.7]), dir([18, -96, 1541], [23.4, -84, 1540.1]), 0.019)]);
-    this.addPart('cutMeyer', "lesione dell'ansa di Meyer destra", RED, [ring(at([41, -86, 1540]), V(0, 0, 1), 0.024)]);
-    this.addPart('cutSup', 'lesione delle fibre superiori della radiazione destra', RED, [ring(at([37.5, -48, 1557.5]), dir([36.5, -58, 1555], [33.5, -38, 1556]), 0.024)]);
-    this.addPart('cutCortex', 'lesione della corteccia calcarina destra', RED, [ring(V(0.05, 0.272, -0.3), V(0, 0, 1), 0.058)]);
   }
 
   #pathways() {

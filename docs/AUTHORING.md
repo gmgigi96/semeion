@@ -159,6 +159,25 @@ a un'interazione che fa ragionare (una via da seguire, una lesione, un blocco).
   c'è lì e di quale cartellino è il posto. 3-5 etichette, strutture grandi e ben separate.
   `explain` compare quando sono tutte a posto.
 
+- **Taglia e prevedi** (`cut: { board }`, senza `options`, con il comportamento `cutter` nella
+  pagina destra): chi legge taglia la via toccandola **in un punto qualsiasi** del suo decorso,
+  poi **dichiara con un gesto** il deficit che prevede, poi tocca «Confronta». Solo allora il
+  modello mostra l'esito vero (vie spente, parti scure, etichette) e la tavola segna che cosa
+  coincide (spunta verde), che cosa mancava (cerchio blu) e che cosa era di troppo (croce rossa),
+  ripetuto in parole sotto «Confronta». Un nuovo taglio ricomincia da capo; «Ricuci la via»
+  toglie il taglio. La domanda è risolta con una previsione esatta o dopo tre confronti.
+  Le tavole (`board`):
+  - `'campo'`: i due dischi del campo visivo, come lo vede il paziente; si toccano i quadranti
+    persi (vedi `src/chapters/sistema-visivo.js`, pagina 4);
+  - `'corpo'`: una sagoma vista di fronte per ogni tipo di perdita, `kinds: [{ key, label, color }]`;
+    si colora la metà destra o sinistra (vedi `src/chapters/sistemi-ascendenti.js`, pagina 5);
+  - `'modello'`: si toccano sul modello le parti che si prevedono colpite; qui resta l'elenco
+    (vedi `src/chapters/sistema-vascolare.js`, pagina 4, e `plesso-brachiale.js`, pagina 5).
+
+  Facoltativi: `hint` (l'invito prima del taglio), `done` («Taglio», «Chiusa»), `again`,
+  `legend` (tavola `'modello'`). La tavola occupa più di una previsione con l'aletta: tenere il
+  testo sotto le 90 parole e il titolo su una riga, e guardare la console.
+
 ### Il riepilogo «Da scoprire»
 
 Il motore aggiunge in fondo a ogni capitolo una doppia pagina di riepilogo, senza modello,
@@ -168,7 +187,8 @@ capitolo ha già.
 
 - **Sinistra**: una voce per doppia pagina, con il titolo e la domanda. La casella prende la
   spunta rossa quando la domanda è risolta: risposta giusta, previsione verificata sotto
-  l'aletta, struttura indicata (anche dopo i tre tentativi), tutte le etichette al loro posto.
+  l'aletta, struttura indicata (anche dopo i tre tentativi), tutte le etichette al loro posto,
+  previsione di un taglio esatta (o tre confronti).
 - **Destra**: per ogni figura i comandi della pagina del modello (pulsanti e corde), quelli
   provati in rosso e sottolineati a penna, con il conto «2 di 5». I comandi di una pagina si
   conoscono dopo averla aperta almeno una volta.
@@ -203,6 +223,7 @@ const spreads = [
     // quiz: { predict: true, question: '…?', options: […], correct: 1, why: ['…', null, '…', '…'], explain: '…', reveal: 2 },
     // oppure da indicare sul modello: quiz: { question: 'Indica …', point: ['idParte'], why: { altraParte: '…' }, explain: '…' },
     // oppure etichette da trascinare: quiz: { question: 'Porta …', tags: [{ label: 'elice', ids: ['helix'] }, …], explain: '…' },
+    // oppure taglia e prevedi, con mode: cutter({ … }): quiz: { question: 'Taglia la via …', cut: { board: 'campo' }, explain: '…' },
     caption: 'Didascalia della figura.',
     instruction: 'ISTRUZIONE DI UNA RIGA, IN MAIUSCOLO',
     view: { yaw: 0.3, zoom: 1.15 },      // facoltativo: vista propria di questa pagina
@@ -288,6 +309,52 @@ mode: selector({
 - Spazio: la corda è alta circa 0,1 pagine. Con la corda tenere i pulsanti su una riga e
   il commento sotto le due righe, altrimenti tocca la didascalia.
 
+### «Taglia qui»: `cutter`
+
+Il comportamento della pagina destra per le lesioni da ragionare, insieme alla domanda `cut`
+(vedi sopra). Il taglio è un punto qualsiasi della via: conta il punto più vicino al raggio
+del puntatore (entro `tolerance`, unità del modello), anche se davanti c'è altro; dove due vie
+si incrociano a schermo vince quella davanti. L'esito resta nascosto fino al confronto; senza
+la domanda `cut` si vede subito.
+
+```js
+mode: cutter({
+  base: […], looks: {…}, idle: 'Nessun taglio: …',
+  paths: ['fRT', 'fRN', …],              // vie (addLink) da tagliare lungo il decorso
+  // oppure parts: ['mca', 'pica'],      // parti da tagliare (il loro vertice più vicino al raggio)
+  tolerance: 0.012,                      // distanza massima tra raggio e via
+  radius: 0.011,                         // raggio della lesione: le vie che vi passano si interrompono
+  // lesion: (punto, vie) => Set,        // al posto di `radius` (es. emisezione del midollo)
+  outcome: (taglio, model) => ({         // taglio: { point, path | part, hits }
+    label: 'tratto ottico destro',       // dove, nella frase «Taglio: …»
+    site: 'Tratto ottico',               // la scoperta (una di `sites`)
+    truth: ['R:L:S', …],                 // le chiavi del deficit vero, quelle della tavola
+    dead: […], links: […], labels: {…},  // facoltativi: ciò che il modello mostra nel confronto
+    info: 'Emianopsia omonima sinistra…',
+    ring: { at, normal, r },             // facoltativo: dove disegnare l'anello del taglio
+  }),                                    // oppure null / { reason: '…' } se lì non si taglia
+  sites: ['Nervo ottico', 'Chiasma', …], // il riepilogo le elenca; si spuntano al confronto
+  marks: [['capsule', 'putamen'], […]],  // tavola 'modello': parti da toccare, a gruppi di precedenza
+  onReveal: (model, esito) => …,         // facoltativo, per esempio model.setFields(esito.truth)
+  reset: 'Ricuci la via', miss: 'Qui non passa la via…',
+}),
+```
+
+- Le chiavi di `truth` sono quelle della tavola: `'occhio:metà:quadrante'` per `'campo'`,
+  `'lato:tipo'` (lato del paziente) per `'corpo'`, id di parti per `'modello'`.
+- Mentre si segna sulla tavola `'modello'`, i tocchi sul modello segnano e non tagliano:
+  per tagliare altrove si ricuce. Il primo gruppo di `marks` che il raggio attraversa vince:
+  mettere prima le parti profonde (capsula, putamen), poi gli involucri.
+- Anche un tocco che non prende nessuna parte arriva al modello (`model.onMiss(raggio)`): la via
+  può passare dentro un involucro trasparente.
+- Il segno del taglio è `model.markCut(punto, normale, raggio)`, che `reset()` toglie;
+  `model.nearestPart(punto, ids)` dice in quale parte cade un punto.
+- Un comportamento su misura può usare la stessa domanda: riceve `quiz` fra gli argomenti,
+  chiama `quiz.cut({ label, truth })` (o `quiz.cut(null)`), legge `quiz.state` (`'idle'`,
+  `'mark'`, `'shown'`) e `quiz.marks`, chiama `quiz.toggle(id)` per la tavola `'modello'`, e
+  ritorna `reveal()`, che la domanda chiama al confronto (vedi `lesionMode` in
+  `src/chapters/plesso-brachiale.js`).
+
 ### Primi piani
 
 Il motore ingrandisce il modello attorno a un suo punto e lo porta sopra il centro della
@@ -316,7 +383,7 @@ Massimo 7 pulsanti (due righe) e commenti di una o due righe: lo spazio sotto il
 Se `selector` non basta, `mode` può essere una funzione propria:
 
 ```js
-async function mioModo({ model, controls, def }) {
+async function mioModo({ model, controls, def, quiz }) {
   // costruire i controlli con chipsInto / infoText di src/modes.js
   return {
     enter() { /* stato iniziale: model.show([...]), model.lookFn = (part) => ({ … }) */ },

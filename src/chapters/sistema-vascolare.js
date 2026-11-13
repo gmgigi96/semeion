@@ -1,6 +1,6 @@
 // Capitolo "Vascolarizzazione dell'encefalo". Testi dagli appunti di
 // neuroanatomia (Sistema vascolare).
-import { selector } from '../modes.js';
+import { selector, cutter } from '../modes.js';
 import { SistemaVascolare } from '../models/sistema-vascolare.js';
 
 const ICA = ['icaCerv', 'icaPetr', 'icaCav', 'icaCer'];
@@ -17,6 +17,37 @@ const VAULT = ['sss', 'ssi', 'straight', 'conf', 'trans', 'sig'];
 const SKULL_BASE = ['occ', 'cav', 'intercav', 'spet', 'ipet', 'sphenopar'];
 const DEEP = ['icv', 'basal', 'galen'];
 const SINUSES = [...VAULT, ...SKULL_BASE, 'ijv'];
+
+// 4 — chiusura di un'arteria in un punto del suo tronco. La cerebrale media chiusa nel
+// tratto da cui nascono le lenticolo-striate (fino alla loro estensione laterale, letta sulla
+// mesh) toglie sangue anche a capsula interna e putamen; più in là solo alla faccia laterale.
+// Le chiavi del confronto sono le parti del modello che restano senza sangue.
+const ARTERIES = {
+  aca: { site: 'Cerebrale anteriore', name: 'cerebrale anteriore', truth: ['terrACA'], dead: [...T_ACA, 'terrACA'], info: 'Senza sangue: faccia mediale di frontale e parietale, area motoria supplementare, aree 23 e 24, corpo calloso.' },
+  striate: { site: 'Lenticolo-striate', name: 'arterie lenticolo-striate', truth: ['capsule', 'putamen'], dead: ['striate', 'capsule', 'putamen'], info: "Rami perforanti della cerebrale media: capsula interna, putamen, nucleo caudato. Qui si rompe l'arteria di Charcot." },
+  pca: { site: 'Cerebrale posteriore', name: 'cerebrale posteriore', truth: ['terrPCA'], dead: [...T_PCA, 'terrPCA'], info: 'Senza sangue: faccia inferiore del temporale e faccia mediale dell’occipitale, con le aree visive.' },
+  pica: { site: 'PICA', name: 'PICA', truth: ['medulla'], dead: ['pica', 'medulla'], info: 'Sindrome di Wallenberg: è colpita la parte laterale del bulbo (nucleo ambiguo, fascio spino-talamico, fascio ipotalamo-spinale).' },
+};
+ARTERIES.pcaP1 = ARTERIES.pca;
+function closeArtery({ point, part }, model) {
+  const side = point.x >= 0 ? 'destra' : 'sinistra';
+  if (part === 'mca') {
+    const st = model.parts.get('striate');
+    const reach = Math.max(...st.meshes.map((m) => Math.abs(m.position.x) + m.userData.size.x / 2));
+    const deep = Math.abs(point.x) < reach;
+    return {
+      site: 'Cerebrale media',
+      label: `cerebrale media ${side}, ${deep ? 'dove nascono le lenticolo-striate' : 'oltre le lenticolo-striate'}`,
+      truth: deep ? ['terrMCA', 'capsule', 'putamen'] : ['terrMCA'],
+      dead: deep ? [...T_MCA, 'striate', 'terrMCA', 'capsule', 'putamen'] : [...T_MCA, 'terrMCA'],
+      info: deep
+        ? 'Senza sangue: faccia laterale (aree 4 e 6, area 3-1-2, insula) e, in profondità, capsula interna e putamen.'
+        : 'Chiusa oltre le lenticolo-striate: resta senza sangue la faccia laterale (aree 4 e 6, area 3-1-2, insula); capsula interna e putamen restano irrorati.',
+    };
+  }
+  const a = ARTERIES[part];
+  return a && { ...a, label: `${a.name} ${part === 'pica' || part === 'striate' ? 'di ' : ''}${side}` };
+}
 
 const spreads = [
   {
@@ -106,33 +137,24 @@ const spreads = [
       "Ogni arteria irrora un territorio proprio: se si chiude, quel territorio resta senza sangue. Dalla {cerebrale media|mca}, prima della scissura di Silvio, nascono le {arterie lenticolo-striate|striate}, rami perforanti per la {capsula interna|capsule}, il {putamen|putamen} e il nucleo caudato: tra le laterali c'è l'arteria dell'emorragia cerebrale di Charcot, sottile e fragile. Nel tronco encefalico l'occlusione della {PICA|pica} causa la sindrome bulbare laterale di Wallenberg, una sindrome alterna: disturbi della deglutizione e disartria, perdita controlaterale della sensibilità dolorifica, sindrome di Horner, atassia omolaterale.",
     terms: { mca: ['mca'], striate: ['striate'], capsule: ['capsule'], putamen: ['putamen'], pica: ['pica'] },
     quiz: {
-      predict: true,
-      question: 'Si chiude la PICA. Quale sindrome prevedi?',
-      options: ['La sindrome bulbare mediale di Dejerine', 'La sindrome bulbare laterale di Wallenberg', 'La perdita delle aree visive', "Un'emorragia della capsula interna"],
-      correct: 1,
-      why: [
-        "La sindrome di Dejerine dipende da un'arteria paramediana bulbare.",
-        null,
-        'Le aree visive sono nel territorio della cerebrale posteriore.',
-        "L'emorragia della capsula viene dalle lenticolo-striate, rami della cerebrale media.",
-      ],
-      explain: 'È colpita la parte laterale del bulbo: nucleo ambiguo, fascio spino-talamico, fascio ipotalamo-spinale.',
-      reveal: 4,
+      question: "Chiudi un'arteria toccandola. Che cosa resta senza sangue?",
+      cut: { board: 'modello', hint: "tocca un'arteria sul modello per chiuderla", done: 'Chiusa', again: "Tocca un'arteria per chiuderne un'altra.", legend: 'sul modello: in scuro ciò che resta senza sangue' },
+      explain: 'Ogni arteria irrora un territorio proprio.',
     },
-    caption: "Il vaso chiuso e il suo territorio si scuriscono; il resto dell'encefalo resta irrorato.",
-    instruction: "SCEGLI L'ARTERIA DA CHIUDERE E GUARDA CHE COSA RESTA SENZA SANGUE",
-    mode: selector({
+    caption: "L'anello rosso segna l'arteria chiusa; nel confronto il suo territorio si scurisce.",
+    instruction: "TOCCA UN'ARTERIA PER CHIUDERLA · TOCCA CIÒ CHE PREVEDI SENZA SANGUE · CONFRONTA",
+    mode: cutter({
       base: [...TERR, ...STEM, ...T_ACA, ...T_MCA, ...T_PCA, 'acom', 'icaCer', 'icaCav', 'basilar', 'va', 'pica', 'striate', 'capsule', 'putamen'],
       looks: Object.fromEntries(TERR.map((id) => [id, { opacity: 0.3 }])),
-      pick: { terrACA: 0, terrMCA: 1, terrPCA: 3, striate: 2, capsule: 2, putamen: 2, pica: 4 },
-      idle: 'Nessuna occlusione. I territori sono in trasparenza per mostrare capsula interna e putamen.',
-      options: [
-        { label: 'Cerebrale anteriore', dead: [...T_ACA, 'terrACA'], info: 'Senza sangue: faccia mediale di frontale e parietale, area motoria supplementare, aree 23 e 24, corpo calloso.' },
-        { label: 'Cerebrale media', dead: [...T_MCA, 'striate', 'terrMCA', 'capsule', 'putamen'], info: 'Senza sangue: faccia laterale (aree 4 e 6, area 3-1-2, insula) e, in profondità, capsula interna e putamen.' },
-        { label: 'Lenticolo-striate', dead: ['striate', 'capsule', 'putamen'], info: "Rami perforanti della cerebrale media: capsula interna, putamen, nucleo caudato. Qui si rompe l'arteria di Charcot." },
-        { label: 'Cerebrale posteriore', dead: [...T_PCA, 'terrPCA'], info: 'Senza sangue: faccia inferiore del temporale e faccia mediale dell’occipitale, con le aree visive.' },
-        { label: 'PICA', dead: ['pica', 'medulla'], info: 'Sindrome di Wallenberg: è colpita la parte laterale del bulbo (nucleo ambiguo, fascio spino-talamico, fascio ipotalamo-spinale).' },
-      ],
+      parts: ['aca', 'mca', 'striate', 'pcaP1', 'pca', 'pica'],
+      radius: 0.01,
+      // prima capsula e putamen, nel profondo: il raggio che li attraversa passa anche per i territori
+      marks: [['capsule', 'putamen'], ['terrACA', 'terrMCA', 'terrPCA', 'medulla', 'pons', 'midbrain', 'cerebellum']],
+      reset: "Riapri l'arteria",
+      sites: ['Cerebrale anteriore', 'Cerebrale media', 'Lenticolo-striate', 'Cerebrale posteriore', 'PICA'],
+      idle: "Nessuna occlusione. Tocca il tronco di un'arteria: cerebrale anteriore, media o posteriore, lenticolo-striate, PICA.",
+      outcome: closeArtery,
+      miss: "Qui non c'è il tronco di un'arteria da chiudere: tocca la cerebrale anteriore, media o posteriore, le lenticolo-striate o la PICA.",
     }),
   },
   {

@@ -100,6 +100,7 @@ export class AnatomyModel {
     this.lookFn = null; // (part) => { color, glow, dim, dead, scale, opacity }
     this.onHover = null;
     this.onClick = null;
+    this.onMiss = null; // (raggio) => …: un tocco sul modello che non ha preso nessuna parte
     this.time = 0;
     this.labels = new Map();
   }
@@ -282,6 +283,42 @@ export class AnatomyModel {
     }
   }
 
+  // Segno di un taglio (vedi `cutter` in src/modes.js): un anello rosso attorno al
+  // punto `at`, perpendicolare a `normal`, di raggio `r`, nelle coordinate del modello.
+  // Si vede anche attraverso le parti che lo coprono. markCut(null) lo toglie.
+  markCut(at, normal, r = 0.012) {
+    if (!this.cutRing) {
+      const mat = new THREE.MeshBasicMaterial({ color: 0xb3261e, depthTest: false, transparent: true, opacity: 0.95 });
+      mat.clippingPlanes = this.clipPlanes;
+      this.cutRing = new THREE.Mesh(new THREE.TorusGeometry(1, 0.14, 8, 40), mat);
+      this.cutRing.renderOrder = 26;
+      this.inner.add(this.cutRing);
+    }
+    this.cutRing.visible = !!at;
+    if (!at) return;
+    this.cutRing.position.copy(at);
+    this.cutRing.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal.clone().normalize());
+    this.cutRing.scale.setScalar(r);
+  }
+
+  // Fra le parti `ids`, quella con la superficie più vicina al punto `p` (coordinate
+  // del modello): { id, d }, con d la distanza dal vertice più vicino.
+  nearestPart(p, ids) {
+    let best = { id: null, d: Infinity };
+    const v = new THREE.Vector3();
+    for (const id of ids) {
+      const part = this.parts.get(id);
+      for (const m of part?.meshes ?? []) {
+        const pos = m.geometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          const d = v.fromBufferAttribute(pos, i).multiplyScalar(m.scale.x).add(m.position).distanceToSquared(p);
+          if (d < best.d) best = { id, d };
+        }
+      }
+    }
+    return { id: best.id, d: Math.sqrt(best.d) };
+  }
+
   // Primo piano su un punto del modello: `at` è l'id di una parte o [x, y, z]
   // nelle coordinate del modello, `scale` l'ingrandimento. Con `clip: false`
   // ciò che esce dalla pagina non viene tagliato; `height` è la quota a cui portare
@@ -306,9 +343,11 @@ export class AnatomyModel {
     this.hover = new Set();
     this.lookFn = null;
     this.onClick = null;
+    this.onMiss = null;
     this.showLinks([]);
     this.setActivity({});
     this.setLabels({});
+    this.markCut(null);
   }
 
   update(dt, camera, realDt = dt) {

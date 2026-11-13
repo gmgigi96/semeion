@@ -134,6 +134,8 @@ export async function buildSpread(def, ctx) {
   const q = await quiz(def.quiz, W, {
     onSolved: () => solve(key),
     onPredict: () => def.quiz.reveal != null && modeApi?.choose?.(def.quiz.reveal),
+    // «taglia e prevedi»: il confronto mostra sul modello l'esito del taglio
+    onCompare: () => modeApi?.reveal?.(),
     nameOf: (id) => model.parts.get(id)?.name ?? id,
     onReveal: (ids) => {
       model.hover = new Set(ids);
@@ -173,7 +175,8 @@ export async function buildSpread(def, ctx) {
     offer: (label) => label && !offered.includes(label) && offered.push(label),
     found: (label) => find(key, label),
   };
-  modeApi = await def.mode({ model, controls, def });
+  // il comportamento riceve anche la domanda: un taglio (`cutter`) le passa la via tagliata
+  modeApi = await def.mode({ model, controls, def, quiz: q });
   offer(key, offered);
   await Promise.all([ready(caption), ready(instruction), ready(kicker), ready(counter), ready(fig)]);
 
@@ -412,7 +415,7 @@ export async function buildSummary(chapter, ctx) {
   }
   // che cosa spunta una voce, in fondo alla lista se c'è posto
   const note = makeText(
-    'Una voce prende la spunta quando la sua domanda è risolta: la risposta giusta, la previsione verificata sotto l’aletta, la struttura indicata sul modello, tutte le etichette al loro posto.',
+    'Una voce prende la spunta quando la sua domanda è risolta: la risposta giusta, la previsione verificata sotto l’aletta, la struttura indicata sul modello, tutte le etichette al loro posto, il taglio previsto bene.',
     { font: FONT.italic, fontSize: 0.0205, color: INK_SOFT, maxWidth: W, lineHeight: 1.35 }
   );
   await ready(note);

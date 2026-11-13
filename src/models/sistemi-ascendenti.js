@@ -168,7 +168,6 @@ const REAL = {
 
 // Unisce tratti consecutivi in un solo percorso, senza punti doppi.
 const join = (...segs) => segs.flat().filter((p, i, a) => i === 0 || p.distanceTo(a[i - 1]) > 1e-5);
-const below = (pts, u) => pts.filter((p) => p.y < Y(u));
 
 // ---- Percorsi (in mm dell'atlante). s = +1: lo stimolo entra da destra. ----
 // Dalla periferia al midollo attraverso il ganglio e la radice posteriore di C8.
@@ -345,7 +344,7 @@ export class AscendingSystems extends AnatomyModel {
     }, [patch(6.65, -0.45, 0.33, 0.42)]);
   }
 
-  // Quattro vie intere (tatto fine e dolore, dai due lati) e tre sedi di lesione.
+  // Quattro vie intere (tatto fine e dolore, dai due lati), da tagliare in un punto qualsiasi.
   #lesions() {
     const touch = (s) => join(entry(s), cuneateUp(s), arcC(s), lmC(s), tcC(s));
     const pain = (s) => join(entry(s), toHorn(s), cross(s), alsCord(s), alsStem(s), neoTop(s), tcC(s, 3).slice(1));
@@ -357,15 +356,13 @@ export class AscendingSystems extends AnatomyModel {
     whole('touchL', 'tatto fine e propriocezione del lato sinistro', 0x7fb0f0, touch(-1));
     whole('painR', 'dolore e temperatura del lato destro', C.pain, pain(1));
     whole('painL', 'dolore e temperatura del lato sinistro', 0xf09aa0, pain(-1));
-    // le stesse vie fino alla sede della lesione
-    this.addLink('touchR-cord', below(touch(1), 1492), { color: C.touch, r: 0.003 });
-    this.addLink('painL-cord', below(pain(-1), 1492), { color: C.pain, r: 0.003 });
-    this.addLink('touchR-pons', below(touch(1), 1584), { color: C.touch, r: 0.003 });
-    this.addLink('touchR-thal', below(touch(1), 1616), { color: C.touch, r: 0.003 });
-    this.addLink('painR-thal', below(pain(1), 1616), { color: C.pain, r: 0.003 });
-    const DARK = 0x2b2420;
-    this.addPart('lesCord', 'lesione: emisezione destra del midollo', DARK, [blob(3.7, canal(1497) + 0.3, 1497, [3.9, 5.3, 1.1])]);
-    this.addPart('lesPons', 'lesione del lemnisco mediale sinistro nel ponte', DARK, [blob(-4.6, 7.8, 1588.5, [3.6, 1.9, 2.2])]);
-    this.addPart('lesThal', 'lesione del VPL sinistro', DARK, [blob(-17.5, 13, 1622.5, [4.6, 5.4, 4.2])]);
   }
 }
+
+// Per i tagli della pagina sulle lesioni (src/chapters/sistemi-ascendenti.js): quota
+// dell'atlante (mm) di un punto del modello, centro della sezione del midollo a quella
+// quota, mezza larghezza del midollo cervicale reale.
+export const MM = S;
+export const atlasU = (y) => y / S + OU;
+export const cordAt = (y) => cord(atlasU(y), 0, 0);
+export const CORD = { bottom: Y(CUT), top: Y(TOP), half: A * S };

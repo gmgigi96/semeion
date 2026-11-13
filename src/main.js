@@ -391,7 +391,8 @@ function pick(e) {
     if (hidden) continue;
     // ciò che il ritaglio ha tolto dalla vista non si può nemmeno toccare
     if (o.material?.clippingPlanes?.some((pl) => pl.distanceToPoint(hit.point) < 0)) continue;
-    if (o.userData.ui) return { ui: o.userData.ui, object: o, hit };
+    // il raggio va con il punto colpito: chi taglia una via cerca la più vicina al raggio
+    if (o.userData.ui) return { ui: o.userData.ui, object: o, hit: { ...hit, ray: ray.ray.clone() } };
     if (o.userData.blocker) break;
   }
   return null;
@@ -505,6 +506,12 @@ el.addEventListener('pointerup', (e) => {
     return;
   }
   if (d.moved <= 5 && d.target) d.target.ui.click?.(d.target.hit);
+  // un tocco sul modello che non prende nessuna parte (per esempio dentro un involucro
+  // trasparente) arriva al modello come raggio: serve a chi taglia una via sottile
+  else if (d.moved <= 5 && d.rotate && active?.onMiss) {
+    aim(e);
+    active.onMiss(ray.ray.clone());
+  }
   // al tocco non c'è passaggio: il termine resta acceso finché non si tocca altrove
   if (e.pointerType === 'mouse' || !d.target?.ui.sticky) setHover(e.pointerType === 'mouse' ? pick(e) : null);
 });
