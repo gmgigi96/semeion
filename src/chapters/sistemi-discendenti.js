@@ -5,7 +5,9 @@ import { DescendingSystems } from '../models/sistemi-discendenti.js';
 const SHELL = ['hemi', 'hemiF', 'cerebellum', 'occipital', 'vertebrae'];
 // Dalla capsula in giù, senza emisferi: il modello si può ingrandire.
 const LOW = ['cerebellum', 'occipital', 'vertebrae'];
-const CLOSE = { yaw: 0.25, zoom: 1.3 };
+// Primo piano dalla sezione ingrandita in su: la faccia inferiore della sezione
+// (y = 0.178) resta appoggiata sulla base; ciò che supera la pagina viene tagliato.
+const close = (scale) => ({ yaw: 0.25, focus: { at: [0, 0.178, 0], scale, height: 0.05 } });
 const STEM = ['midbrain', 'peduncle', 'pons', 'medulla', 'cord'];
 const SECTION = ['section', 'grey', 'motoLat', 'motoMed'];
 const AREAS = ['precentral', 'area6', 'postcentral'];
@@ -80,7 +82,7 @@ const spreads = [
     },
     caption: 'Ai piedi del modello, una sezione di midollo cervicale ingrandita mostra dove scende ogni fascio.',
     instruction: 'SCEGLI UN CONTINGENTE E GUARDA DA CHE LATO SCENDE',
-    view: CLOSE,
+    view: close(1.3), // dalla sezione al ponte
     mode: selector({
       base: [...LOW, ...STEM, 'capPost', 'cst', 'pyramid', 'decussation', 'csl', 'csu', 'csa', ...SECTION],
       pick: { csl: 0, csu: 1, csa: 2 },
@@ -108,7 +110,7 @@ const spreads = [
     },
     caption: 'I nuclei del tronco sono ricostruiti dentro il tronco reale; ogni fascio parte dal lato destro.',
     instruction: 'SCEGLI UN GRUPPO O UN FASCIO E SEGUILO FINO AL SUO CORDONE',
-    view: CLOSE,
+    view: close(1.2), // dalla sezione al nucleo rosso
     mode: selector({
       base: [...LOW, ...STEM, ...NUCLEI, ...GROUP_B, ...GROUP_A, ...SECTION],
       pick: { rubro: 2, rosso: 2, retL: 3, retM: 3, frPonte: 3, frBulbo: 3, vestL: 4, vestLat: 4, flm: 5, vsm: 5, tetto: 5, inter: 5 },
@@ -136,7 +138,7 @@ const spreads = [
     },
     caption: 'Il tratto leso si scurisce. Verde: eccitazione; rosso: inibizione; il cono indica attività aumentata.',
     instruction: 'SCEGLI DOVE CADE LA LESIONE',
-    view: CLOSE,
+    view: close(1.3),
     mode: selector({
       base: [...LOW, ...STEM, 'capPost', 'cst', 'pyramid', 'decussation', 'csl', 'csu', 'csa', 'vestL', 'vestLat', 'nucleoF', ...SECTION],
       pick: { capPost: 0, cst: 0, csl: 1, csa: 2 },
@@ -145,6 +147,7 @@ const spreads = [
       options: [
         {
           label: 'Capsula interna', dead: ['capPost', 'cst', 'csl', 'csu', 'csa'], links: ['vestL', 'vestL-moto'], activity: { vestLat: 1 },
+          focus: close(1).focus, // la capsula sta in alto: senza ingrandimento entra nella pagina
           info: 'Sopra la decussazione: deficit nel lato opposto del corpo. Senza freno, il vestibolo-spinale laterale è iperattivo: spasticità.',
         },
         {

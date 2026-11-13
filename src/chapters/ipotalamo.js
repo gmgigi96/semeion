@@ -18,22 +18,21 @@ const MED = ['preopticM', 'anterior', 'paraventricular', 'supraoptic', 'dorsomed
 const LAT = ['preopticL', 'lateral'];
 const NUCLEI = [...new Set([...PRE, ...SUPRA, ...TUB, ...MAM, ...PERI, ...LAT])];
 const BASE = [...CONTEXT, ...NUCLEI];
-// Primo piano sull'ipotalamo, senza l'ipofisi (vedi setFocus nel modello).
-const CLOSE = [[0.05, 0.62, -0.01], 1.25, 0.4];
-const WIDE = [[0.05, 0.62, -0.04], 0.9, 0.33]; // con talamo e fasci, che salgono più in alto
+// Primo piano sull'ipotalamo, senza l'ipofisi, sopra il centro della base.
+const CLOSE = { at: [0.05, 0.62, -0.053], scale: 1.15, height: 0.37 };
+const WIDE = { at: [0.05, 0.62, -0.096], scale: 0.9, height: 0.33 }; // con talamo e fasci, che salgono più in alto
 // la colonna del fornice attraversa i nuclei: semitrasparente finché non serve
 const LOOKS = { periventricular: { opacity: 0.8, litOpacity: 1 }, fornix: { opacity: 0.5, litOpacity: 1 } };
 
 // Ciò che un'opzione lascia in ombra diventa quasi trasparente, così i nuclei
 // accesi si vedono anche se stanno più in profondità.
 const NUC = new Set([...NUCLEI, 'eminence']);
-const faded = (mode, focus = CLOSE) => async (ctx) => {
+const faded = (mode) => async (ctx) => {
   const api = await mode(ctx);
   return {
     ...api,
     enter() {
       api.enter();
-      ctx.model.setFocus(...(focus ?? []));
       const look = ctx.model.lookFn;
       ctx.model.lookFn = (part) => {
         const l = look(part);
@@ -60,7 +59,7 @@ const spreads = [
     },
     caption: 'Metà destra dell’ipotalamo reale (BodyParts3D) vista dal terzo ventricolo; i nuclei sono ricostruiti al suo interno.',
     instruction: 'SCEGLI UNA REGIONE (DAVANTI-DIETRO) O UNA ZONA (DENTRO-FUORI)',
-    view: { yaw: 1.45 },
+    view: { yaw: 1.45, focus: CLOSE },
     mode: faded(selector({
       base: BASE,
       looks: LOOKS,
@@ -117,7 +116,7 @@ const spreads = [
           ],
         },
       ],
-    }), null),
+    })),
   },
   {
     title: 'Un termostato, e molto altro',
@@ -132,7 +131,7 @@ const spreads = [
     },
     caption: 'Coppie di nuclei con effetti opposti tengono in equilibrio ogni funzione.',
     instruction: 'SCEGLI UNA FUNZIONE E GUARDA QUALI NUCLEI LA REGOLANO',
-    view: { yaw: 1.0 },
+    view: { yaw: 1.0, focus: CLOSE },
     mode: faded(selector({
       base: BASE,
       looks: LOOKS,
@@ -177,7 +176,7 @@ const spreads = [
     },
     caption: 'Verde: vie eccitatorie. Rosso: inibizione dei sistemi del risveglio.',
     instruction: 'SCEGLI: OROLOGIO, SONNO O VEGLIA',
-    view: { yaw: 0.85 },
+    view: { yaw: 0.85, focus: CLOSE },
     mode: faded(selector({
       base: BASE,
       looks: LOOKS,
@@ -218,7 +217,7 @@ const spreads = [
     },
     caption: 'Colonna del fornice e stria terminale sono mesh reali; il fascio mammillotalamico e le frecce sono ricostruiti.',
     instruction: 'SCEGLI UN FASCIO E SEGUINE IL DECORSO',
-    view: { yaw: 1.0 },
+    view: { yaw: 1.0, focus: WIDE },
     mode: faded(selector({
       base: [...BASE, 'thalamus', 'mtt', 'stria'],
       looks: LOOKS,
@@ -244,7 +243,7 @@ const spreads = [
           info: 'Il fascio mediale del telencefalo: fibre nei due sensi tra proencefalo basale e tronco encefalico, frammiste ai neuroni della zona laterale.',
         },
       ],
-    }), WIDE),
+    })),
   },
 ];
 

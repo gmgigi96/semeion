@@ -13,13 +13,11 @@ const LM = ['lmC', 'lmG'];
 const LAMINAE = ['waldeyer', 'gelatinosa', 'proprius'];
 const ALS = ['sttLatL', 'sttAntL'];
 const LOOKS = { postcentral: { litOpacity: 1 }, thalamus: { litOpacity: 0.5 } };
-const FRONT = { yaw: -0.45, zoom: 1.2 };
-
-// Il modello è condiviso dalle pagine: ognuna dichiara l'ingrandimento che le serve.
-const focused = (mode, scale = 1, floor = 0, z = 0) => async (ctx) => {
-  const m = await mode(ctx);
-  return { ...m, enter() { ctx.model.focus(scale, floor, z); m.enter(); } };
-};
+// Primi piani: il punto `at` scende fino alla base e ciò che supera la pagina viene tagliato.
+// Tutto il modello, con la faccia inferiore della sezione ingrandita (y = 0.066) sulla base.
+const whole = (scale) => ({ at: [0, 0.066, 0], scale, height: 0.035 });
+// Solo il tronco encefalico, dal bulbo in su.
+const stem = (scale) => ({ at: [0, 0.363, 0.03], scale, height: 0.034 });
 
 const spreads = [
   {
@@ -39,7 +37,7 @@ const spreads = [
     caption: 'Anatomia reale in trasparenza, vista da dietro; lo stimolo entra dal ganglio C8 di destra.',
     instruction: 'SEGUI LA VIA DAL GANGLIO ALLA CORTECCIA · TRASCINA PER RUOTARE',
     view: { yaw: 2.5 },
-    mode: focused(selector({
+    mode: selector({
       base: [...SHELL, ...STEM, ...SECTION, ...HORNS, ...ROOT, ...DC, 'postcentral', 'thalamus', 'vpl', 'nGracile', 'nCuneate', 'afferent', 'dcC', 'dcG'],
       looks: LOOKS,
       pick: { gracileR: 0, gracileL: 0, nGracile: 0, cuneateR: 1, cuneateL: 1, nCuneate: 1 },
@@ -74,7 +72,7 @@ const spreads = [
           info: 'Il 30% del cordone posteriore: meccanocettori di visceri e rachide lombare, lungo il contorno e tra gracile e cuneato.',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Il lemnisco mediale',
@@ -97,8 +95,8 @@ const spreads = [
     },
     caption: 'I due contingenti del lemnisco, dal nucleo gracile (blu) e dal cuneato (verde), salgono a sinistra.',
     instruction: 'SCEGLI UN LIVELLO E GUARDA COME RUOTA IL LEMNISCO',
-    view: { yaw: -0.6 },
-    mode: focused(selector({
+    view: { yaw: -0.6, focus: stem(1.75) },
+    mode: selector({
       base: ['cerebellum', 'midbrain', 'peduncle', 'pons', 'medulla', 'olive', 'thalamus', 'lenticular', 'vpl', 'capPost', 'nGracile', 'nCuneate', 'arcuate', ...LM, 'radiation'],
       looks: LOOKS,
       pick: { arcuate: 0, nGracile: 0, nCuneate: 0, medulla: 1, pons: 2, midbrain: 3, vpl: 4, capPost: 4, postcentral: 4 },
@@ -122,10 +120,11 @@ const spreads = [
         },
         {
           label: 'VPL e corteccia', lit: ['vpl', 'capPost', 'radiation', 'postcentral'], show: ['hemi'], links: ['tcC', 'tcG'],
+          focus: stem(1.3), // fino al giro postcentrale
           info: 'Nel VPL il core (esterocettivo) proietta alle aree 3b e 1, lo shell (propriocettivo) a 3a e 2.',
         },
       ],
-    }), 1.75, 0.363, 0.03),
+    }),
   },
   {
     title: 'Il sistema antero-laterale',
@@ -143,8 +142,8 @@ const spreads = [
     },
     caption: 'Sulla sezione ingrandita: lamine di origine, incrocio e posizione del sistema nel lato opposto.',
     instruction: 'SCEGLI UN TRATTO E SEGUILO FINO ALLA SUA TERMINAZIONE',
-    view: FRONT,
-    mode: focused(selector({
+    view: { yaw: -0.45, focus: whole(1.2) },
+    mode: selector({
       base: [...LOW, ...STEM, ...SECTION, ...ROOT, 'postHorn', ...ALS, ...LAMINAE, 'lissauer', 'cba', 'thalamus', 'vpl', 'diffuse', 'reticular', 'pag', 'collSup', 'collInf', 'alsIn', 'neo', 'paleo', 'spinotect', 'spinotectP'],
       looks: LOOKS,
       pick: { neo: 1, vpl: 1, paleo: 2, reticular: 2, diffuse: 2, pag: 2, spinotect: 3, spinotectP: 3, collSup: 3, cba: 0, postHorn: 0 },
@@ -171,7 +170,7 @@ const spreads = [
           info: 'Estremo posteriore del cordone laterale, fino al nucleo cervicale laterale (C1-C3), che proietta al VPL con il lemnisco mediale.',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'I fasci spino-cerebellari',
@@ -189,8 +188,8 @@ const spreads = [
     },
     caption: 'Vista da dietro e da destra. Solo il fascio ventrale sale nel lato opposto e incrocia due volte.',
     instruction: 'SCEGLI UN FASCIO E SEGUILO FINO AL CERVELLETTO',
-    view: { yaw: 2.35, zoom: 1.35 },
-    mode: focused(selector({
+    view: { yaw: 2.35, focus: whole(1.25) },
+    mode: selector({
       base: [...LOW, ...STEM, ...SECTION, ...HORNS, ...ROOT, 'scp', 'icp', 'sctPostR', 'sctAntL', 'clarke', 'border', 'nCuneAcc', 'nCervCentr', 'nucleoZ', 'sctD', 'sctV', 'cuneoc', 'rostral'],
       pick: { sctD: 0, sctPostR: 0, clarke: 0, sctV: 1, sctAntL: 1, border: 1, cuneoc: 2, nCuneAcc: 2, rostral: 3, nCervCentr: 4 },
       idle: 'Dal midollo al cervelletto, senza passare per il talamo.',
@@ -216,7 +215,7 @@ const spreads = [
           info: 'Dal nucleo cervicale centrale, profondamente al fascio dorsale; collateralizza nel nucleo f: propriocezione della regione nucale.',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Lesione: che cosa si perde, e da che lato',
@@ -234,7 +233,7 @@ const spreads = [
     caption: 'Blu: tatto fine e propriocezione. Rosso: dolore e temperatura. La via interrotta si scurisce.',
     instruction: 'SCEGLI DOVE CADE LA LESIONE',
     view: { yaw: -0.3 },
-    mode: focused(selector({
+    mode: selector({
       base: [...SHELL, ...STEM, 'postHorn', 'postcentral', 'thalamus', 'vpl', ...ROOT, 'ganglionL', 'rootL', 'bodyR', 'bodyL', 'touchR', 'touchL', 'painR', 'painL'],
       looks: LOOKS,
       initial: 0,
@@ -261,7 +260,7 @@ const spreads = [
           info: 'Nel talamo le due vie sono riunite: si perde tutta la sensibilità somatica del lato destro.',
         },
       ],
-    })),
+    }),
   },
 ];
 

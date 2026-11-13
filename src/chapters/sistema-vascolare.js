@@ -18,12 +18,6 @@ const SKULL_BASE = ['occ', 'cav', 'intercav', 'spet', 'ipet', 'sphenopar'];
 const DEEP = ['icv', 'basal', 'galen'];
 const SINUSES = [...VAULT, ...SKULL_BASE, 'ijv'];
 
-// Primo piano: dopo l'ingresso nella pagina il modello viene ingrandito, arretrato e inclinato.
-const closeUp = (drop, back, lean, scale, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return { ...api, enter() { api.enter(); ctx.model.focus(drop, back, lean, scale); } };
-};
-
 const spreads = [
   {
     title: 'Due circoli arteriosi',
@@ -63,8 +57,9 @@ const spreads = [
     },
     caption: "Il poligono visto dall'alto e da davanti, senza gli emisferi: carotidi in rosso, basilare in porpora.",
     instruction: 'SCEGLI UN LATO DEL POLIGONO (ANCHE CLICCANDO UN VASO)',
-    view: { yaw: -0.3, zoom: 1.2 },
-    mode: closeUp(0.18, 0.39, 0.55, 1.5, selector({
+    // primo piano sul poligono, con il modello quasi verticale (lo si guarda dall'alto)
+    view: { yaw: -0.3, focus: { at: [0, 0.4, 0.1], scale: 1.8, height: 0.3, tilt: 0.05 } },
+    mode: selector({
       base: ['midbrain', 'pons', 'icaCav', 'icaCer', 'mca', 'aca', 'acom', 'pcom', 'pcaP1', 'pca', 'basilar', 'sca'],
       pick: { acom: 1, aca: 2, pcom: 3, pcaP1: 4 },
       initial: 0,
@@ -75,7 +70,7 @@ const spreads = [
         { label: 'Comunicanti posteriori', lit: ['pcom'], info: 'Lati laterali: vasi molto piccoli, dalla carotide interna alla cerebrale posteriore.' },
         { label: 'Cerebrali posteriori', lit: ['pcaP1'], info: 'Lati posteriori: rami terminali del tronco basilare, al solco ponto-mesencefalico.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Tre arterie, tre territori',

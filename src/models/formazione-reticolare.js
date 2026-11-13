@@ -204,19 +204,7 @@ const LINKS = [
 export class ReticularModel extends AnatomyModel {
   constructor() {
     super({ tilt: -0.42 });
-    this.addStand({ radius: 0.2, z: -0.03 });
-    // l'asta sta nel gruppo che ruota, non in quello che scorre (vedi setFocus)
-    const rod = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.007, 0.007, 0.03, 12),
-      new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: 1, roughness: 0.25 })
-    );
-    rod.position.set(0, 0.033, -0.061);
-    rod.castShadow = true;
-    this.spin.add(rod);
-    this.rod = rod;
-    this.focusScale = 1;
-    this.focus = new THREE.Vector3();
-    this.focusTarget = new THREE.Vector3();
+    this.addStand({ radius: 0.2, z: -0.03, rod: [0, 0.018, 0.048, -0.061] });
     this.ready = this.#build();
   }
 
@@ -248,28 +236,5 @@ export class ReticularModel extends AnatomyModel {
     const p = mm(s.c);
     g.translate(p.x, p.y, p.z);
     return g;
-  }
-
-  // Ingrandisce una regione del modello e la porta sopra la base: `center` è il
-  // punto (coordinate del modello) che finisce sull'asse della base all'altezza
-  // `height`, `scale` l'ingrandimento. Senza argomenti: modello intero.
-  setFocus(center = null, scale = 1, height = 0.3) {
-    this.focusScale = scale;
-    if (center) this.focusTarget.set(-center[0] * scale, height - center[1] * scale, -0.03 - center[2] * scale);
-    else this.focusTarget.set(0, 0, 0);
-  }
-
-  reset() {
-    super.reset();
-    this.setFocus();
-  }
-
-  update(dt, camera, realDt = dt) {
-    const k = 1 - Math.exp(-Math.min(realDt, 0.5) * 6);
-    this.focus.lerp(this.focusTarget, k);
-    this.inner.position.copy(this.focus);
-    this.inner.scale.setScalar(this.inner.scale.x + (this.focusScale - this.inner.scale.x) * k);
-    this.rod.visible = this.focusScale === 1; // l'asta regge solo il modello intero
-    super.update(dt, camera, realDt);
   }
 }

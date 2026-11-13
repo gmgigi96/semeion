@@ -19,13 +19,9 @@ const PRECB = ['lrn', 'pmrn', 'rtn'];
 const NET = [...RAPHE, ...MEDIAL, ...LATERAL];
 const both = (...ids) => ids.flatMap((id) => [id, `${id}L`]);
 
-// Porta sopra la base la regione di cui parla la pagina (vedi setFocus nel modello).
-const focused = (center, scale, height, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return { ...api, enter() { api.enter(); ctx.model.setFocus(center, scale, height); } };
-};
-const BRAINSTEM = [0, 0.297, -0.02];
-const UPPER = ['midbrain', 'pons', 'medulla', 'v4', 'aqueduct']; // senza il midollo, che nei primi piani uscirebbe dalla base
+// Primo piano sul tronco encefalico, dal bulbo al mesencefalo, sopra il centro della base.
+const BRAINSTEM = { at: [0, 0.297, -0.006], scale: 2.2, height: 0.355 };
+const UPPER = ['midbrain', 'pons', 'medulla', 'v4', 'aqueduct']; // senza il midollo, che nei primi piani attraverserebbe la base
 
 const spreads = [
   {
@@ -99,8 +95,8 @@ const spreads = [
     },
     caption: 'Tronco encefalico reale in trasparenza, da dietro e da destra; in azzurro quarto ventricolo e acquedotto.',
     instruction: 'SCEGLI UNA COLONNA',
-    view: { yaw: -2.65, zoom: 1.12 },
-    mode: focused(BRAINSTEM, 2.05, 0.33, selector({
+    view: { yaw: -2.65, focus: BRAINSTEM },
+    mode: selector({
       base: [...UPPER, 'collSup', 'collInf', ...NET],
       idle: 'Dalla linea mediana verso il lato: rafe (giallo), colonna mediale (rosso), colonna laterale.',
       pick: Object.fromEntries([...RAPHE.map((id) => [id, 0]), ...MEDIAL.map((id) => [id, 1]), ...LATERAL.map((id) => [id, 2]), ...PRECB.map((id) => [id, 3])]),
@@ -126,7 +122,7 @@ const spreads = [
           info: 'Nucleo paramediano, nucleo della calotta pontina e nucleo reticolare laterale proiettano al cervelletto.',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Nuclei e neurotrasmettitori',
@@ -143,8 +139,8 @@ const spreads = [
     },
     caption: 'I nuclei ricostruiti nel tronco reale; le sigle sono quelle della classificazione di Dahlström e Fuxe.',
     instruction: 'SCEGLI UN NEUROTRASMETTITORE',
-    view: { yaw: -2.25, zoom: 1.12 },
-    mode: focused(BRAINSTEM, 2.05, 0.33, selector({
+    view: { yaw: -2.25, focus: BRAINSTEM },
+    mode: selector({
       base: [...UPPER, 'collSup', 'collInf', 'red', ...RAPHE, ...INNER, ...OUTER, ...DOPA],
       idle: 'Giallo: serotonina. Verde e azzurro: noradrenalina. Viola: acetilcolina. Scuro e magenta: dopamina.',
       pick: {
@@ -177,7 +173,7 @@ const spreads = [
           info: 'I neuroni REM-on del peduncolo-pontino, tramite interneuroni inibitori, spengono i REM-off del locus coeruleus.',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Movimento e tono: le vie reticolo-spinali',
@@ -199,8 +195,9 @@ const spreads = [
     },
     caption: 'Tronco e midollo cervicale reali, dal davanti e da destra; in rosso scuro le corna anteriori del midollo.',
     instruction: 'SEGUI UNA VIA, POI PROVA LA LESIONE',
-    view: { yaw: 0.55, zoom: 1.15 },
-    mode: focused([0, 0.25, -0.03], 1.55, 0.37, selector({
+    // tronco e midollo cervicale: il midollo arriva alla base
+    view: { yaw: 0.55, focus: { at: [0, 0.25, -0.012], scale: 1.7, height: 0.39 } },
+    mode: selector({
       base: [...STEM, 'antHorn', 'postHorn', 'gigBulb', 'magoun', 'gigPont', 'pprf', 'rMag', 'ppn', 'lc', 'snr', 'snc'],
       idle: 'Verde: eccitazione. Rosso: inibizione. Le frecce uniscono origine e bersaglio.',
       pick: { gigPont: 0, magoun: 1, ppn: 2, snr: 2, rMag: 3 },
@@ -228,7 +225,7 @@ const spreads = [
           info: 'Magoun perde la sua eccitazione: cade il tono inibitorio e i motoneuroni gamma sostengono gli alfa. Ipertono.',
         },
       ],
-    })),
+    }),
   },
 ];
 
