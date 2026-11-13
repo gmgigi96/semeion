@@ -66,8 +66,10 @@ function decal(w, h, material, u, v, n) {
   return m;
 }
 
-// Nastro del segnalibro: scende lungo la piega sulla pagina corrente, esce
-// dal piede del libro e si adagia sul sottomano.
+// Nastro del segnalibro: scende lungo la piega sulla pagina segnata, esce
+// dal piede del libro e si adagia sul sottomano. Due pezzi: `strip`, il tratto
+// sulla pagina, che gira con il foglio; `tail`, il tratto fuori dal libro, che
+// esce dalla parte del blocco in cui sta la pagina segnata.
 function ribbon() {
   const z0 = PAGE_H / 2;
   const y = 0.0026;
@@ -82,25 +84,32 @@ function ribbon() {
     'centripetal'
   );
   const N = 90, half = 0.0115;
-  const pos = [], idx = [];
-  for (let i = 0; i <= N; i++) {
-    const p = curve.getPoint(i / N);
-    const py = Math.max(p.y, ground);
-    // la punta è tagliata in diagonale
-    const cut = i === N ? 0.03 : 0;
-    pos.push(p.x - half, py, p.z - cut, p.x + half, py, p.z + cut);
-    if (i < N) idx.push(i * 2, i * 2 + 2, i * 2 + 1, i * 2 + 1, i * 2 + 2, i * 2 + 3);
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setIndex(idx);
-  g.computeVertexNormals();
-  const m = new THREE.Mesh(
-    g,
-    new THREE.MeshPhysicalMaterial({ color: 0x1d2a6e, roughness: 0.55, sheen: 1, sheenColor: 0x5a6fd0, sheenRoughness: 0.4, side: THREE.DoubleSide })
-  );
-  m.castShadow = m.receiveShadow = true;
-  return m;
+  const pts = [];
+  for (let i = 0; i <= N; i++) pts.push(curve.getPoint(i / N));
+  const foot = pts.findIndex((p) => p.z >= z0);
+  const material = new THREE.MeshPhysicalMaterial({
+    color: 0x1d2a6e, roughness: 0.55, sheen: 1, sheenColor: 0x5a6fd0, sheenRoughness: 0.4, side: THREE.DoubleSide,
+  });
+  const strap = (from, to) => {
+    const pos = [], idx = [];
+    for (let i = from; i <= to; i++) {
+      const p = pts[i];
+      const py = Math.max(p.y, ground);
+      // la punta è tagliata in diagonale
+      const cut = i === N ? 0.03 : 0;
+      pos.push(p.x - half, py, p.z - cut, p.x + half, py, p.z + cut);
+      const k = i - from;
+      if (i < to) idx.push(k * 2, k * 2 + 2, k * 2 + 1, k * 2 + 1, k * 2 + 2, k * 2 + 3);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    const m = new THREE.Mesh(g, material);
+    m.castShadow = m.receiveShadow = true;
+    return m;
+  };
+  return { strip: strap(0, foot), tail: strap(foot, N) };
 }
 
 export class Book {
@@ -189,8 +198,13 @@ export class Book {
     this.spinePivot.add(this.spine);
     this.group.add(this.spinePivot);
 
-    this.ribbon = ribbon();
-    this.group.add(this.ribbon);
+    const { strip, tail } = ribbon();
+    this.strip = strip;
+    this.tail = tail;
+    this.group.add(strip, tail);
+    this.ribbonAt = 'page';
+    this.tailX = 1; // +1 il nastro esce dal blocco destro, -1 dal sinistro
+    this.u = 1;
 
     // foglio che gira
     this.flipPivot = new THREE.Group();
@@ -219,18 +233,49 @@ export class Book {
     const yaw = 0.42 * c;
     this.group.rotation.y = yaw;
     this.group.position.set(-0.5 * Math.cos(yaw) * c, 0, 0.5 * Math.sin(yaw) * c);
+    this.u = u;
+    this.placeTail();
+  }
+
+  // Chiudendo il libro il blocco sinistro si ribalta sul destro: il nastro
+  // finisce comunque dalla parte destra.
+  placeTail() {
+    const closing = (1 - Math.cos(Math.PI * (1 - this.u))) / 2;
+    this.tail.scale.x = this.tailX + (1 - this.tailX) * closing;
+  }
+
+  // Dov'è la pagina segnata rispetto a quella aperta: 'page' è proprio lei
+  // (il nastro è steso sulla pagina destra), 'left' è già stata girata,
+  // 'right' deve ancora venire.
+  setRibbon(at) {
+    if (this.strip.parent !== this.group) this.group.add(this.strip);
+    this.strip.position.y = 0;
+    this.strip.visible = at === 'page';
+    this.ribbonAt = at;
+    this.tailX = at === 'left' ? -1 : 1;
+    this.placeTail();
   }
 
   // dir = +1 avanti (il foglio va da destra a sinistra), -1 indietro.
   // onCovered: chiamata subito (il foglio copre la pagina di partenza);
   // la promessa si risolve quando il foglio è atterrato.
-  flip(dir) {
+  // `to` è la posizione della pagina segnata a sfoglio finito (v. setRibbon).
+  flip(dir, to = this.ribbonAt) {
+    const from = this.ribbonAt;
+    // il nastro sta sul foglio che gira quando si lascia la pagina segnata
+    // andando avanti, o ci si torna andando indietro: gira con lui
+    const ride = (from === 'page' && dir > 0) || (to === 'page' && dir < 0);
+    const cross = (from === 'left') !== (to === 'left');
+    if (ride) {
+      this.flipPivot.add(this.strip);
+      this.strip.position.y = 0.0045; // sopra il foglio
+      this.strip.visible = true;
+    } else if (to === 'page') {
+      this.strip.visible = true; // il foglio che si alza la scopre
+    }
     return new Promise((resolve) => {
       this.flipPivot.visible = true;
-      // il nastro resta dov'era: mentre il foglio gira si disegna sopra di lui
-      this.ribbon.material.depthTest = false;
-      this.ribbon.renderOrder = 10;
-      this.flipAnim = { t: 0, dir, resolve };
+      this.flipAnim = { t: 0, dir, to, cross, resolve };
     });
   }
 
@@ -241,10 +286,10 @@ export class Book {
     const e = a.t < 0.5 ? 2 * a.t * a.t : 1 - Math.pow(-2 * a.t + 2, 2) / 2;
     const angle = (a.dir > 0 ? e : 1 - e) * Math.PI;
     this.flipPivot.rotation.z = angle;
+    if (a.cross) (this.tailX = Math.cos(angle)), this.placeTail();
     if (a.t >= 1) {
       this.flipPivot.visible = false;
-      this.ribbon.material.depthTest = true;
-      this.ribbon.renderOrder = 0;
+      this.setRibbon(a.to);
       this.flipAnim = null;
       a.resolve();
     }

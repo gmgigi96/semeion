@@ -240,6 +240,11 @@ function bookmark() {
     return 0;
   }
 }
+// Il nastro resta nella pagina in cui il libro era stato lasciato l'ultima
+// volta; sfogliando, se ne va con lei. Il segnalibro salvato invece segue la
+// lettura, così alla prossima visita il nastro sarà dove ci si è fermati.
+let marked = 0;
+const ribbonAt = (i) => (i === marked ? 'page' : i > marked ? 'left' : 'right');
 function setBookmark(page) {
   try {
     localStorage.setItem(MARK, keyOf(page));
@@ -286,7 +291,7 @@ async function goTo(i, animate = true) {
     await wait(260);
     // il foglio copre prima la pagina di partenza, poi atterra sull'altra
     const [first, second] = dir > 0 ? ['right', 'left'] : ['left', 'right'];
-    const flipping = book.flip(dir);
+    const flipping = book.flip(dir, ribbonAt(i));
     book[first].remove(current[first]);
     book[first].add(next[first]);
     await flipping;
@@ -294,6 +299,7 @@ async function goTo(i, animate = true) {
     book[second].add(next[second]);
   } else {
     if (current) book.left.remove(current.left), book.right.remove(current.right);
+    book.setRibbon(ribbonAt(i));
     book.left.add(next.left);
     book.right.add(next.right);
   }
@@ -547,7 +553,8 @@ addEventListener('hashchange', () => {
   goTo(pageFromHash());
 });
 if (deepLink) (isOpen = true), (openness = 1);
-goTo(deepLink ? pageFromHash() : bookmark(), false);
+marked = bookmark();
+goTo(deepLink ? pageFromHash() : marked, false);
 window.__book = {
   goTo, scene, camera, models, open: openBook, close: closeBook, lean: setLean,
   get model() { return active; },
