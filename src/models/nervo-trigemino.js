@@ -179,19 +179,7 @@ function territory(ax, a, z) {
 export class TrigeminalModel extends AnatomyModel {
   constructor() {
     super({ tilt: -0.45 });
-    this.addStand({ radius: 0.21, z: 0 });
-    // l'asta sta nel gruppo che ruota, non in quello che scorre (vedi setFocus)
-    const rod = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.007, 0.007, 0.04, 12),
-      new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: 1, roughness: 0.25 })
-    );
-    rod.position.set(0, 0.035, 0.125);
-    rod.castShadow = true;
-    this.spin.add(rod);
-    this.rod = rod;
-    this.focusScale = 1;
-    this.focus = new THREE.Vector3();
-    this.focusTarget = new THREE.Vector3();
+    this.addStand({ radius: 0.21, z: 0, rod: [0, 0.015, 0.055, 0.125] });
     this.ready = this.#build();
   }
 
@@ -395,29 +383,5 @@ export class TrigeminalModel extends AnatomyModel {
       tube([[28, -20, 1570], [32, -22, 1568.8], [35.5, -23.5, 1567.6]], 0.5),
       tube([[22.6, -15, 1576], [22.2, -17.5, 1570], [23, -20.5, 1563.5]], 0.5),
     ]);
-  }
-
-  // Ingrandisce una regione del modello e la porta sopra la base: `center` è il
-  // punto (coordinate del modello) che finisce sull'asse della base all'altezza
-  // `height`, `scale` l'ingrandimento. La base non si ingrandisce (lo zoom della
-  // pagina ingrandirebbe anche lei). Senza argomenti: modello intero.
-  setFocus(center = null, scale = 1, height = 0.3) {
-    this.focusScale = scale;
-    if (center) this.focusTarget.set(-center[0] * scale, height - center[1] * scale, -center[2] * scale);
-    else this.focusTarget.set(0, 0, 0);
-  }
-
-  reset() {
-    super.reset();
-    this.setFocus();
-  }
-
-  update(dt, camera, realDt = dt) {
-    const k = 1 - Math.exp(-Math.min(realDt, 0.5) * 6);
-    this.focus.lerp(this.focusTarget, k);
-    this.inner.position.copy(this.focus);
-    this.inner.scale.setScalar(this.inner.scale.x + (this.focusScale - this.inner.scale.x) * k);
-    this.rod.visible = this.focusScale === 1; // l'asta regge solo il modello intero
-    super.update(dt, camera, realDt);
   }
 }
