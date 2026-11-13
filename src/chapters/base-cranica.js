@@ -10,18 +10,9 @@ const BONES = [...ANT, ...MID, ...POST, 'parietal', ...SECTION];
 const CLIVUS = ['clivusSph', 'occBasilar'];
 const ORBIT_NERVES = ['cn3', 'cn3t', 'cn4', 'cn6', 'v1', 'frontalN', 'lacrimalN', 'nasociliaryN'];
 const tint = (ids, color) => Object.fromEntries(ids.map((id) => [id, { color }]));
-// Ogni pagina porta al centro la fossa di cui parla: il modello scorre sulla
-// propria base (dz, in unità del modello) e la pagina lo ingrandisce.
-const focus = (dz, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return {
-    ...api,
-    enter() {
-      ctx.model.inner.position.z = dz;
-      api.enter();
-    },
-  };
-};
+// Ogni pagina porta al centro la fossa di cui parla: primo piano del motore su un
+// punto della linea mediana, a quota 0.25 (il piano delle fosse), `z` in avanti.
+const fossa = (z, scale) => ({ at: [0, 0.25, z], scale, height: 0.25 * scale });
 const glass = (ids, opacity) => Object.fromEntries(ids.map((id) => [id, { opacity }]));
 
 const spreads = [
@@ -44,7 +35,7 @@ const spreads = [
     caption: 'Base cranica dall’alto, a calotta rimossa (ossa reali BodyParts3D). In alto la fronte.',
     instruction: 'SCEGLI UNA FOSSA · TRASCINA IL MODELLO PER RUOTARLO',
     view: { yaw: Math.PI, zoom: 0.8 },
-    mode: focus(0, selector({
+    mode: selector({
       base: BONES,
       looks: { ...tint(ANT, 0xe3c46a), ...tint(MID, 0xd98f70), ...tint(POST, 0x86aacb) },
       idle: 'Giallo: fossa anteriore. Rosso mattone: fossa media. Azzurro: fossa posteriore.',
@@ -58,7 +49,7 @@ const spreads = [
           info: 'Margine posteriore della piccola ala; margine superiore della piramide, con il seno petroso superiore; solco del seno trasverso.',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Fossa anteriore: tetto di orbite e naso',
@@ -76,8 +67,8 @@ const spreads = [
     },
     caption: 'I fori sono segnati da anelli verdi; scegliendone uno compare ciò che lo attraversa.',
     instruction: 'SCEGLI UN OSSO O UN FORO DELLA FOSSA ANTERIORE',
-    view: { yaw: Math.PI, zoom: 1.3 },
-    mode: focus(-0.22, selector({
+    view: { yaw: Math.PI, zoom: 1, focus: fossa(0.22, 1.3) },
+    mode: selector({
       base: [...ANT, 'sectionF', 'sphBody', 'sphGreater', 'clivusSph', 'fCaecum', 'fEthmoid', 'fOptic'],
       pick: { frontal: 0, ethmoid: 1, cristaGalli: 1, sphLesser: 2, fCaecum: 3, olfactory: 4, fEthmoid: 5, fOptic: 6, optic: 6 },
       idle: 'Tre ossa formano la fossa anteriore: frontale, etmoide e sfenoide.',
@@ -90,7 +81,7 @@ const spreads = [
         { label: 'Forami etmoidali', lit: ['fEthmoid', 'ethmoidalN'], info: 'Ai lati della lamina cribrosa: vasi e nervi etmoidali anteriori e posteriori.' },
         { label: 'Canale ottico', lit: ['fOptic', 'optic', 'ophthalmicA'], info: "Nervo ottico e arteria oftalmica; medialmente continua nel solco chiasmatico, che accoglie il chiasma." },
       ],
-    })),
+    }),
   },
   {
     title: 'Fossa media: i fori e ciò che li attraversa',
@@ -108,8 +99,8 @@ const spreads = [
     },
     caption: 'Fossa anteriore in trasparenza, per seguire i nervi fin dentro l’orbita.',
     instruction: 'SCEGLI UN FORO: COMPAIONO I NERVI E I VASI CHE LO ATTRAVERSANO',
-    view: { yaw: Math.PI, zoom: 1.06 },
-    mode: focus(-0.1, selector({
+    view: { yaw: Math.PI, zoom: 1, focus: fossa(0.1, 1.06) },
+    mode: selector({
       base: [...ANT, 'sectionF', ...MID, ...CLIVUS, 'tempPost', 'pituitary', 'stem', 'fSof', 'fRotundum', 'fOvale', 'fSpinosum', 'fLacerum', 'fHiatus'],
       looks: glass([...ANT, 'sectionF'], 0.3),
       pick: { fSof: 0, fRotundum: 1, v2: 1, fOvale: 2, v3: 2, fSpinosum: 3, mma: 3, fLacerum: 4, ica: 4, fHiatus: 5, pituitary: 6, sphBody: 6 },
@@ -126,7 +117,7 @@ const spreads = [
         { label: 'Iati petrosi', lit: ['fHiatus', 'gpn', 'lpn'], info: 'Iato del canale faciale: nervo grande petroso superficiale. Orifizio accessorio: piccolo petroso.' },
         { label: 'Sella turcica', lit: ['sphBody', 'pituitary', 'ica'], info: 'Tubercolo, fossa ipofisaria e dorso della sella; ai lati il solco carotico e il seno cavernoso.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Fossa posteriore: verso il foro giugulare',
@@ -144,8 +135,8 @@ const spreads = [
     },
     caption: 'Nervi ricostruiti dal tronco encefalico (in trasparenza) fino ai rispettivi fori.',
     instruction: 'SCEGLI UN FORO, OPPURE SEGUI IL SANGUE DEI SENI VENOSI',
-    view: { yaw: Math.PI, zoom: 1.15 },
-    mode: focus(0.09, selector({
+    view: { yaw: Math.PI, zoom: 1, focus: fossa(-0.09, 1.15) },
+    mode: selector({
       base: [...POST, 'sectionO', 'tempMid', 'parietal', 'sectionP', 'stem', 'medulla', 'fMagnum', 'fHypoglossal', 'fJugular', 'fIam', 'fCondylar', 'fMastoid'],
       pick: { fMagnum: 0, medulla: 0, fHypoglossal: 1, fJugular: 2, fIam: 3, transverse: 4, sigmoid: 4, fCondylar: 5, fMastoid: 5, clivusSph: 6, occBasilar: 6 },
       idle: 'Domina il grande forame occipitale; dietro di esso la cresta occipitale interna.',
@@ -171,7 +162,7 @@ const spreads = [
         { label: 'Emissarie', lit: ['fCondylar', 'fMastoid'], info: 'Canale condilare: vena emissaria condilare. Forame mastoideo: vena emissaria mastoidea.' },
         { label: 'Clivo', lit: CLIVUS, info: "Una porzione sfenoidale e una occipitale (parte basilare): scende dal dorso della sella al forame magno." },
       ],
-    })),
+    }),
   },
 ];
 
