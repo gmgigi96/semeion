@@ -16,11 +16,9 @@ const YELLOW = 0xe6bd2e;
 // fuori dalla pagina del canale il nervo ha un solo colore
 const PLAIN = Object.fromEntries(NERVE.map((id) => [id, { color: YELLOW }]));
 
-// Primo piano: all'ingresso nella pagina il modello viene ingrandito attorno a un punto (mm Z-Anatomy).
-const closeUp = (center, scale, height, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return { ...api, enter() { api.enter(); ctx.model.focus(center, scale, height); } };
-};
+// Primo piano del motore attorno a un punto dato in mm Z-Anatomy (stessa terna del modello:
+// distanza dal piano mediano, verso dietro, verso l'alto), portato all'altezza `height`.
+const closeUp = ([a, b, h], scale, height) => ({ at: [a * 0.0034, (h - 1485) * 0.0034, -b * 0.0034], scale, height });
 
 // lesioni: ciò che sta a valle del punto interrotto
 const D_FACE = ['fnTrunk', 'tempFac', 'cervFac', ...FACE_R, 'digastric', 'stylohyoid', ...EXTRA];
@@ -70,8 +68,8 @@ const spreads = [
     },
     caption: 'Ponte e bulbo in trasparenza, ingranditi: i nuclei sono piccoli quanto nella realtà.',
     instruction: 'SCEGLI UN NUCLEO (ANCHE CLICCANDOLO) E RUOTA IL TRONCO ENCEFALICO',
-    view: { yaw: 0.5 },
-    mode: closeUp([0, 12, 1580], 6.5, 0.4, selector({
+    view: { yaw: 0.5, focus: closeUp([0, 12, 1580], 6.5, 0.4) },
+    mode: selector({
       base: ['pons', 'medulla', ...NUCLEI, 'nucVI', 'fnPons', 'fnCist', 'radiceInt'],
       looks: PLAIN,
       pick: { nucMotUp: 0, nucMotLow: 1, nucLac: 2, nucSal: 3, nucSol: 4 },
@@ -83,7 +81,7 @@ const spreads = [
         { label: 'Salivatorio superiore', lit: ['nucSal', 'radiceInt'], info: 'Parasimpatico: ganglio sottomandibolare, poi ghiandole sottomandibolare, sottolinguale e salivari minori della lingua.' },
         { label: 'Tratto solitario', lit: ['nucSol', 'radiceInt'], links: ['gustoIn'], info: 'Nucleo sensitivo: padiglione auricolare, meato acustico esterno e membrana del timpano.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Nel canale di Falloppio',
@@ -101,8 +99,8 @@ const spreads = [
     },
     caption: 'La rocca destra ingrandita: nervo, orecchio interno e ossicini sono mesh reali nei loro rapporti.',
     instruction: 'SEGUI IL DECORSO O ISOLA UN TRATTO (ANCHE CLICCANDOLO)',
-    view: { yaw: 0.9 },
-    mode: closeUp([33, 3, 1573], 5.2, 0.3, selector({
+    view: { yaw: 0.9, focus: closeUp([25, 3, 1571], 4.5, 0.26) },
+    mode: selector({
       base: ['petrous', 'fnPons', 'fnCist', ...CANAL, 'fnTrunk', 'intermedio', 'geniculate', 'viii', 'cochlea', 'labyrinth', 'ossicles', 'stapes', 'tympanic', 'gspn', 'chorda', 'stapedius', 'nStap'],
       looks: { fnPons: { color: YELLOW }, fnTrunk: { color: YELLOW } },
       pick: { fnCist: 1, fnMeat: 1, intermedio: 1, viii: 1, fnLab: 2, geniculate: 2, fnTymp: 3, fnMast: 4 },
@@ -125,7 +123,7 @@ const spreads = [
         { label: 'Timpanico', lit: ['fnTymp', 'ossicles', 'stapes'], info: 'Dal ganglio genicolato indietro e lateralmente, parallelo alla rocca, sopra la cassa del timpano.' },
         { label: 'Mastoideo', lit: ['fnMast', 'chorda', 'nStap', 'stapedius'], info: 'Dal ginocchio esterno in basso, lungo la parete posteriore della cassa, fino al foro stilo-mastoideo.' },
       ],
-    })),
+    }),
   },
   {
     title: 'I rami collaterali',
@@ -143,8 +141,8 @@ const spreads = [
     },
     caption: 'Metà destra del cranio. Blu: fibre parasimpatiche. Verde: corda del timpano. Arancio: rami extrapetrosi.',
     instruction: 'SCEGLI UN RAMO E SEGUILO FINO AL SUO BERSAGLIO',
-    view: { yaw: -2.0 },
-    mode: closeUp([30, -25, 1556], 1.7, 0.3, selector({
+    view: { yaw: -2.0, focus: closeUp([30, -25, 1548], 1.5, 0.3) },
+    mode: selector({
       base: ['skullR', ...NERVE.slice(1), 'geniculate', 'petroso', 'ppg', 'lacrimal', 'ossicles', 'stapes', 'stapedius', 'nStap', 'chorda', 'lingual', 'smg',
         ...SALIVARY, ...TONGUE, 'digastric', 'stylohyoid', ...EXTRA],
       looks: { ...PLAIN, skullR: { opacity: 0.07 } },
@@ -156,7 +154,7 @@ const spreads = [
         { label: 'Corda del timpano', lit: ['chorda', 'lingual', 'tongueAnt', 'smg', ...SALIVARY], links: ['salivaSm', 'salivaSl'], info: 'Dal tratto mastoideo attraversa la cassa del timpano: gusto dei 2/3 anteriori della lingua, secrezione di sottomandibolare e sottolinguale.' },
         { label: 'Rami extrapetrosi', lit: [...EXTRA, 'digastric', 'stylohyoid', 'occipitalis'], info: 'Ventre posteriore del digastrico, muscolo stiloioideo, muscoli intrinseci ed estrinseci del padiglione auricolare.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Dove si è interrotto?',

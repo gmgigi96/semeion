@@ -25,12 +25,6 @@ const SKIN = ['skin1', 'skin2', 'skin3', 'skinRest'];
 const GLASS = { opacity: 0.22, litOpacity: 0.9 };
 const MUSCLE_GLASS = { temporalis: GLASS, masseter: GLASS, ptlat: { opacity: 0.4, litOpacity: 0.9 }, ptmed: { opacity: 0.5, litOpacity: 0.9 } };
 
-// Porta sopra la base la regione di cui parla la pagina (vedi setFocus nel modello).
-const focused = (center, scale, height, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return { ...api, enter() { api.enter(); ctx.model.setFocus(center, scale, height); } };
-};
-
 const spreads = [
   {
     title: 'Il più voluminoso dei nervi encefalici',
@@ -83,8 +77,8 @@ const spreads = [
     },
     caption: 'Tronco encefalico reale in trasparenza, visto da dietro e da destra; nuclei ricostruiti al suo interno.',
     instruction: 'SCEGLI UN NUCLEO',
-    view: { yaw: -2.55, zoom: 1 },
-    mode: focused([0, 0.32, -0.225], 1.75, 0.44, selector({
+    view: { yaw: -2.55, zoom: 1, focus: { at: [0, 0.32, -0.225], scale: 1.5, height: 0.35 } },
+    mode: selector({
       base: [...STEM, 'thalamus', ...NUCLEI, 'fSens', 'fMot', 'vroot', 'motor'],
       idle: 'Dal mesencefalo al midollo cervicale: quattro nuclei per un solo nervo.',
       pick: { nucMot: 0, nucMes: 1, nucPr: 2, spOr: 3, spInt: 3, spCau: 3 },
@@ -105,7 +99,7 @@ const spreads = [
           info: 'Verde: lemnisco trigeminale, crociato, al nucleo VPM. Blu: fascio trigemino-talamico dorsale, ipsilaterale.',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Dal ponte al ganglio di Gasser',
@@ -123,8 +117,8 @@ const spreads = [
     },
     caption: 'Lo sfenoide in trasparenza, da destra e dal davanti; gli anelli scuri segnano i tre orifizi.',
     instruction: 'FAI PARTIRE UNA BRANCA E SEGUILA FUORI DAL CRANIO',
-    view: { yaw: -0.85, zoom: 1 },
-    mode: focused([0.04, 0.4, -0.05], 2, 0.36, selector({
+    view: { yaw: -0.85, zoom: 1, focus: { at: [0.04, 0.4, -0.05], scale: 2, height: 0.36 } },
+    mode: selector({
       base: [...STEM, 'sphenoid', ...EYES, 'nucMot', 'nucPr', ...ROOTS, 'sof', 'frot', 'foval', 'v1', 'lacn', 'nasocil', 'v2', 'ppg', 'v3trunk', 'v3ant', 'v3post'],
       looks: { sphenoid: { opacity: 0.4 } },
       idle: 'Radice sensitiva (chiara) e motoria (rossa), ganglio, tre branche.',
@@ -169,7 +163,7 @@ const spreads = [
           ],
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Tre branche, tre territori',
@@ -224,8 +218,8 @@ const spreads = [
     },
     caption: 'Fossa infratemporale destra, vista di lato; mandibola e muscoli superficiali in trasparenza.',
     instruction: 'SCEGLI UN TRONCO, SEGUI UN NERVO O INTERROMPI LA BRANCA',
-    view: { yaw: -1.2, zoom: 1 },
-    mode: focused([0.1, 0.25, -0.04], 1.15, 0.27, selector({
+    view: { yaw: -1.2, zoom: 1, focus: { at: [0.1, 0.25, -0.04], scale: 1.05, height: 0.235 } },
+    mode: selector({
       base: [...BONES, 'tongue', 'gasser', 'vroot', 'motor', 'foval', ...V3, ...MUSCLES],
       // qui i muscoli accesi restano semitrasparenti: i nervi che li raggiungono devono vedersi
       looks: { ...MUSCLE_GLASS, temporalis: { opacity: 0.18, litOpacity: 0.5 }, masseter: { opacity: 0.18, litOpacity: 0.5 }, mandible: { opacity: 0.2 }, skull: { opacity: 0.1 } },
@@ -255,7 +249,7 @@ const spreads = [
           info: 'Si perdono la sensibilità del territorio mandibolare e, da quel lato, i muscoli masticatori.',
         },
       ],
-    })),
+    }),
   },
 ];
 
