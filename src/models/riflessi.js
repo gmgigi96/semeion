@@ -284,53 +284,28 @@ const REAL = {
 };
 
 const PLATE_IDS = new Set();
-// Inquadrature: ingrandimento e punto del modello (x, y, z) che va sopra il centro della base, a quota y0.
+// Primi piani (vedi AnatomyModel.zoomTo): punto del modello che va sopra il centro della
+// base, ingrandimento e quota. Nei primi piani la base non serve. `plateOnly`: la piastra
+// sta sospesa sopra il bacino, e il resto del corpo le resterebbe attorno: viene nascosto.
 const at = (r, b, u) => Q(r, b, u).toArray();
-const VIEWS = {
-  home: { s: 1, c: [0, 0, 0], y0: 0 },
-  plate: { s: 4.8, c: [0, PLATE.top, PLATE.z], y0: 0.26, only: PLATE_IDS },
-  spindle: { s: 8.5, c: at(FU.r, FU.b, FU.u), y0: 0.3 },
-  gto: { s: 12, c: at(...GT.c), y0: 0.25 },
-  knee: { s: 2.6, c: at(84, -5, 440), y0: 0.2 },
-  thigh: { s: 1.5, c: at(70, 0, 330), y0: 0 },
+export const FOCUS = {
+  plate: { at: [0, PLATE.top, PLATE.z], scale: 3.8, height: 0.24, stand: false, plateOnly: true },
+  spindle: { at: at(FU.r, FU.b, FU.u), scale: 8.5, height: 0.3, stand: false },
+  gto: { at: at(...GT.c), scale: 10, height: 0.22, stand: false },
+  thigh: { at: at(70, 0, 330), scale: 1.5, height: 0, stand: false },
 };
 
 export class Riflessi extends AnatomyModel {
   constructor() {
     super({ tilt: -0.5 });
     this.addStand({ radius: 0.17, z: 0 });
-    this.home = 'home';
-    this.view = VIEWS.home;
     this.ready = this.#build();
   }
 
-  // Le pagine scelgono l'inquadratura con un segnaposto tra le parti da mostrare
-  // ('@plate', '@spindle'…); senza segnaposto vale quella della pagina (`home`).
-  show(ids) {
-    const key = ids.find((id) => id[0] === '@')?.slice(1) ?? this.home;
-    this.view = VIEWS[key] ?? VIEWS.home;
-    super.show(ids.filter((id) => id[0] !== '@' && (!this.view.only || this.view.only.has(id))));
-  }
-
-  reset() {
-    super.reset();
-    this.home = 'home';
-    this.view = VIEWS.home;
-    this.inner.position.set(0, 0, 0);
-    this.inner.scale.setScalar(1);
-    this.flat.visible = true;
-  }
-
-  update(dt, camera, realDt = dt) {
-    const { s, c, y0 } = this.view;
-    const k = 1 - Math.exp(-Math.min(realDt, 0.5) * 5);
-    const inner = this.inner;
-    inner.scale.setScalar(inner.scale.x + (s - inner.scale.x) * k);
-    inner.position.x += (-s * c[0] - inner.position.x) * k;
-    inner.position.y += (y0 - s * c[1] - inner.position.y) * k;
-    inner.position.z += (-s * c[2] - inner.position.z) * k;
-    this.flat.visible = inner.scale.x < 1.05; // nei primi piani il modello esce dalla pagina
-    super.update(dt, camera, realDt);
+  // Nel primo piano sulla sezione restano visibili solo le parti della piastra.
+  zoomTo(focus) {
+    super.zoomTo(focus);
+    if (focus?.plateOnly) this.show([...this.visible].filter((id) => PLATE_IDS.has(id)));
   }
 
   async #build() {

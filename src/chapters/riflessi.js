@@ -1,6 +1,6 @@
 // Capitolo "Riflessi". Testi dagli appunti di neuroanatomia (Riflessi).
 import { selector } from '../modes.js';
-import { Riflessi } from '../models/riflessi.js';
+import { Riflessi, FOCUS } from '../models/riflessi.js';
 
 const AXIAL = ['spine', 'sacrum', 'hipR', 'hipL', 'cord'];
 const LEG = ['femurR', 'patellaR', 'tibiaR'];
@@ -19,13 +19,6 @@ const EFF = ['eff1', 'eff2', 'eff3'];
 const GLASS = { rectus: { opacity: 0.2, litOpacity: 0.3 }, vasti: { opacity: 0.12, litOpacity: 0.2 }, quadTendon: { opacity: 0.3, litOpacity: 0.4 } };
 const SOFT = { rectus: { opacity: 0.5, litOpacity: 0.7 }, vasti: { opacity: 0.4, litOpacity: 0.6 } };
 
-// Il modello è condiviso dalle pagine: ognuna dichiara la propria inquadratura di partenza
-// (le opzioni possono cambiarla con un segnaposto '@…' tra le parti da mostrare).
-const framed = (home, mode) => async (ctx) => {
-  const m = await mode(ctx);
-  return { ...m, enter() { ctx.model.home = home; m.enter(); } };
-};
-
 const spreads = [
   {
     title: 'Il fuso neuromuscolare',
@@ -43,44 +36,44 @@ const spreads = [
     },
     caption: 'Coscia destra reale (Z-Anatomy) con il quadricipite in trasparenza; il fuso, ricostruito nel ventre del retto femorale, è molto ingrandito.',
     instruction: 'SCEGLI UNA PARTE DEL FUSO · TRASCINA PER RUOTARE',
-    view: { yaw: -0.45 },
-    mode: framed('thigh', selector({
+    view: { yaw: -0.45, focus: FOCUS.thigh },
+    mode: selector({
       base: ['hipR', ...LEG, ...QUAD, ...KNEE, 'femoral', 'rfBranch', ...SPINDLE, 'extrafusal', 'endAlpha'],
       looks: GLASS,
       idle: 'Il fuso sta nel ventre del muscolo, in parallelo alle fibre extrafusali: qui è nel retto femorale.',
       pick: { bagFibers: 1, bagNuclei: 1, chainFibers: 2, chainNuclei: 2, endIa: 3, endII: 4, endGamma: 5, extrafusal: 6, endAlpha: 6 },
       options: [
         {
-          label: 'Capsula e fibre', show: ['@spindle'], lit: ['fusCapsule', 'bagFibers', 'chainFibers', 'bagNuclei', 'chainNuclei'],
+          label: 'Capsula e fibre', focus: FOCUS.spindle, lit: ['fusCapsule', 'bagFibers', 'chainFibers', 'bagNuclei', 'chainNuclei'],
           labels: { bagFibers: 'sacco di nuclei', chainFibers: 'catena di nuclei' },
           info: 'Capsula di fibre collagene con 10-15 fibre intrafusali affusolate (qui sei): al centro la porzione equatoriale, ai capi i due poli contrattili.',
         },
         {
-          label: 'Sacco di nuclei', show: ['@spindle'], lit: ['bagFibers', 'bagNuclei', 'endIa'],
+          label: 'Sacco di nuclei', focus: FOCUS.spindle, lit: ['bagFibers', 'bagNuclei', 'endIa'],
           info: 'Nuclei raggruppati: fibra molto deformabile, a rapido adattamento. Misura le variazioni di lunghezza e la velocità con cui avvengono.',
         },
         {
-          label: 'Catena di nuclei', show: ['@spindle'], lit: ['chainFibers', 'chainNuclei', 'endII'],
+          label: 'Catena di nuclei', focus: FOCUS.spindle, lit: ['chainFibers', 'chainNuclei', 'endII'],
           info: "Nuclei in singola fila: fibra meno deformabile, a lento adattamento. Rileva l'allungamento e mantiene il tono muscolare.",
         },
         {
-          label: 'Fibre Ia', show: ['@spindle'], lit: ['endIa'],
+          label: 'Fibre Ia', focus: FOCUS.spindle, lit: ['endIa'],
           info: 'Fibre sensitive Ia: si avvolgono a spire attorno alla porzione equatoriale. È la terminazione anulospirale.',
         },
         {
-          label: 'Fibre II', show: ['@spindle'], lit: ['endII'],
+          label: 'Fibre II', focus: FOCUS.spindle, lit: ['endII'],
           info: 'Fibre sensitive II: terminano in vari punti delle fibre a catena. È la terminazione a fiorame.',
         },
         {
-          label: 'Fibre gamma', show: ['@spindle'], lit: ['endGamma'],
+          label: 'Fibre gamma', focus: FOCUS.spindle, lit: ['endGamma'],
           info: 'Fibre motorie gamma, fasiche per le fibre a sacco e toniche per quelle a catena: raggiungono le porzioni polari e le fanno contrarre.',
         },
         {
-          label: 'Extrafusali', show: ['@spindle'], lit: ['extrafusal', 'endAlpha'],
+          label: 'Extrafusali', focus: FOCUS.spindle, lit: ['extrafusal', 'endAlpha'],
           info: 'Le fibre extrafusali, innervate dai motoneuroni alfa, corrono parallele al fuso: quando il muscolo si allunga, il fuso si allunga con loro.',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Il riflesso patellare',
@@ -104,7 +97,7 @@ const spreads = [
     caption: 'Arto inferiore destro, colonna e midollo reali; in alto la sezione lombare ingrandita con i neuroni del circuito. Radici e gangli L2-L4 sono ricostruiti.',
     instruction: 'AVVIA IL RIFLESSO, POI GUARDA IL CIRCUITO NEL MIDOLLO',
     view: { yaw: -0.3 },
-    mode: framed('home', selector({
+    mode: selector({
       base: [...AXIAL, ...LEG, ...QUAD, ...KNEE, 'hams', ...ROOTS, ...FEM, ...SCI, ...SPINDLE, ...PLATE, 'mnExt', 'mnFlex', 'inIa', 'hammer'],
       looks: SOFT,
       idle: 'Un colpo sul legamento rotuleo: la gamba si estende sulla coscia.',
@@ -123,12 +116,12 @@ const spreads = [
           ],
         },
         {
-          label: 'Una sola sinapsi', show: ['@plate'], lit: [...SECTION, 'mnExt', 'rootPostP', 'rootAntP', 'ganglionP'], links: ['cIa', 'cMnOut'],
+          label: 'Una sola sinapsi', focus: FOCUS.plate, lit: [...SECTION, 'mnExt', 'rootPostP', 'rootAntP', 'ganglionP'], links: ['cIa', 'cMnOut'],
           labels: { mnExt: 'motoneurone α', ganglionP: 'ganglio' },
           info: 'La fibra Ia entra con la radice dorsale e termina direttamente sul motoneurone alfa del quadricipite, nel corno ventrale.',
         },
         {
-          label: 'Inibizione reciproca', show: ['@plate'], stepTime: 2.6,
+          label: 'Inibizione reciproca', focus: FOCUS.plate, stepTime: 2.6,
           labels: { mnExt: 'α quadricipite', inIa: 'Ia' },
           steps: [
             { ids: ['mnExt', 'rootPostP'], links: ['cIa', 'cMnOut'], text: 'La fibra Ia eccita il motoneurone alfa del quadricipite.' },
@@ -142,7 +135,7 @@ const spreads = [
           info: 'Mentre il quadricipite si contrae, i muscoli posteriori della coscia, flessori della gamba, vengono rilasciati.',
         },
       ],
-    })),
+    }),
   },
   {
     title: "L'organo tendineo del Golgi",
@@ -165,18 +158,18 @@ const spreads = [
     caption: "L'organo tendineo, ricostruito e ingrandito, è alla giunzione tra il ventre del retto femorale e il tendine del quadricipite (mesh reali).",
     instruction: 'GUARDA IL RECETTORE, POI SEGUI I DUE CIRCUITI',
     view: { yaw: -0.3 },
-    mode: framed('home', selector({
+    mode: selector({
       base: [...AXIAL, ...LEG, ...QUAD, ...KNEE, ...ROOTS, ...FEM, ...SPINDLE, ...GTO, ...PLATE, 'cst', 'mnExt', 'mnGamma', 'inIb'],
       looks: GLASS,
       idle: 'Il fuso è in parallelo con le fibre muscolari, l’organo tendineo in serie: il primo misura la lunghezza, il secondo la tensione.',
       pick: { gtoCollagen: 0, gtoMuscle: 0, endIb: 0, mnGamma: 1, cst: 1, inIb: 2 },
       options: [
         {
-          label: 'Organo del Golgi', show: ['@gto'], lit: GTO, labels: { endIb: 'fibra Ib', gtoMuscle: 'fibre muscolari' },
+          label: 'Organo del Golgi', focus: FOCUS.gto, lit: GTO, labels: { endIb: 'fibra Ib', gtoMuscle: 'fibre muscolari' },
           info: 'In serie tra fibre muscolari e tendine: la contrazione stira il tendine e le terminazioni delle fibre Ib, prevalentemente a fiorame.',
         },
         {
-          label: 'Coattivazione α-γ', show: ['@plate'], stepTime: 2.6,
+          label: 'Coattivazione α-γ', focus: FOCUS.plate, stepTime: 2.6,
           labels: { mnExt: 'α', cst: 'via discendente' },
           steps: [
             { ids: ['cst'], text: 'Dalla corteccia scende una via motoria che nel midollo si divide in due rami.' },
@@ -187,7 +180,7 @@ const spreads = [
           ],
         },
         {
-          label: 'Miotatico inverso', show: ['@plate'], stepTime: 2.6,
+          label: 'Miotatico inverso', focus: FOCUS.plate, stepTime: 2.6,
           labels: { mnExt: 'α', inIb: 'interneurone Ib' },
           steps: [
             { ids: ['rootPostP', 'ganglionP'], links: ['cIb'], text: 'La contrazione diventa eccessiva: la fibra Ib entra con la radice dorsale.' },
@@ -206,7 +199,7 @@ const spreads = [
           ],
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Renshaw, partition cells e CPG',
@@ -226,8 +219,8 @@ const spreads = [
     },
     caption: 'Sezione lombare ingrandita, vista da davanti: contorni di sostanza bianca, corna e fasci sono sezioni vere delle mesh; i neuroni sono ricostruiti.',
     instruction: 'SCEGLI UN CIRCUITO DELLA SOSTANZA GRIGIA',
-    view: { yaw: -0.2 },
-    mode: framed('plate', selector({
+    view: { yaw: -0.2, focus: FOCUS.plate },
+    mode: selector({
       base: [...PLATE, 'lam7', 'lam10', 'retSpin', 'mnExt', 'mnNear', 'renshaw', 'partition', 'cpg', 'mnExtL'],
       idle: 'Tra le fibre che entrano e i motoneuroni che escono, la sostanza grigia contiene circuiti propri.',
       pick: { renshaw: 0, mnNear: 0, retSpin: 1, partition: 2, lam10: 2, cpg: 3 },
@@ -258,7 +251,7 @@ const spreads = [
           info: 'Cellule pacemaker tengono la rete in oscillazione sotto soglia; afferenze periferiche o vie discendenti la portano sopra soglia e le partition cells smistano il messaggio ai due lati.',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Il riflesso flesso-estensorio crociato',
@@ -281,7 +274,7 @@ const spreads = [
     caption: 'I due arti e il midollo lombare. Per semplicità i motoneuroni di flessori ed estensori stanno sulla stessa sezione; nel vero occupano più segmenti lombo-sacrali.',
     instruction: 'SEGUI IL DOLORE DAL LATO DESTRO AL SINISTRO',
     view: { yaw: -0.3 },
-    mode: framed('home', selector({
+    mode: selector({
       base: [...AXIAL, ...LEG, ...QUAD, ...KNEE, 'hams', ...ROOTS, ...FEM, ...SCI, ...LEFT, ...PLATE, 'lam10',
         'mnExt', 'mnFlex', 'inEx', 'inInh', 'partition', 'mnExtL', 'mnFlexL', 'inInhL'],
       idle: 'Lato offeso: flessione. Lato opposto: estensione.',
@@ -306,7 +299,7 @@ const spreads = [
           ],
         },
         {
-          label: 'Nel midollo', show: ['@plate'],
+          label: 'Nel midollo', focus: FOCUS.plate,
           lit: [...SECTION, 'inEx', 'mnFlex', 'inInh', 'mnExt', 'partition', 'mnExtL', 'inInhL', 'mnFlexL', 'rootPostP'],
           links: ['cPain', 'cExFlex', 'cExInh', 'cInhExt', 'cExPart', 'cPartExtL', 'cPartInhL', 'cInhFlexL'],
           labels: { mnExt: 'estensori –', mnExtL: 'estensori +', partition: 'partition cell', inEx: 'fibra III' },
@@ -318,7 +311,7 @@ const spreads = [
           info: 'Un arto si flette mentre l’altro si estende: se il riflesso si innesca più volte, alternando i lati, si ha la deambulazione sul posto.',
         },
       ],
-    })),
+    }),
   },
 ];
 
