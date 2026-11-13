@@ -74,7 +74,6 @@
 //      (dietro il grande adduttore, davanti al capo lungo del bicipite; divisione al poplite)
 //
 // Coordinate del modello: x laterale (destra del paziente +), y craniale, z anteriore.
-import * as THREE from 'three';
 import { AnatomyModel } from '../model.js';
 import { V, taperTube, ellipsoid } from '../geo.js';
 
@@ -82,6 +81,8 @@ import { V, taperTube, ellipsoid } from '../geo.js';
 // alle coordinate del modello; stessa terna del manifesto.
 const S = 0.00072;
 const mm = (x, y, z) => V(-(x + 60) * S, (z + 40) * S, -(y - 20) * S);
+// Un punto dato in millimetri Z-Anatomy, per i primi piani del capitolo (`focus.at`).
+export const atMm = (x, y, z) => mm(x, y, z).toArray();
 
 // Assi dei nervi estratti dalle mesh Z-Anatomy (mm).
 const AX = {
@@ -216,23 +217,6 @@ export class PlessoSacrale extends AnatomyModel {
     super({ tilt: -0.5 });
     this.addStand({ radius: 0.135, z: 0.03 });
     this.ready = this.#build();
-  }
-
-  // Primo piano di una regione: il punto `at` (mm Z-Anatomy) va sopra il centro
-  // della base, all'altezza `height`; il modello è ingrandito di `scale` e
-  // inclinato di `lean` attorno all'asse trasversale. `reset` lo riporta a posto.
-  focus(at, scale, height = 0.4, lean = 0) {
-    const p = mm(...at).multiplyScalar(scale).applyEuler(new THREE.Euler(lean, 0, 0));
-    this.inner.scale.setScalar(scale);
-    this.inner.rotation.x = lean;
-    this.inner.position.set(-p.x, height - p.y, -p.z);
-  }
-
-  reset() {
-    super.reset();
-    this.inner.position.set(0, 0, 0);
-    this.inner.scale.setScalar(1);
-    this.inner.rotation.x = 0;
   }
 
   async #build() {

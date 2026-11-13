@@ -1,7 +1,7 @@
 // Capitolo "Plesso sacrale e pudendo". Testi dagli appunti di neuroanatomia
 // (5. Plesso sacrale e pudendo).
 import { selector } from '../modes.js';
-import { PlessoSacrale } from '../models/plesso-sacrale.js';
+import { PlessoSacrale, atMm } from '../models/plesso-sacrale.js';
 
 const SPINE = ['l4', 'l5', 'discs', 'sacrum'];
 const PELVIS = [...SPINE, 'hip', 'hipAnt'];
@@ -15,11 +15,16 @@ const TAGS = { tagL4: 'L4', tagL5: 'L5', tagS1: 'S1', tagS2: 'S2', tagS3: 'S3', 
 const FIB_TERR = ['fibSup', 'fibDeep', 'extensors', 'peronei'];
 const LEG = ['tibPop', 'tibial', 'plantar', 'fibCom', 'fibSup', 'fibDeep', 'sural'];
 
-// Primo piano: all'ingresso nella pagina il modello viene centrato sul punto
-// `at` (mm Z-Anatomy), ingrandito e inclinato (vedi `focus` nel modello).
-const closeUp = (at, scale, height, lean, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return { ...api, enter() { api.enter(); ctx.model.focus(at, scale, height, lean); } };
+// Primi piani (vedi «Primi piani» in docs/AUTHORING.md): il punto `at` (mm Z-Anatomy)
+// va sopra il centro della pagina, alla quota `height`; `tilt` reclina il modello
+// verso chi legge dove la regione è piccola e conviene guardarla di fronte.
+const FOCUS = {
+  triangle: { at: atMm(-40, 40, 939), scale: 4.4, tilt: -0.7, stand: false },
+  gluteal: { at: atMm(-82, 45, 866), scale: 3.7, height: 0.32, tilt: -0.85, stand: false },
+  thigh: { at: atMm(-72, 40, 617), scale: 1.6, height: 0.32, stand: false },
+  popliteal: { at: atMm(-72, 40, 460), scale: 2.4, height: 0.3, tilt: -0.75, stand: false },
+  leg: { at: atMm(-88, -30, 290), scale: 1.5, stand: false },
+  pudendal: { at: atMm(-38, 6, 846), scale: 4.8, height: 0.32, tilt: -0.85, stand: false },
 };
 
 const spreads = [
@@ -44,8 +49,8 @@ const spreads = [
     },
     caption: 'Emibacino destro visto da davanti: ossa e piriforme reali (Z-Anatomy), nervi sul loro decorso reale.',
     instruction: 'SCEGLI UNA RADICE E SEGUI DOVE VANNO LE SUE FIBRE',
-    view: { yaw: 0.8, zoom: 1.1 },
-    mode: closeUp([-40, 40, 925], 4, 0.44, -0.45, selector({
+    view: { yaw: 0.8, focus: FOCUS.triangle },
+    mode: selector({
       base: [...PELVIS, 'piriformis', ...SACRAL, 'L4lumb', ...PUD_ROOTS, 'sciGlut'],
       labels: TAGS,
       looks: { hip: { opacity: 0.3 }, hipAnt: { opacity: 0.12 } },
@@ -58,7 +63,7 @@ const spreads = [
         { label: 'S3', lit: ['S3', 'S3p'], labels: TAGS, info: 'Gran parte di S3 va al plesso sacrale; il resto si anastomizza con S4 nel plesso pudendo.' },
         { label: 'Triangolo', lit: [...SACRAL, 'sciGlut'], labels: TAGS, info: 'Base mediale ai forami sacrali, apice infero-laterale al grande forame ischiatico: da lì continua il nervo ischiatico.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Sopra e sotto il piriforme',
@@ -76,8 +81,8 @@ const spreads = [
     },
     caption: 'Regione glutea destra vista da dietro; il grande gluteo è in trasparenza.',
     instruction: 'SCEGLI UNA PORZIONE DEL FORAME O UN NERVO · RUOTA IL MODELLO',
-    view: { yaw: 3.45, zoom: 1.1 },
-    mode: closeUp([-82, 45, 880], 3.7, 0.41, 0.5, selector({
+    view: { yaw: 3.45, focus: FOCUS.gluteal },
+    mode: selector({
       base: ['sacrum', 'hip', 'hipAnt', 'femur', 'ssl', 'stl', 'piriformis', 'obtInt', 'gemelli', 'quadFem', 'gluMin',
         'gluSup', 'gluInf', 'nQF', 'nOI', 'pfcn', 'sciGlut', 'pud', 'nPir'],
       pick: { gluSup: 2, gluMin: 2, gluInf: 3, nOI: 4, nQF: 4, obtInt: 4, quadFem: 4, pfcn: 5 },
@@ -90,7 +95,7 @@ const spreads = [
         { label: 'Otturatore e quadrato', lit: ['nOI', 'obtInt', 'nQF', 'quadFem', 'gemelli'], info: 'Il nervo dell’otturatore interno rientra dal piccolo forame ischiatico; spesso dà anche il nervo del gemello inferiore.' },
         { label: 'Cutaneo posteriore', lit: ['pfcn'], show: ['gluMax'], info: 'Sensitivo. Scende sotto il grande gluteo, medialmente all’ischiatico, poi si fa superficiale: cute posteriore della coscia fino al poplite.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Il nervo ischiatico',
@@ -105,8 +110,8 @@ const spreads = [
     },
     caption: 'Coscia destra vista da dietro: i muscoli reali sono in trasparenza attorno al nervo.',
     instruction: 'SEGUI IL NERVO DALLA PELVI AL POPLITE, POI PROVA A INTERROMPERLO',
-    view: { yaw: 2.9, zoom: 1.1 },
-    mode: closeUp([-72, 40, 700], 1.85, 0.43, 0.45, selector({
+    view: { yaw: 2.9, focus: FOCUS.thigh },
+    mode: selector({
       base: ['sacrum', 'hip', 'hipAnt', 'femur', 'femurShaft', 'femurDist', 'patella', 'piriformis', 'plexus', ...SCIATIC, 'tibPop', 'fibCom', 'pfcn', 'pfcnThigh', 'hamstrings', 'addMag', 'gluMax'],
       looks: { hamstrings: { opacity: 0.3, litOpacity: 0.75 }, addMag: { opacity: 0.3, litOpacity: 0.75 } },
       idle: 'Giallo: nervo ischiatico. Arancio: nervo tibiale. Verde: peroniero comune. Lilla: cutaneo posteriore della coscia.',
@@ -121,13 +126,13 @@ const spreads = [
           ],
         },
         { label: 'Rami muscolari', lit: ['sciThigh', 'hamstrings', 'addMag'], info: 'Semimembranoso, semitendinoso, bicipite femorale e porzione ischio-condilare del grande adduttore.' },
-        { label: 'Divisione', lit: ['tibPop', 'fibCom'], info: 'Nel poplite, con i vasi poplitei: il tibiale continua la direzione dell’ischiatico, il peroniero comune segue il bicipite.' },
+        { label: 'Divisione', lit: ['tibPop', 'fibCom'], focus: FOCUS.popliteal, info: 'Nel poplite, con i vasi poplitei: il tibiale continua la direzione dell’ischiatico, il peroniero comune segue il bicipite.' },
         {
           label: 'Lesione alla natica', dead: [...SCIATIC, 'tibPop', 'fibCom', 'hamstrings'],
           info: 'Si spegne tutto il territorio: loggia posteriore della coscia, muscoli della gamba e del piede, cute di gamba e piede tranne il margine mediale (nervo safeno).',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Tibiale e peroniero comune',
@@ -145,8 +150,8 @@ const spreads = [
     },
     caption: 'Gamba e piede destri: il peroniero comune gira attorno alla testa della fibula, il tibiale scende dietro la tibia.',
     instruction: 'SCEGLI UN NERVO · POI COMPRIMI IL PERONIERO COMUNE ALLA FIBULA',
-    view: { yaw: 3.75, zoom: 1.1 },
-    mode: closeUp([-88, 25, 290], 1.85, 0.44, 0.45, selector({
+    view: { yaw: 3.75, focus: FOCUS.leg },
+    mode: selector({
       base: ['femurDist', 'patella', 'tibia', 'fibula', 'foot', ...LEG, 'calf', 'extensors', 'peronei'],
       looks: { calf: { opacity: 0.22, litOpacity: 0.6 }, extensors: { opacity: 0.45, litOpacity: 0.85 }, peronei: { opacity: 0.45, litOpacity: 0.85 } },
       pick: { fibCom: 0, fibSup: 1, fibDeep: 2, tibial: 3, tibPop: 3, calf: 3, plantar: 4, sural: 5, peronei: 1, extensors: 2 },
@@ -160,7 +165,7 @@ const spreads = [
         { label: 'Surale', lit: ['sural'], info: 'Cutaneo mediale del polpaccio (dal tibiale) più un ramo dal cutaneo laterale: gira attorno al malleolo laterale fino al margine laterale del piede.' },
         { label: 'Compressione', dead: FIB_TERR, info: 'Sindrome del piede cadente: si spengono estensori e peronieri e la cute del dorso del piede; il tibiale resta integro.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Plesso pudendo e canale di Alcock',
@@ -183,8 +188,8 @@ const spreads = [
     },
     caption: 'Emibacino destro visto da dietro, con il sacro in trasparenza: il pudendo gira attorno al legamento sacro-spinoso.',
     instruction: 'SEGUI IL NERVO PUDENDO DALLE RADICI AI RAMI TERMINALI',
-    view: { yaw: 3.35, zoom: 1.1 },
-    mode: closeUp([-38, 48, 860], 4.8, 0.42, 0.7, selector({
+    view: { yaw: 3.35, focus: FOCUS.pudendal },
+    mode: selector({
       base: ['sacrum', 'hip', 'hipAnt', 'ssl', 'stl', 'piriformis', 'obtInt', 'levator', 'sphincter', 'pudArt', ...PUD_ROOTS, ...PUD, 'alcock'],
       looks: { sacrum: { opacity: 0.22 }, stl: { opacity: 0.3, litOpacity: 0.8 }, levator: { opacity: 0.5, litOpacity: 0.9 } },
       labels: { tagS2: 'S2', tagS3: 'S3', tagS4: 'S4' },
@@ -205,7 +210,7 @@ const spreads = [
         { label: 'Canale di Alcock', lit: ['alcock', 'pud', 'pudArt'], info: 'Lesioni dei rami del pudendo nel canale (infezioni, interventi chirurgici) causano la sindrome di Alcock: dolore pelvico cronico incoercibile.' },
         { label: 'Rami terminali', lit: ['pudRect', 'pudPerin', 'pudDors'], info: 'Perineale: cute dei genitali esterni, muscoli del trigono urogenitale. Dorsale del pene o del clitoride. Emorroidale inferiore: sfintere dell’ano.' },
       ],
-    })),
+    }),
   },
 ];
 

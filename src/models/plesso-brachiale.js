@@ -226,19 +226,9 @@ export class PlessoBrachiale extends AnatomyModel {
     super({ tilt: -0.35 });
     this.addStand({ radius: 0.33, z: 0, rod: [-0.27, 0.02, 0.41, -0.02] });
     this.flat.children[0].scale.z = 0.17;
-    this.rod = this.inner.children.at(-1);
     this.segs = new Map();
     this.cut = null; // { id, t }
     this.ready = this.#build();
-  }
-
-  // Primo piano: il punto (cx, cy) del modello viene portato al centro della
-  // pagina e ingrandito; ciò che scende sotto la pagina scompare.
-  focus(cx, cy, scale, at = 0.42) {
-    this.inner.position.set(-cx * scale, at - cy * scale, 0);
-    this.inner.scale.setScalar(scale);
-    this.rod.visible = false;
-    this.flat.visible = false;
   }
 
   // Le etichette del motore hanno un contorno, quindi due materiali: qui si
@@ -250,10 +240,6 @@ export class PlessoBrachiale extends AnatomyModel {
 
   reset() {
     super.reset();
-    this.inner.position.set(0, 0, 0);
-    this.inner.scale.setScalar(1);
-    this.rod.visible = true;
-    this.flat.visible = true;
     this.setCut(null);
   }
 
@@ -391,6 +377,7 @@ export class PlessoBrachiale extends AnatomyModel {
   #segment(def) {
     const part = this.parts.get(def.id);
     const seg = { ...def, name: part.name, part, pieces: [], tailMat: part.mat.clone() };
+    seg.tailMat.clippingPlanes = this.clipPlanes; // clone() li copierebbe per valore
     const offs = [];
     let n = 0;
     for (const m of part.meshes) {
@@ -496,7 +483,7 @@ export class PlessoBrachiale extends AnatomyModel {
     if (!this.cutMark) {
       this.cutMark = new THREE.Mesh(
         new THREE.SphereGeometry(1, 18, 12),
-        new THREE.MeshStandardMaterial({ color: 0xb3261e, emissive: 0xb3261e, emissiveIntensity: 0.6 })
+        new THREE.MeshStandardMaterial({ color: 0xb3261e, emissive: 0xb3261e, emissiveIntensity: 0.6, clippingPlanes: this.clipPlanes })
       );
       this.cutMark.visible = false;
       this.inner.add(this.cutMark);

@@ -3,18 +3,21 @@
 // Il modello è un primo piano dell'ottavo nervo toracico di destra, fatto di
 // mesh anatomiche reali (vedi src/models/nervi-spinali.js).
 import { selector } from '../modes.js';
-import { NerviSpinali, FLOOR } from '../models/nervi-spinali.js';
+import { NerviSpinali, FLOOR, atMm } from '../models/nervi-spinali.js';
 
 const LEFT = ['rootPL', 'rootAL', 'ganglionL', 'nerveL'];
 const GREY_MATTER = ['antHorn', 'postHorn', 'greyMid', 'iml'];
 const ROOTS = ['radP', 'rootP', 'ganglion', 'radA', 'rootA', 'nerve', 'anterior'];
 const CHAIN = ['trunk', 'sgang', 'sgangCtx'];
 
-// Primo piano: all'ingresso nella pagina il modello viene ingrandito attorno a
-// un asse verticale (mm Z-Anatomy: x, y); la quota z poggia sulla pagina.
-const closeUp = (center, scale, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return { ...api, enter() { api.enter(); ctx.model.focus(center, scale); } };
+// Primi piani (vedi «Primi piani» in docs/AUTHORING.md): il modello è ingrandito
+// attorno a un asse verticale (mm Z-Anatomy: x, y) e la quota z del taglio inferiore
+// (vedi FLOOR) poggia sulla pagina.
+const onPage = (x, y, z, scale) => ({ at: atMm(x, y, z), scale, height: 0.004, stand: false });
+const FOCUS = {
+  cord: onPage(-7, 69, FLOOR.cord, 2.5),
+  foramen: onPage(-13, 68, FLOOR.block, 2.1),
+  axial: onPage(-33, 74, FLOOR.axial, 1.3),
 };
 
 const spreads = [
@@ -38,8 +41,8 @@ const spreads = [
     },
     caption: 'Ottavo nervo toracico (T8) di destra, veduta antero-laterale. Un tratto di midollo, isolato dalla colonna, con le due radici di ciascun lato.',
     instruction: 'SCEGLI UNA RADICE E SEGUILA DAL MIDOLLO AL NERVO · TRASCINA PER RUOTARE',
-    view: { yaw: -0.75 },
-    mode: closeUp([-10, 69, FLOOR.cord], 3.0, selector({
+    view: { yaw: -0.75, focus: FOCUS.cord },
+    mode: selector({
       base: ['cord', ...GREY_MATTER, ...ROOTS, 'posterior', ...LEFT],
       idle: 'Radice posteriore in azzurro, radice anteriore in rosso, nervo in giallo.',
       pick: { radP: 0, rootP: 0, ganglion: 0, radA: 1, rootA: 1, nerve: 2, anterior: 2 },
@@ -77,7 +80,7 @@ const spreads = [
           info: 'A ogni neuromero una coppia di nervi, destro e sinistro: 31 paia in tutto.',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Origine apparente e origine reale',
@@ -101,8 +104,8 @@ const spreads = [
     },
     caption: 'Midollo in trasparenza con la sostanza grigia; le fibre corrono dentro radici e nervo.',
     instruction: 'SCEGLI UN TIPO DI NEURONE E SEGUI IL SUO ASSONE',
-    view: { yaw: -0.55 },
-    mode: closeUp([-10, 69, FLOOR.cord], 3.0, selector({
+    view: { yaw: -0.55, focus: FOCUS.cord },
+    mode: selector({
       base: ['cord', ...GREY_MATTER, 'sulcusP', 'sulcusA', ...ROOTS],
       looks: {
         cord: { opacity: 0.28 }, rootP: { opacity: 0.4 }, rootA: { opacity: 0.4 }, radP: { opacity: 0.5 }, radA: { opacity: 0.5 },
@@ -145,7 +148,7 @@ const spreads = [
           ],
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Fuori dal canale: i rami collaterali',
@@ -168,8 +171,8 @@ const spreads = [
     },
     caption: 'Il nervo T8 esce tra le vertebre T8 e T9; sul fianco dei corpi vertebrali scende la catena del simpatico.',
     instruction: 'SCEGLI UN COLLATERALE · TRASCINA PER GUARDARE DENTRO IL FORO',
-    view: { yaw: -1.2 },
-    mode: closeUp([-13, 68, FLOOR.block], 2.7, selector({
+    view: { yaw: -1.2, focus: FOCUS.foramen },
+    mode: selector({
       base: ['gT8', 'bT9', 'bDisc', 'cord', ...GREY_MATTER, 'dura', 'rootP', 'rootA', 'ganglion', 'nerve', 'anterior', 'posterior', 'meningeal', 'white', 'grey', ...CHAIN],
       looks: {
         cord: { opacity: 0.6 },
@@ -205,7 +208,7 @@ const spreads = [
           info: 'Fibre postgangliari, amieliniche: dal ganglio rientrano nel nervo, verso il territorio da innervare.',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Ramo posteriore e ramo anteriore',
@@ -227,8 +230,8 @@ const spreads = [
     },
     caption: 'La vertebra T9 vista dall’alto e da dietro, con il nervo T8 che le passa sopra. Nel torace il ramo anteriore decorre sotto la costa come nervo intercostale.',
     instruction: 'SCEGLI UN RAMO · TRASCINA IL MODELLO PER RUOTARLO',
-    view: { yaw: 2.8 },
-    mode: closeUp([-30, 70, FLOOR.axial], 1.5, selector({
+    view: { yaw: 2.8, focus: FOCUS.axial },
+    mode: selector({
       base: ['cT9', 'cDisc', 'rib8', 'rib9', 'cord', ...GREY_MATTER, 'rootP', 'rootA', 'ganglion', 'nerve', 'anterior', 'anteriorD', 'posterior', 'postMed', 'postLat', 'white', 'grey', ...CHAIN, 'transv', 'erector'],
       looks: { rib8: { litOpacity: 0.55 } },
       idle: 'Dal foro intervertebrale: un ramo va indietro, verso il dorso, l’altro in avanti.',
@@ -256,7 +259,7 @@ const spreads = [
           info: 'Radici, ganglio, tronco del nervo, collaterali e i due rami terminali.',
         },
       ],
-    })),
+    }),
   },
 ];
 

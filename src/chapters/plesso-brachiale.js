@@ -17,6 +17,15 @@ const CORE = [...TRUNKS, ...DIVS_A, ...DIVS_P, ...CORDS];
 const PLEXUS = [...ROOTS, ...CORE, ...NERVES];
 const SCALENES = ['scalA', 'scalM'];
 
+// Primi piani (vedi «Primi piani» in docs/AUTHORING.md): il punto `at` del modello
+// va sopra il centro della pagina, alla quota `height`.
+const FOCUS = {
+  roots: { at: [-0.11, 0.57, 0], scale: 1.9, height: 0.37, stand: false },
+  plexus: { at: [-0.04, 0.5, 0], scale: 1.5, height: 0.37, stand: false },
+  clavicle: { at: [-0.03, 0.46, 0.03], scale: 1.15, height: 0.38, stand: false },
+  arm: { at: [-0.02, 0.39, 0], scale: 1.15, height: 0.34, stand: false },
+};
+
 const spreads = [
   {
     title: 'Cinque radici, da C5 a T1',
@@ -36,7 +45,7 @@ const spreads = [
     },
     caption: 'Plesso brachiale destro, veduta anteriore: ogni radice esce dal proprio foro intervertebrale. Clavicola in trasparenza.',
     instruction: 'SCEGLI UNA CONFORMAZIONE · TRASCINA IL MODELLO PER RUOTARLO',
-    view: { yaw: -0.35 },
+    view: { yaw: -0.35, focus: FOCUS.roots },
     mode: originMode,
   },
   {
@@ -52,7 +61,7 @@ const spreads = [
     },
     caption: 'Le fibre di ogni radice si distribuiscono a più tronchi secondari attraverso le anastomosi.',
     instruction: 'SCEGLI UNA RADICE E SEGUI LE SUE FIBRE',
-    view: { yaw: -0.3 },
+    view: { yaw: -0.3, focus: FOCUS.plexus },
     mode: fibresMode,
   },
   {
@@ -78,7 +87,7 @@ const spreads = [
     },
     caption: 'I rapporti del plesso con clavicola, prima costa, scaleni, arteria e piccolo pettorale.',
     instruction: 'ACCENDI E SPEGNI LE STRUTTURE · I PUNTI DI COMPRESSIONE SI EVIDENZIANO',
-    view: { yaw: -0.3 },
+    view: { yaw: -0.3, focus: FOCUS.clavicle },
     mode: relationsMode,
   },
   {
@@ -94,7 +103,7 @@ const spreads = [
     },
     caption: 'Ogni nervo terminale si può risalire fino alle radici che gli forniscono le fibre.',
     instruction: 'SCEGLI UN NERVO: SI ILLUMINA A RITROSO FINO ALLE RADICI',
-    view: { yaw: -0.2 },
+    view: { yaw: -0.2, focus: FOCUS.arm },
     mode: terminalsMode,
   },
   {
@@ -110,7 +119,7 @@ const spreads = [
     },
     caption: 'Le fibre interrotte si spengono; i nervi che ricevono da più vie restano accesi in parte.',
     instruction: 'CLICCA UN PUNTO DEL PLESSO PER TAGLIARLO',
-    view: { yaw: -0.2 },
+    view: { yaw: -0.2, focus: FOCUS.arm },
     mode: lesionMode,
   },
 ];
@@ -149,7 +158,6 @@ async function originMode({ model, controls }) {
       current = 'classic';
       peek = null;
       apply();
-      model.focus(-0.13, 0.58, 1.9);
       model.lookFn = (part) => {
         const v = VARIANTS[peek ?? current].find((r) => r[0] === part.id);
         return v ? { color: LEVEL_COLORS[v[1]], glow: 0.12 } : {};
@@ -189,7 +197,6 @@ async function fibresMode({ model, controls }) {
       select(null);
       model.show([...SPINE, 'rib1', 'clavicleG', ...PLEXUS]);
       model.setLabels(rootLabels());
-      model.focus(-0.04, 0.5, 1.5);
       model.lookFn = (part) => {
         const seg = model.segs.get(part.id);
         if (!seg || !sel) return {};
@@ -241,7 +248,6 @@ async function relationsMode({ model, controls }) {
     enter() {
       items.forEach((it, i) => (it.on = i === 0));
       apply();
-      model.focus(-0.03, 0.47, 1.25, 0.5);
     },
   };
 }
@@ -280,7 +286,6 @@ async function terminalsMode({ model, controls }) {
     enter() {
       select(null);
       model.show([...SPINE, 'rib1', 'clavicleG', 'scapula', 'humerus', ...PLEXUS]);
-      model.focus(-0.03, 0.4, 1.25, 0.45);
       model.lookFn = (part) => {
         const seg = model.segs.get(part.id);
         if (!seg || !sel) return {};
@@ -360,7 +365,6 @@ async function lesionMode({ model, controls }) {
       cut(null);
       model.show([...SPINE, 'rib1', 'clavicleG', 'scapula', 'humerus', ...PLEXUS]);
       model.setLabels(Object.fromEntries(TERMINALS.map((t) => [t, model.segs.get(t).short])));
-      model.focus(-0.03, 0.4, 1.25, 0.45);
       model.lookFn = (part) => {
         const seg = model.segs.get(part.id);
         if (!seg) return {};

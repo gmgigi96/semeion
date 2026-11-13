@@ -115,7 +115,7 @@ const O = [-15, 0, 1167];
 const mm = (x, y, z) => V(-(x - O[0]) * S, (z - O[2]) * S, -(y - O[1]) * S);
 const tube = (pts, r, opts) =>
   taperTube(pts.map((p) => mm(...p)), Array.isArray(r) ? r.map((v) => v * S) : r * S, { radial: 10, seg: pts.length * 3, caps: false, ...opts });
-const FLOOR = 0.026; // piano di taglio sotto la cupola del diaframma
+const FLOOR = 0.026; // quota a cui il file di mesh taglia il diaframma, sotto la cupola
 
 // Linee d'asse dei nervi ricostruiti, in mm Z-Anatomy.
 const P = {
@@ -228,33 +228,14 @@ export class PlessoCervicale extends AnatomyModel {
   constructor() {
     super({ tilt: -0.6 });
     this.addStand({ radius: 0.2, z: 0, rod: [-0.022, 0.02, 0.07, -0.05] });
-    this.rod = this.inner.children.at(-1);
     this.ready = this.#build();
-  }
-
-  // Primo piano: il modello si ingrandisce, scende sotto la pagina e si
-  // inclina verso chi legge. `reset` lo riporta a posto.
-  focus(drop, back, lean, scale, side = 0) {
-    this.inner.position.set(-side, -drop, -back);
-    this.inner.scale.setScalar(scale);
-    this.inner.rotation.x = lean;
-    this.rod.visible = false;
-    this.flat.visible = false;
-  }
-
-  reset() {
-    super.reset();
-    this.inner.position.set(0, 0, 0);
-    this.inner.scale.setScalar(1);
-    this.inner.rotation.x = 0;
-    this.rod.visible = true;
-    this.flat.visible = true;
   }
 
   async #build() {
     await this.loadMeshes('plesso-cervicale.glb', REAL);
     for (const [id, d] of Object.entries(INFLATE)) this.#inflate(id, d * S);
-    for (const part of this.parts.values()) this.#clampFloor(part);
+    // il file di mesh taglia il diaframma a triangoli interi: l'orlo va pareggiato
+    for (const id of ['diaR', 'diaL']) this.#clampFloor(this.parts.get(id));
     // copie trasparenti dei muscoli che coprono il plesso
     this.#ghostOf('scm', 'scmG', 0.42);
     this.#ghostOf('scalA', 'scalAG', 0.4);
@@ -276,21 +257,14 @@ export class PlessoCervicale extends AnatomyModel {
     }
   }
 
-  // Taglio netto in basso: i vertici sotto il piano vengono portati sul piano.
+  // Orlo netto: i vertici sotto il piano vengono portati sul piano.
   #clampFloor(part) {
     for (const m of part.meshes) {
       const p = m.geometry.attributes.position;
       const y0 = FLOOR - m.position.y;
-      let touched = false;
-      for (let i = 0; i < p.count; i++)
-        if (p.getY(i) < y0) {
-          p.setY(i, y0);
-          touched = true;
-        }
-      if (touched) {
-        p.needsUpdate = true;
-        m.geometry.computeVertexNormals();
-      }
+      for (let i = 0; i < p.count; i++) if (p.getY(i) < y0) p.setY(i, y0);
+      p.needsUpdate = true;
+      m.geometry.computeVertexNormals();
     }
   }
 
