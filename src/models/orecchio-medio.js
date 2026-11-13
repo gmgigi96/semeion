@@ -74,11 +74,19 @@ const mm = (list) => list.map((r) => r * S);
 
 const BONE = 0xe9dfc8;
 
-// Inquadrature: il punto `at` (mm) va sopra la base all'altezza `y`, ingrandito `k`.
+// Il modello intero: `HOME` (mm) sta sopra il centro della base, alla quota
+// HOME_Y, con il modello ingrandito HOME_K (spostamento fisso di `inner`).
+const HOME = [-28, -11, 1565];
+const HOME_Y = 0.3;
+const HOME_K = 1.01;
+// Primi piani del motore (vedi AnatomyModel.zoomTo): la tuba, la cassa del timpano.
+// `wide` non ingrandisce: serve a ritagliare al volume della pagina ciò che del
+// modello intero ne uscirebbe (rinofaringe, palato, labirinto).
+const at = (x, y, z) => P(x, y, z).toArray();
 export const FOCUS = {
-  wide: { at: [-28, -11, 1565], y: 0.26, k: 0.88, rod: 0.34 },
-  tube: { at: [-32, -9, 1575], y: 0.33, k: 1.3, rod: 0.324 },
-  ear: { at: [-40, 0, 1576.5], y: 0.24, k: 2.1, rod: 0.242 },
+  wide: { at: at(...HOME), scale: 1, height: 0.27 },
+  tube: { at: at(-31, -9, 1574), scale: 1.3, height: 0.3 },
+  ear: { at: at(-44.5, 3.5, 1580), scale: 2.2, height: 0.3 },
 };
 
 // Superficie ottenuta trascinando un profilo chiuso lungo una curva. `profile(u)`
@@ -172,16 +180,11 @@ const lateralLamina = (u) => {
 export class MiddleEarModel extends AnatomyModel {
   constructor() {
     super({ tilt: -0.45 });
-    this.addStand({ radius: 0.22, z: 0 });
-    // l'asta non segue l'ingrandimento: sta fuori da `inner`
-    this.rod = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.007, 0.007, 1, 12),
-      new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: 1, roughness: 0.25 })
-    );
-    this.rod.castShadow = true;
-    this.mirror.add(this.rod);
-    this.focusNow = { pos: V(0, 0, 0), k: 1, rod: FOCUS.wide.rod };
-    this.focusTarget = { pos: V(0, 0, 0), k: 1, rod: FOCUS.wide.rod };
+    // spostamento fisso: il modello intero sopra il centro della base
+    this.inner.scale.setScalar(HOME_K);
+    this.inner.position.copy(P(...HOME)).multiplyScalar(-HOME_K).add(V(0, HOME_Y, 0));
+    // niente asta: tutte le pagine usano un primo piano del motore, che la nasconde
+    this.addStand({ radius: 0.25, z: 0 });
     this.ear = { sound: 0, tt: 0, st: 0, press: 0, open: 0 };
     this.earTarget = { ...this.ear };
     this.clock = 0;
@@ -210,7 +213,6 @@ export class MiddleEarModel extends AnatomyModel {
     this.#earMuscles();
     this.#rig();
     this.#waves();
-    this.setFocus('wide', true);
   }
 
   #tube() {
@@ -353,25 +355,12 @@ export class MiddleEarModel extends AnatomyModel {
         ring(V(0, 0, 0), D(-0.22, 0.94, 0.26), D(-0.45, -0.34, 0.83), 3.4, 3.0, 0.16),
         new THREE.MeshBasicMaterial({ color: 0x2f6fe0, transparent: true, opacity: 0, depthWrite: false })
       );
+      m.material.clippingPlanes = this.clipPlanes;
       m.visible = false;
       this.inner.add(m);
       return { m, phase: i / 3 };
     });
     this.waveAxis = { c, out };
-  }
-
-  // name: una delle inquadrature di FOCUS
-  setFocus(name, now = false) {
-    const f = FOCUS[name];
-    const t = this.focusTarget;
-    t.k = f.k;
-    t.rod = f.rod;
-    t.pos.copy(P(...f.at)).multiplyScalar(-f.k).add(V(0, f.y, 0));
-    if (now) {
-      this.focusNow.pos.copy(t.pos);
-      this.focusNow.k = t.k;
-      this.focusNow.rod = t.rod;
-    }
   }
 
   // sound: ampiezza della vibrazione (0 silenzio, 1 suono intenso); tt, st:
@@ -384,7 +373,6 @@ export class MiddleEarModel extends AnatomyModel {
   reset() {
     super.reset();
     this.setEar();
-    this.setFocus('wide');
   }
 
   #pose() {
@@ -442,14 +430,6 @@ export class MiddleEarModel extends AnatomyModel {
     const step = Math.min(realDt, 0.5);
     const k = 1 - Math.exp(-step * 5);
     this.clock += step;
-    const f = this.focusNow, t = this.focusTarget;
-    f.pos.lerp(t.pos, k);
-    f.k += (t.k - f.k) * k;
-    f.rod += (t.rod - f.rod) * k;
-    this.inner.position.copy(f.pos);
-    this.inner.scale.setScalar(f.k);
-    this.rod.scale.y = Math.max(0.01, f.rod - 0.02);
-    this.rod.position.set(0, 0.02 + (f.rod - 0.02) / 2, 0);
     for (const key of Object.keys(this.ear)) {
       this.ear[key] += (this.earTarget[key] - this.ear[key]) * k;
       if (Math.abs(this.earTarget[key] - this.ear[key]) < 1e-4) this.ear[key] = this.earTarget[key];
