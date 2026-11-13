@@ -115,13 +115,33 @@ const RK = [[0.8191, -0.509, -0.2645], [0.4559, 0.8575, -0.2384], [0.3482, 0.074
 const ENLARGE = 2.5;
 const LIFT = 30; // mm: i labirinti ingranditi stanno sollevati sopra le rocche
 
-// Inquadrature. `at` (mm) va nel punto `to` della pagina, ingrandito `k`;
+// Pose del modello. `at` (mm) va nel punto `to` della pagina, ingrandito `k`;
 // `rot` = [inclinazione verso chi legge, rotazione attorno alla verticale].
+// Restano del modello perché `inner` oscilla con il labirinto (vedi update) e
+// perché `macula` mette il labirinto rimpicciolito in un angolo, accanto allo
+// schema ingrandito: il primo piano del motore inquadra un solo punto al centro.
+const LAB_YAW = -1.05;
 export const FOCUS = {
-  lab: { at: [-39.5, 4.6, 1582.6], to: [0, 0.31, 0], k: 0.9, rot: [0, -1.05], rod: 0.16 },
-  macula: { at: [-39.5, 5, 1582.6], to: [0.27, 0.49, 0], k: 0.44, rot: [0, -1.05], rod: 0.1 },
-  cell: { at: [-39.5, 5, 1582.6], to: [0, 0.4, 0], k: 0.3, rot: [0, -1.05], rod: 0.2 },
-  skull: { at: [0, 6, 1590], to: [0, 0.34, 0.02], k: 0.2, rot: [1.0, 0], rod: 0.3 },
+  lab: { at: [-39.5, 4.6, 1582.6], to: [0, 0.31, 0], k: 0.9, rot: [0, LAB_YAW], rod: 0.16 },
+  macula: { at: [-39.5, 5, 1582.6], to: [0.27, 0.49, 0], k: 0.44, rot: [0, LAB_YAW], rod: 0.1 },
+  cell: { at: [-39.5, 5, 1582.6], to: [0, 0.4, 0], k: 0.3, rot: [0, LAB_YAW], rod: 0.2 },
+};
+// Base cranica dall'alto: veduta del motore (vedi AnatomyModel.zoomTo, qui con
+// scala < 1) sopra la posa `lab`, con il ritaglio al volume della pagina. Il
+// modello è inclinato verso chi legge con `tilt`; la pagina annulla la rotazione
+// della posa con view.yaw = SKULL_YAW. Poiché la posa è ruotata, `at` è dato
+// nelle coordinate ruotate; il suo scarto dal centro della base cranica porta
+// quest'ultima dietro l'asse della base, dove l'inclinazione la riporta sopra
+// la pagina. SKULL_FIT rimpicciolisce il tutto attorno a quel centro, perché i
+// due labirinti stiano dentro la pagina.
+const SKULL_FIT = 0.85;
+export const SKULL_YAW = -LAB_YAW;
+
+export const SKULL_VIEW = {
+  at: P(0, 6, 1590).applyAxisAngle(V(0, 1, 0), LAB_YAW).add(V(-1.194 / SKULL_FIT, 0, 0.685 / SKULL_FIT)).toArray(),
+  scale: (0.2 / FOCUS.lab.k) * SKULL_FIT,
+  height: 0.2,
+  tilt: 0.55,
 };
 
 const REST = { organ: 0, shift: 0, bend: 0, lin: 0, turn: 0 };
@@ -208,6 +228,7 @@ export class InnerEarModel extends AnatomyModel {
     );
     this.rod.castShadow = true;
     this.mirror.add(this.rod);
+    this.standRod = this.rod; // il motore la nasconde nelle sue vedute
     // gli ingrandimenti stanno accanto al modello, fuori dall'inquadratura e dal
     // ribaltamento: x verso la destra di chi guarda, y in alto, z verso chi guarda
     this.side = new THREE.Group();
