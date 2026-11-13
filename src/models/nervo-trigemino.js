@@ -180,7 +180,47 @@ export class TrigeminalModel extends AnatomyModel {
   constructor() {
     super({ tilt: -0.45 });
     this.addStand({ radius: 0.21, z: 0, rod: [0, 0.015, 0.055, 0.125] });
+    // punti toccati sul viso (vedi `pin`): spilli rossi, tolti a ogni cambio di pagina
+    this.pins = new THREE.Group();
+    this.inner.add(this.pins);
     this.ready = this.#build();
+  }
+
+  // Uno spillo sulla cute nel punto `at` (coordinate del modello), spinto un poco
+  // fuori lungo la normale; `big`: il punto appena toccato. Ritorna lo spillo, a cui
+  // si può cambiare colore (pin.material.color) e misura (pin.scale).
+  pin(at, normal, color = 0x9c3d1f, big = true) {
+    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.35, emissive: color, emissiveIntensity: 0.25 });
+    mat.clippingPlanes = this.clipPlanes;
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.013, 18, 12), mat);
+    m.position.copy(at).addScaledVector(normal, 0.006);
+    m.scale.setScalar(big ? 1 : 0.7);
+    m.castShadow = true;
+    this.pins.add(m);
+    return m;
+  }
+
+  // Cute senza nome: al passaggio la cute dei territori dice solo «cute del volto» e non
+  // accende i termini del testo, così il territorio di un punto non si legge prima di
+  // rispondere (vedi `faceMode` nel capitolo). reset() la riporta com'era.
+  maskSkin(on) {
+    for (const id of ['skin1', 'skin2', 'skin3', 'skinRest'])
+      for (const m of this.parts.get(id)?.meshes ?? []) {
+        const ui = m.userData.ui;
+        ui.own ??= { tip: ui.tip, hover: ui.hover };
+        ui.tip = on ? 'cute del volto' : ui.own.tip;
+        ui.hover = on ? null : ui.own.hover;
+      }
+  }
+
+  reset() {
+    super.reset();
+    this.maskSkin(false);
+    for (const m of [...this.pins.children]) {
+      this.pins.remove(m);
+      m.geometry.dispose();
+      m.material.dispose();
+    }
   }
 
   async #build() {
