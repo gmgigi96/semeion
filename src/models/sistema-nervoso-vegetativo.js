@@ -126,6 +126,8 @@ import { V, taperTube, ellipsoid } from '../geo.js';
 // alle coordinate del modello; stessa terna del manifesto.
 const S = 0.00092, OY = 20, OZ = 795;
 const mm = (a, b, h) => V(a * S, (h - OZ) * S, -(b - OY) * S);
+// Lo stesso punto come `at` di un primo piano (vedi AnatomyModel.zoomTo).
+export const at = (a, b, h) => mm(a, b, h).toArray();
 const tube = (pts, r, opts) =>
   taperTube(pts.map((p) => (p.isVector3 ? p : mm(...p))), Array.isArray(r) ? r.map((v) => v * S) : r * S, { radial: 8, seg: Math.max(12, pts.length * 6), ...opts });
 const ball = ([a, b, h], [ra, rb, rh]) => {
@@ -310,43 +312,7 @@ export class SistemaNervosoVegetativo extends AnatomyModel {
   constructor() {
     super({ tilt: -0.5 });
     this.addStand({ radius: 0.17, z: 0, rod: [0, 0.02, 0.045, -0.055] });
-    this.rod = this.inner.children.at(-1);
-    this.focusList = null;
     this.ready = this.#build();
-  }
-
-  // Primi piani. `list`: [{ when: [idParte…], c: [a, b, h] in mm, k, h }]; vale
-  // la prima voce che ha una delle parti `when` visibile (l'ultima, senza
-  // `when`, è la vista di base). Il punto `c` va sull'asse di rotazione,
-  // all'altezza `h`, e il modello è ingrandito di `k`.
-  setFocus(list) {
-    this.focusList = list;
-    this.focusNow = null;
-  }
-
-  reset() {
-    super.reset();
-    this.focusList = null;
-    this.inner.position.set(0, 0, 0);
-    this.inner.scale.setScalar(1);
-    this.rod.visible = true;
-  }
-
-  update(dt, camera, realDt = dt) {
-    if (this.focusList) {
-      const f = this.focusList.find((t) => !t.when || t.when.some((id) => this.visible.has(id)));
-      if (f) {
-        const k = f.k ?? 1;
-        const p = mm(...f.c).multiplyScalar(k);
-        const target = V(-p.x, (f.h ?? 0.4) - p.y, -p.z);
-        const e = this.focusNow ? 1 - Math.exp(-Math.min(realDt, 0.5) * 6) : 1;
-        this.inner.position.lerp(target, e);
-        this.inner.scale.setScalar(this.inner.scale.x + (k - this.inner.scale.x) * e);
-        this.focusNow = f;
-        this.rod.visible = false;
-      }
-    }
-    super.update(dt, camera, realDt);
   }
 
   async #build() {

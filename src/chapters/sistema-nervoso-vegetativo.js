@@ -1,6 +1,6 @@
 // Capitolo "Sistema nervoso vegetativo". Testi dagli appunti di neuroanatomia (SNV).
 import { selector } from '../modes.js';
-import { SistemaNervosoVegetativo } from '../models/sistema-nervoso-vegetativo.js';
+import { SistemaNervosoVegetativo, at } from '../models/sistema-nervoso-vegetativo.js';
 
 const STEM = ['midbrain', 'pons', 'medulla'];
 const SPINE = ['spineC', 'spineT', 'spineL', 'sacrum'];
@@ -21,14 +21,18 @@ const EYE = ['sclera', 'iris'];
 const ORTHO = ['iml', ...TRUNK, ...PARAVERT, ...RAMI, ...SPLANCHNIC, ...PREVERT, ...PELVIC, 'plexCarot'];
 const PARASYM = [...NUCLEI, ...HEAD_PRE, ...HEAD_GANGLIA, ...HEAD_POST, ...VAGUS, 'vagGastric', 'nucSacral', 'pelvSpl', 'plexHypoInf'];
 
-// Primi piani: all'ingresso nella pagina il modello riceve l'elenco delle viste
-// (vedi `setFocus` nel modello); le voci con `when` valgono quando l'opzione
-// scelta mostra quel segnaposto (`show: ['@nome']`).
-const closeUp = (list, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return { ...api, enter() { api.enter(); ctx.model.setFocus(list); } };
+// Primi piani del motore su un punto dato in mm della sorgente (verso destra,
+// verso dietro, quota), ingrandito di `scale` e portato a quota `height`. Ciò che
+// esce dal volume della pagina viene tagliato: centro e ingrandimento sono scelti
+// in modo che il tratto di cui si parla ci stia tutto.
+const closeUp = (c, scale, height = 0.36) => ({ at: at(...c), scale, height });
+const CLOSE = {
+  segment: closeUp([15, 58, 1322], 8.5, 0.4),
+  cerv: closeUp([8, 6, 1490], 3.6), thor: closeUp([0, 40, 1288], 1.75), lumb: closeUp([0, 5, 1060], 3.1, 0.38), pelv: closeUp([0, 45, 915], 4, 0.34),
+  abdomen: closeUp([0, 12, 1205], 2), near: closeUp([6, -8, 1138], 5.6), toPelvis: closeUp([0, 12, 958], 2.8),
+  eye: closeUp([17, -32, 1597], 6.4, 0.42), tear: closeUp([25, -24, 1588], 6.4, 0.42), saliva: closeUp([26, -16, 1552], 5.6, 0.42), parotid: closeUp([30, -4, 1570], 7, 0.42),
+  vagusNuclei: closeUp([5, 10, 1500], 2.6), vagus: closeUp([-4, 0, 1352], 1.85, 0.42), sacral: closeUp([4, 30, 955], 2.8),
 };
-const WHOLE = { c: [0, 20, 795], k: 1, h: 0 };
 
 const spreads = [
   {
@@ -75,8 +79,8 @@ const spreads = [
     },
     caption: 'Il sesto segmento toracico, da destra. Midollo, radici, nervi, vertebre e coste reali; gangli e rami comunicanti ricostruiti.',
     instruction: 'SEGUI UNA FIBRA PREGANGLIARE NEI SUOI TRE DESTINI',
-    view: { yaw: -0.75 },
-    mode: closeUp([{ c: [15, 58, 1322], k: 8.5, h: 0.4 }], selector({
+    view: { yaw: -0.75, focus: CLOSE.segment },
+    mode: selector({
       base: ['spineT', 'ribs', 'cord', 'hornAnt', 'iml', 'rootAnt', 'rootPost', 'drg', 'icn', 'trunkT', 'gThor', ...RAMI, 'splGreat'],
       looks: { spineT: { opacity: 0.22 }, ribs: { opacity: 0.3 }, cord: { opacity: 0.5 }, hornAnt: { opacity: 0.55 } },
       pick: { iml: 0, ramiWhite: 3, ramiGrey: 3, trunkT: 1, splGreat: 2, gThor: 0 },
@@ -110,7 +114,7 @@ const spreads = [
         },
         { label: 'Bianco e grigio', lit: RAMI, info: 'Giallo, ramo bianco: fibre pregangliari mieliniche, dal nervo al ganglio. Grigio, ramo grigio: fibre postgangliari amieliniche, dal ganglio al nervo.' },
       ],
-    })),
+    }),
   },
   {
     title: 'La catena limitante',
@@ -126,27 +130,21 @@ const spreads = [
     caption: 'La catena dei due lati, ricostruita su vertebre e coste reali: i gangli toracici stanno sulle teste delle coste.',
     instruction: 'SCEGLI UN TRATTO DELLA CATENA (ANCHE CLICCANDO UN GANGLIO)',
     view: { yaw: -0.55, zoom: 1.1 },
-    mode: closeUp([
-      { when: ['@cerv'], c: [8, 6, 1490], k: 3.6, h: 0.42 },
-      { when: ['@thor'], c: [0, 40, 1285], k: 2.1, h: 0.42 },
-      { when: ['@lumb'], c: [0, 5, 1060], k: 3.1, h: 0.42 },
-      { when: ['@pelv'], c: [0, 45, 915], k: 4, h: 0.42 },
-      WHOLE,
-    ], selector({
+    mode: selector({
       base: ['skull', ...SPINE, 'ribs', 'hip', ...TRUNK, ...PARAVERT, 'carotid', 'subclavian'],
       looks: { carotid: { opacity: 0.55 }, subclavian: { opacity: 0.55 } },
       pick: { gSCG: 0, gMCG: 0, gStell: 0, trunkC: 0, gThor: 1, trunkT: 1, gLumb: 2, trunkL: 2, gSacr: 3, gImpar: 3, trunkS: 3 },
       idle: 'Rosso: i gangli paravertebrali. Arancio: i tronchi intermedi che li uniscono.',
       options: [
-        { label: 'Cervicale', show: ['@cerv', 'ansa', 'plexCarot'], lit: ['trunkC', 'gSCG', 'gMCG', 'gStell', 'ansa', 'plexCarot'], labels: { gSCG: 'superiore', gMCG: 'medio', gStell: 'stellato' },
+        { label: 'Cervicale', focus: CLOSE.cerv, show: ['ansa', 'plexCarot'], lit: ['trunkC', 'gSCG', 'gMCG', 'gStell', 'ansa', 'plexCarot'], labels: { gSCG: 'superiore', gMCG: 'medio', gStell: 'stellato' },
           info: 'Tre gangli. L’ansa succlavia del Vieussens unisce l’inferiore al medio aggirando anteriormente l’arteria succlavia; dal superiore nasce il plesso pericarotideo interno.' },
-        { label: 'Toracica', show: ['@thor', ...RAMI], lit: ['trunkT', 'gThor', 'gStell', ...RAMI],
+        { label: 'Toracica', focus: CLOSE.thor, show: RAMI, lit: ['trunkT', 'gThor', 'gStell', ...RAMI],
           info: 'Dall’apertura superiore del torace al diaframma. Con il ramo grigio le fibre entrano nei nervi intercostali; altri rami vanno ai visceri toracici e all’avventizia dell’aorta.' },
-        { label: 'Lombare', show: ['@lumb', ...RAMI, 'aortaAbd', 'iliac'], lit: ['trunkL', 'gLumb'], info: 'La catena addominale comprende 4-5 gangli: nella colonna lombare si spostano anteriormente al corpo vertebrale.' },
-        { label: 'Pelvica', show: ['@pelv'], lit: ['trunkS', 'gSacr', 'gImpar'], labels: { gImpar: 'ganglio coccigeo' },
+        { label: 'Lombare', focus: CLOSE.lumb, show: [...RAMI, 'aortaAbd', 'iliac'], lit: ['trunkL', 'gLumb'], info: 'La catena addominale comprende 4-5 gangli: nella colonna lombare si spostano anteriormente al corpo vertebrale.' },
+        { label: 'Pelvica', focus: CLOSE.pelv, lit: ['trunkS', 'gSacr', 'gImpar'], labels: { gImpar: 'ganglio coccigeo' },
           info: 'Quattro gangli sacrali e uno coccigeo: le due catene convergono sui lati della faccia anteriore del sacro e terminano sul coccige.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Splancnici e gangli prevertebrali',
@@ -163,12 +161,8 @@ const spreads = [
     },
     caption: 'Colonna, aorta con i suoi rami, reni e surreni reali; nervi splancnici, gangli e plessi preaortici ricostruiti su di essi.',
     instruction: 'SCEGLI UN NERVO SPLANCNICO O SEGUI I PLESSI FINO ALLA PELVI',
-    view: { yaw: -0.5 },
-    mode: closeUp([
-      { when: ['@near'], c: [6, -8, 1138], k: 5.6, h: 0.42 },
-      { when: ['@pelv'], c: [0, 12, 955], k: 2.8, h: 0.42 },
-      { c: [0, 12, 1200], k: 2.45, h: 0.42 },
-    ], selector({
+    view: { yaw: -0.5, focus: CLOSE.abdomen },
+    mode: selector({
       base: [...SPINE.slice(1), 'ribs', 'hip', ...AORTA, 'kidney', 'adrenal', 'trunkT', 'trunkL', 'trunkS', 'gThor', 'gLumb', 'gSacr', 'gImpar', ...SPLANCHNIC, ...PREVERT, 'plexCeliac', ...PELVIC],
       looks: { kidney: { opacity: 0.75 }, bladder: { opacity: 0.5 }, rectum: { opacity: 0.45 } },
       pick: { splGreat: 0, gCeliac: 0, splLesser: 1, gSMG: 1, splLeast: 2, gAortRen: 2, splLumb: 3, gIMG: 3, adrenal: 5, plexHypoSup: 6, nHypo: 6, plexInterm: 6 },
@@ -178,14 +172,14 @@ const spreads = [
         { label: 'Piccolo', lit: ['splLesser', 'gSMG', 'gThor'], labels: { gSMG: 'mesenterico superiore' }, info: 'Fibre pregangliari da T10 a T11: attraversa il ganglio celiaco e si porta al mesenterico superiore, per la porzione sottomesocolica dell’addome.' },
         { label: 'Minimo', lit: ['splLeast', 'gAortRen', 'gThor'], labels: { gAortRen: 'reno-aortici' }, info: 'Fibre pregangliari da T12: giunge al ganglio reno-aortico, per l’apparato iuxtaglomerulare del rene e il surrene.' },
         { label: 'Lombari', lit: ['splLumb', 'gIMG', 'gLumb'], labels: { gIMG: 'mesenterico inferiore' }, info: 'Da L1 e L2 raggiungono il ganglio mesenterico inferiore, per innervare la cavità pelvica.' },
-        { label: 'Ansa di Wrisberg', show: ['@near', 'vagCeliac', 'vagR', 'oesophagus'], lit: ['gCeliac', 'splGreat', 'vagCeliac', 'vagR'],
+        { label: 'Ansa di Wrisberg', focus: CLOSE.near, show: ['vagCeliac', 'vagR', 'oesophagus'], lit: ['gCeliac', 'splGreat', 'vagCeliac', 'vagR'],
           info: 'Ganglio celiaco destro: all’angolo supero-laterale giunge il grande splancnico, al supero-mediale il ramo celiaco del vago. È l’ansa memorabile di Wrisberg.' },
-        { label: 'Surrene', show: ['@near'], lit: ['gAortRen', 'adrenal', 'splLeast'], links: ['toAdrenal'],
+        { label: 'Surrene', focus: CLOSE.near, lit: ['gAortRen', 'adrenal', 'splLeast'], links: ['toAdrenal'],
           info: 'Dal ganglio reno-aortico fibre pregangliari raggiungono la midollare del surrene, le cui cellule secernono adrenalina e noradrenalina; fibre postgangliari vanno alla corticale.' },
-        { label: 'Verso la pelvi', show: ['@pelv', 'plexHypoInf', 'bladder', 'rectum'], lit: [...PELVIC, 'plexHypoInf', 'gIMG'],
+        { label: 'Verso la pelvi', focus: CLOSE.toPelvis, show: ['plexHypoInf', 'bladder', 'rectum'], lit: [...PELVIC, 'plexHypoInf', 'gIMG'],
           info: 'Plesso intermesenterico, poi ipogastrico superiore, che davanti al sacro si continua nei due nervi ipogastrici: questi formano il plesso ipogastrico inferiore o pelvico.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Parasimpatico: cranico e sacrale',
@@ -204,15 +198,7 @@ const spreads = [
     caption: 'Nuclei, nervi III e IX, occhio, ghiandole e visceri reali; gangli e tratti intermedi ricostruiti. Nella testa, solo il lato destro.',
     instruction: 'SCEGLI UN NERVO E SEGUILO DAL NUCLEO ALL’ORGANO',
     view: { yaw: -0.85 },
-    mode: closeUp([
-      { when: ['@eye'], c: [17, -32, 1597], k: 6.4, h: 0.42 },
-      { when: ['@tear'], c: [25, -24, 1588], k: 6.4, h: 0.42 },
-      { when: ['@saliva'], c: [26, -16, 1552], k: 5.6, h: 0.42 },
-      { when: ['@parotid'], c: [30, -4, 1570], k: 7, h: 0.42 },
-      { when: ['@vagus'], c: [-4, 0, 1352], k: 1.85, h: 0.42 },
-      { when: ['@sacral'], c: [4, 30, 945], k: 3.3, h: 0.42 },
-      WHOLE,
-    ], selector({
+    mode: selector({
       base: ['skull', ...STEM, ...NUCLEI, 'cord', ...SPINE, 'hip', ...EYE, ...GLANDS, 'optic', ...HEAD_PRE, ...HEAD_GANGLIA, ...HEAD_POST, 'lingual', ...VAGUS, 'vagGastric', 'heart', 'trachea', 'stomach',
         'nucSacral', 'pelvSpl', 'plexHypoInf', 'bladder', 'rectum'],
       looks: {
@@ -223,7 +209,7 @@ const spreads = [
       idle: 'Blu: fibre pregangliari. Blu scuro: gangli. Azzurro: fibre postgangliari.',
       options: [
         {
-          label: 'III · pupilla', show: ['@eye'], stepTime: 2.6,
+          label: 'III · pupilla', focus: CLOSE.eye, stepTime: 2.6,
           steps: [
             { ids: ['nucEW', 'nIII'], text: 'Dal nucleo di Edinger e Westphal le fibre decorrono nell’oculomotore fino all’orbita' },
             { ids: ['radBreve', 'gCiliare'], text: 'Dal ramo inferiore nasce la radice breve, che sinapta nel ganglio ciliare' },
@@ -232,7 +218,7 @@ const spreads = [
           ],
         },
         {
-          label: 'VII · lacrime', show: ['@tear'], stepTime: 2.6,
+          label: 'VII · lacrime', focus: CLOSE.tear, stepTime: 2.6,
           steps: [
             { ids: ['nucLac', 'intermedio', 'gGenic'], text: 'Dal nucleo lacrimatorio, con il nervo intermedio di Wrisberg, fino al ganglio genicolato' },
             { ids: ['petroso'], text: 'Nervo grande petroso superficiale; con il petroso profondo forma il nervo vidiano' },
@@ -241,7 +227,7 @@ const spreads = [
           ],
         },
         {
-          label: 'VII · saliva', show: ['@saliva'], stepTime: 2.6,
+          label: 'VII · saliva', focus: CLOSE.saliva, stepTime: 2.6,
           steps: [
             { ids: ['nucSalSup', 'intermedio', 'gGenic'], text: 'Dal nucleo salivatorio superiore, con il nervo intermedio, nel faciale' },
             { ids: ['corda'], text: 'Nel terzo tratto si stacca la corda del timpano, che attraversa la cassa del timpano' },
@@ -250,7 +236,7 @@ const spreads = [
           ],
         },
         {
-          label: 'IX · parotide', show: ['@parotid'], stepTime: 2.6,
+          label: 'IX · parotide', focus: CLOSE.parotid, stepTime: 2.6,
           steps: [
             { ids: ['nucSalInf', 'nIX'], text: 'Dal nucleo salivatorio inferiore, con il glossofaringeo, attraverso il forame lacero posteriore' },
             { ids: ['timpanico'], text: 'Nervo timpanico, plesso timpanico, poi nervo piccolo petroso superficiale' },
@@ -259,16 +245,16 @@ const spreads = [
           ],
         },
         {
-          label: 'X · visceri', show: ['@vagus', 'oesophagus', 'gThor', 'trunkT', 'trunkC', 'gMCG', 'gStell', 'lungs'], stepTime: 2.6,
+          label: 'X · visceri', focus: CLOSE.vagus, show: ['oesophagus', 'gThor', 'trunkT', 'trunkC', 'gMCG', 'gStell', 'lungs'], stepTime: 2.6,
           steps: [
-            { ids: ['nucAmb', 'nucDors', 'vagR', 'vagL'], text: 'Nucleo ambiguo per i visceri toracici, nucleo dorsale motore per quelli addominali' },
+            { ids: ['nucAmb', 'nucDors', 'vagR', 'vagL'], focus: CLOSE.vagusNuclei, text: 'Nucleo ambiguo per i visceri toracici, nucleo dorsale motore per quelli addominali' },
             { ids: ['vagCard', 'symCard', 'cardPlex', 'heart'], text: 'Plesso cardiaco: i nervi cardiaci del vago si fondono con i nervi cardiaci ortosimpatici' },
             { ids: ['plexPulm', 'symPulm', 'trachea'], text: 'Plesso polmonare: il parasimpatico dà broncocostrizione e ipersecrezione, l’ortosimpatico broncodilatazione' },
             { ids: ['vagGastric', 'stomach'], text: 'Plessi gastrici anteriore e posteriore: i gangli sono intramurali' },
           ],
         },
         {
-          label: 'Sacrale', show: ['@sacral', 'nHypo'], stepTime: 2.6,
+          label: 'Sacrale', focus: CLOSE.sacral, show: ['nHypo'], stepTime: 2.6,
           steps: [
             { ids: ['nucSacral', 'cord'], links: ['sacralPre'], text: 'Neuroni nella colonna intermedio-laterale, solo da S2 a S4' },
             { ids: ['pelvSpl'], text: 'Fibre pregangliari dirette all’organo: il ganglio periferico sta subito prima' },
@@ -277,7 +263,7 @@ const spreads = [
           ],
         },
       ],
-    })),
+    }),
   },
 ];
 
