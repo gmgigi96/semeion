@@ -45,4 +45,5 @@ pubblica su GitHub Pages (`.github/workflows/deploy.yml`).
   **Z-Anatomy**, the libre 3D atlas of anatomy, licenza
   [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), a sua volta derivato da
   BodyParts3D; quei file `public/meshes/*.glb` sono distribuiti con la stessa licenza.
-- Font: Noto Serif (SIL Open Font License).
+- Font: EB Garamond, © The EB Garamond Project Authors, SIL Open Font License 1.1
+  (`public/fonts/OFL-EBGaramond.txt`).

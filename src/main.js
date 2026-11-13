@@ -4,7 +4,7 @@ import { Text } from 'troika-three-text';
 import { Book, PAGE_H } from './book.js';
 import { buildSpread, buildToc } from './spread.js';
 import { CHAPTERS, PARTS } from './chapters/index.js';
-import { FONT } from './ui.js';
+import { FONT, FONT_SCALE } from './ui.js';
 import { createBar } from './bar.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -16,7 +16,7 @@ renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.toneMappingExposure = 0.95;
 document.body.appendChild(renderer.domElement);
 
-const DESK = 0xcfc8ba; // il legno in lontananza
+const DESK = 0x66777b; // grigio ardesia, come il sottomano
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(DESK);
 scene.fog = new THREE.Fog(DESK, 9, 30);
@@ -78,7 +78,7 @@ for (const chapter of CHAPTERS) {
 // etichetta che segue il puntatore sul modello
 const tip = new Text();
 Object.assign(tip, {
-  font: FONT.semi, fontSize: 0.026, color: 0x2a2520, anchorX: 'center', anchorY: 'bottom',
+  font: FONT.semi, fontSize: 0.026 * FONT_SCALE, color: 0x2a2520, anchorX: 'center', anchorY: 'bottom',
   outlineWidth: '10%', outlineColor: 0xfbf6ea,
 });
 tip.material.depthTest = false;

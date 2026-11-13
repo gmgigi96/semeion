@@ -12,14 +12,20 @@ const OVER = 0.035; // di quanto la copertina sporge dalle pagine
 const COVER_Y = -BLOCK - 0.001 - BOARD / 2; // quota del centro della copertina, a libro aperto
 const FLOOR = COVER_Y - BOARD / 2 - 0.001; // piano del sottomano
 const SPINE = -2 * COVER_Y + BOARD; // larghezza del dorso = spessore del libro chiuso
-const YELLOW = 0xd6a62a;
+const LEATHER = 0x4e2f20; // pelle marrone scuro
 
 function paperTexture(mirror) {
   const c = document.createElement('canvas');
   c.width = 512;
   c.height = 700;
   const g = c.getContext('2d');
-  g.fillStyle = '#f7f1e3';
+  g.fillStyle = '#f1e9d7';
+  g.fillRect(0, 0, c.width, c.height);
+  // carta vecchia: i margini appena più scuri del centro
+  const age = g.createRadialGradient(c.width / 2, c.height / 2, c.width * 0.35, c.width / 2, c.height / 2, c.height * 0.75);
+  age.addColorStop(0, 'rgba(150,120,70,0)');
+  age.addColorStop(1, 'rgba(150,120,70,0.13)');
+  g.fillStyle = age;
   g.fillRect(0, 0, c.width, c.height);
   for (let i = 0; i < 9000; i++) {
     g.fillStyle = `rgba(${90 + Math.random() * 60},${70 + Math.random() * 50},40,${Math.random() * 0.035})`;
@@ -88,7 +94,7 @@ function ribbon() {
   for (let i = 0; i <= N; i++) pts.push(curve.getPoint(i / N));
   const foot = pts.findIndex((p) => p.z >= z0);
   const material = new THREE.MeshPhysicalMaterial({
-    color: 0x1d2a6e, roughness: 0.55, sheen: 1, sheenColor: 0x5a6fd0, sheenRoughness: 0.4, side: THREE.DoubleSide,
+    color: 0x7a1f1a, roughness: 0.55, sheen: 1, sheenColor: 0xc0604a, sheenRoughness: 0.4, side: THREE.DoubleSide,
   });
   const strap = (from, to) => {
     const pos = [], idx = [];
@@ -134,7 +140,7 @@ export class Book {
     mat.castShadow = mat.receiveShadow = true;
     this.desk.add(wood, mat);
 
-    const board = new THREE.MeshStandardMaterial({ color: YELLOW, roughness: 0.72 });
+    const board = new THREE.MeshStandardMaterial({ color: LEATHER, roughness: 0.72 });
     const coverGeo = new THREE.BoxGeometry(PAGE_W + OVER, BOARD, PAGE_H + OVER * 2);
     const edge = new THREE.MeshStandardMaterial({ color: 0xe6dcc6, roughness: 1 });
     const cut = new THREE.MeshStandardMaterial({ map: edgeTexture(), roughness: 1 });

@@ -4,12 +4,16 @@
 import * as THREE from 'three';
 import { Text, getSelectionRects } from 'troika-three-text';
 
+// EB Garamond (SIL Open Font License, vedi public/fonts/OFL-EBGaramond.txt).
 export const FONT = {
-  regular: `${import.meta.env.BASE_URL}fonts/NotoSerif-Regular.ttf`,
-  italic: `${import.meta.env.BASE_URL}fonts/NotoSerif-Italic.ttf`,
-  semi: `${import.meta.env.BASE_URL}fonts/NotoSerif-Medium.ttf`,
-  bold: `${import.meta.env.BASE_URL}fonts/NotoSerif-Bold.ttf`,
+  regular: `${import.meta.env.BASE_URL}fonts/EBGaramond-Regular.ttf`,
+  italic: `${import.meta.env.BASE_URL}fonts/EBGaramond-Italic.ttf`,
+  semi: `${import.meta.env.BASE_URL}fonts/EBGaramond-SemiBold.ttf`,
+  bold: `${import.meta.env.BASE_URL}fonts/EBGaramond-Bold.ttf`,
 };
+// Il Garamond ha l'occhio piccolo: a parità di corpo sembra più minuto del Noto
+// per cui erano pensate le misure. Tutti i testi passano da qui.
+export const FONT_SCALE = 1.06;
 export const INK = 0x2a2520;
 export const INK_SOFT = 0x7a7166;
 export const ACCENT = 0x9c3d1f;
@@ -32,6 +36,7 @@ export function makeText(str, opts = {}) {
     anchorY: 'top',
     ...opts,
   });
+  t.fontSize *= FONT_SCALE;
   t.position.z = Z_TEXT;
   t.renderOrder = 4;
   t.frustumCulled = false; // altrimenti un testo mai misurato non verrebbe mai disegnato

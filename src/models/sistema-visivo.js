@@ -64,7 +64,7 @@
 import * as THREE from 'three';
 import { Text } from 'troika-three-text';
 import { AnatomyModel } from '../model.js';
-import { FONT } from '../ui.js';
+import { FONT, FONT_SCALE } from '../ui.js';
 import { V, taperTube, ellipsoid, mirror } from '../geo.js';
 
 const S = 0.0045; // unità per millimetro (come meshes/sistema-visivo.json)
@@ -396,7 +396,7 @@ export class VisualSystem extends AnatomyModel {
       const label = new Text();
       Object.assign(label, {
         text: eye === 'R' ? 'occhio destro' : 'occhio sinistro',
-        font: FONT.italic, fontSize: 0.024, color: 0x2a2520, anchorX: 'center', anchorY: 'bottom',
+        font: FONT.italic, fontSize: 0.024 * FONT_SCALE, color: 0x2a2520, anchorX: 'center', anchorY: 'bottom',
         outlineWidth: '9%', outlineColor: 0xfbf6ea,
       });
       label.position.set(0, R * 1.14, 0);

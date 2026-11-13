@@ -3,7 +3,7 @@
 // orientate (vie) con un impulso che le percorre.
 import * as THREE from 'three';
 import { Text } from 'troika-three-text';
-import { FONT } from './ui.js';
+import { FONT, FONT_SCALE } from './ui.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { taperTube } from './geo.js';
 
@@ -265,7 +265,8 @@ export class AnatomyModel {
       if (!t) {
         t = new Text();
         Object.assign(t, {
-          font: FONT.italic, fontSize: 0.026, color: 0x2a2520, anchorX: 'center', anchorY: 'bottom',
+          // corsivo rosso, come le etichette a mano delle tavole
+          font: FONT.italic, fontSize: 0.028 * FONT_SCALE, color: 0x9c2f22, anchorX: 'center', anchorY: 'bottom',
           outlineWidth: '9%', outlineColor: 0xfbf6ea,
         });
         t.frustumCulled = false;
