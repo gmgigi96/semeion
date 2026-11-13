@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Text } from 'troika-three-text';
 import { Book, PAGE_H } from './book.js';
-import { buildSpread, buildToc } from './spread.js';
+import { buildSpread, buildToc, buildSummary } from './spread.js';
 import { CHAPTERS, PARTS } from './chapters/index.js';
-import { FONT } from './ui.js';
+import { FONT, FONT_SCALE } from './ui.js';
 import { createBar } from './bar.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -16,7 +16,7 @@ renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.toneMappingExposure = 0.95;
 document.body.appendChild(renderer.domElement);
 
-const DESK = 0xcfc8ba; // il legno in lontananza
+const DESK = 0x66777b; // grigio ardesia, come il sottomano
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(DESK);
 scene.fog = new THREE.Fog(DESK, 9, 30);
@@ -69,16 +69,20 @@ function modelFor(chapter) {
 }
 
 // Sequenza piatta delle doppie pagine: indice, poi i capitoli uno dopo l'altro.
+// Ogni capitolo finisce con il riepilogo «Da scoprire», dopo le sue doppie pagine:
+// così i numeri nell'indirizzo delle pagine esistenti non cambiano.
 const PAGES = [{ toc: true }];
 for (const chapter of CHAPTERS) {
   chapter.first = PAGES.length;
   chapter.spreads.forEach((def, index) => PAGES.push({ chapter, def, index }));
+  chapter.summary = PAGES.length;
+  PAGES.push({ chapter, summary: true, index: chapter.spreads.length });
 }
 
 // etichetta che segue il puntatore sul modello
 const tip = new Text();
 Object.assign(tip, {
-  font: FONT.semi, fontSize: 0.026, color: 0x2a2520, anchorX: 'center', anchorY: 'bottom',
+  font: FONT.semi, fontSize: 0.026 * FONT_SCALE, color: 0x2a2520, anchorX: 'center', anchorY: 'bottom',
   outlineWidth: '10%', outlineColor: 0xfbf6ea,
 });
 tip.material.depthTest = false;
@@ -136,8 +140,8 @@ function refreshBar() {
       hasNext: index < PAGES.length - 1,
       num: n,
       title: page.toc ? 'Indice' : page.chapter.title,
-      sub: page.toc ? `${CHAPTERS.length} capitoli` : `${page.index + 1} di ${page.chapter.spreads.length}`,
-      hasModel: !!page.chapter,
+      sub: page.toc ? `${CHAPTERS.length} capitoli` : page.summary ? 'da scoprire' : `${page.index + 1} di ${page.chapter.spreads.length}`,
+      hasModel: !!page.def,
       focus: leanTarget > 0.3,
     });
 }
@@ -231,7 +235,8 @@ function pageFromKey(key) {
   const [id, n] = (key ?? '').split('/');
   const chapter = CHAPTERS.find((c) => c.id === id);
   if (!chapter) return 0;
-  return chapter.first + Math.min(chapter.spreads.length, Math.max(1, parseInt(n) || 1)) - 1;
+  // il riepilogo è la pagina dopo l'ultima (n = numero di doppie pagine + 1)
+  return chapter.first + Math.min(chapter.spreads.length + 1, Math.max(1, parseInt(n) || 1)) - 1;
 }
 function bookmark() {
   try {
@@ -263,8 +268,10 @@ function build(i) {
     nav: (d) => goTo(index + d),
     toc: () => goTo(0),
     openChapter: (c) => goTo(CHAPTERS[c].first),
+    go: (k) => goTo(k),
   };
   if (page.toc) return buildToc(CHAPTERS, PARTS, ctx);
+  if (page.summary) return buildSummary(page.chapter, { ...ctx, number: CHAPTERS.indexOf(page.chapter) + 1 });
   return buildSpread(page.def, {
     ...ctx,
     model: modelFor(page.chapter),
@@ -284,7 +291,7 @@ async function goTo(i, animate = true) {
   const dir = i > index ? 1 : -1;
   const page = PAGES[i];
   const next = await build(i);
-  const model = modelFor(page.chapter);
+  const model = page.def ? modelFor(page.chapter) : null; // indice e riepiloghi sono senza modello
   await model?.ready; // i modelli con mesh reali si caricano in modo asincrono
   if (current && animate) {
     growTarget = 0;
@@ -426,6 +433,12 @@ el.addEventListener('pointermove', (e) => {
     if (touches.size === 2) setLean(pinch.lean + Math.log2(spread() / pinch.d) * 1.3);
     return;
   }
+  // un oggetto afferrato (un'etichetta) segue il puntatore
+  if (drag?.grab) {
+    aim(e);
+    drag.grab.move(ray.ray);
+    return;
+  }
   if (drag) {
     const dx = e.clientX - drag.x;
     const dy = e.clientY - drag.y0;
@@ -457,6 +470,14 @@ el.addEventListener('pointerdown', (e) => {
     }
   }
   const p = pick(e);
+  if (p?.ui.grab) {
+    clearHover();
+    drag = { grab: p.ui.grab };
+    p.ui.grab.start(ray.ray);
+    el.style.cursor = 'grabbing';
+    el.setPointerCapture(e.pointerId);
+    return;
+  }
   setHover(p);
   const onModel = p?.ui.drag || (!p && (overModel() || (isOpen && active && leanTarget > 0.3)));
   drag = { x: e.clientX, y0: e.clientY, moved: 0, rotate: !!onModel, target: p };
@@ -477,12 +498,19 @@ el.addEventListener('pointerup', (e) => {
   const d = drag;
   drag = null;
   if (!d) return;
+  // al rilascio l'oggetto si nasconde un istante: conta ciò che c'è sotto
+  if (d.grab) {
+    d.grab.end(() => pick(e));
+    setHover(pick(e));
+    return;
+  }
   if (d.moved <= 5 && d.target) d.target.ui.click?.(d.target.hit);
   // al tocco non c'è passaggio: il termine resta acceso finché non si tocca altrove
   if (e.pointerType === 'mouse' || !d.target?.ui.sticky) setHover(e.pointerType === 'mouse' ? pick(e) : null);
 });
 el.addEventListener('pointercancel', (e) => {
   release(e);
+  drag?.grab?.end(() => null);
   drag = null;
 });
 el.addEventListener('pointerleave', () => !drag && clearHover());

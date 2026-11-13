@@ -4,9 +4,9 @@ import * as THREE from 'three';
 
 const FONTS = `${import.meta.env.BASE_URL}fonts/`;
 const faces = [
-  new FontFace('Libro', `url(${FONTS}NotoSerif-Bold.ttf)`, { weight: '700' }),
-  new FontFace('Libro', `url(${FONTS}NotoSerif-Italic.ttf)`, { style: 'italic' }),
-  new FontFace('Libro', `url(${FONTS}NotoSerif-Medium.ttf)`, { weight: '500' }),
+  new FontFace('Libro', `url(${FONTS}EBGaramond-Bold.ttf)`, { weight: '700' }),
+  new FontFace('Libro', `url(${FONTS}EBGaramond-Italic.ttf)`, { style: 'italic' }),
+  new FontFace('Libro', `url(${FONTS}EBGaramond-SemiBold.ttf)`, { weight: '500' }),
 ];
 const fontsReady = Promise.all(faces.map((f) => f.load().then((l) => document.fonts.add(l)))).catch(() => {});
 
@@ -74,10 +74,10 @@ export function deskTexture() {
   return t;
 }
 
-// Sottomano verde salvia, appena feltrato. Le uv della forma sono in unità di scena.
+// Sottomano grigio ardesia, appena feltrato. Le uv della forma sono in unità di scena.
 export function matTexture() {
   const t = texture(512, 512, (g, w, h) => {
-    g.fillStyle = '#93aaa2';
+    g.fillStyle = '#6b7b7f';
     g.fillRect(0, 0, w, h);
     grain(g, w, h, 26000, 0.05);
   });
@@ -102,24 +102,24 @@ export function edgeTexture() {
 }
 
 function leather(g, w, h) {
-  g.fillStyle = '#d6a62a';
+  g.fillStyle = '#4e2f20';
   g.fillRect(0, 0, w, h);
-  grain(g, w, h, (w * h) / 22, 0.045);
+  grain(g, w, h, (w * h) / 22, 0.06);
   const v = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
-  v.addColorStop(0, 'rgba(120,70,0,0)');
-  v.addColorStop(1, 'rgba(120,70,0,0.16)');
+  v.addColorStop(0, 'rgba(10,4,0,0)');
+  v.addColorStop(1, 'rgba(10,4,0,0.32)');
   g.fillStyle = v;
   g.fillRect(0, 0, w, h);
 }
 
-// Scritta o filetto impressi: un'ombra sopra, una luce sotto.
-function debossed(g, draw, ink = '#8a4a26') {
+// Scritta o filetto impressi in oro sulla pelle: un'ombra sopra, una luce sotto.
+function debossed(g, draw, ink = '#c9a663') {
   g.save();
   g.translate(0, 2.5);
-  g.fillStyle = g.strokeStyle = 'rgba(255,236,170,0.55)';
+  g.fillStyle = g.strokeStyle = 'rgba(255,226,170,0.14)';
   draw();
   g.translate(0, -4);
-  g.fillStyle = g.strokeStyle = 'rgba(90,50,0,0.35)';
+  g.fillStyle = g.strokeStyle = 'rgba(0,0,0,0.45)';
   draw();
   g.restore();
   g.fillStyle = g.strokeStyle = ink;
@@ -139,7 +139,7 @@ function frame(g, x, y, w, h, lw, corner = 0) {
           g.fill();
         }
     },
-    'rgba(150,96,14,0.75)'
+    'rgba(201,166,99,0.75)'
   );
 }
 

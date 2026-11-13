@@ -86,9 +86,9 @@ const spreads = [
       ant: ['anterior'], cing: ['cingulate'], phg: ['parahippocampal', 'entorhinal'],
     },
     quiz: {
-      question: 'Quale fascio collega i corpi mammillari ai nuclei anteriori del talamo?',
-      options: ['La stria terminale', 'Il fascio mammillotalamico', 'La via perforante', 'Il fornice precommessurale'],
-      correct: 1,
+      question: 'Indica il fascio che collega i corpi mammillari ai nuclei anteriori del talamo.',
+      point: ['mtt'],
+      why: Object.fromEntries(FORNIX.map((id) => [id, "Il fornice porta all'ippocampo, non al talamo."])),
       explain: 'È la tappa che porta il circuito dal diencefalo verso il lobo limbico.',
     },
     caption: 'Le sette tappe del circuito, accese in ordine.',

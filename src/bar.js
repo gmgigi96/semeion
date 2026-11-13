@@ -4,9 +4,9 @@
 const FONTS = `${import.meta.env.BASE_URL}fonts/`;
 
 const CSS = `
-@font-face { font-family: 'Libro'; src: url(${FONTS}NotoSerif-Medium.ttf); font-weight: 500; }
-@font-face { font-family: 'Libro'; src: url(${FONTS}NotoSerif-Bold.ttf); font-weight: 700; }
-@font-face { font-family: 'Libro'; src: url(${FONTS}NotoSerif-Italic.ttf); font-style: italic; }
+@font-face { font-family: 'Libro'; src: url(${FONTS}EBGaramond-SemiBold.ttf); font-weight: 500; }
+@font-face { font-family: 'Libro'; src: url(${FONTS}EBGaramond-Bold.ttf); font-weight: 700; }
+@font-face { font-family: 'Libro'; src: url(${FONTS}EBGaramond-Italic.ttf); font-style: italic; }
 .vignette {
   position: fixed; inset: 0; pointer-events: none;
   background: radial-gradient(ellipse at 50% 42%, rgba(30,24,14,0) 48%, rgba(30,24,14,0.55) 100%);

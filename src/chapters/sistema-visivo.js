@@ -125,10 +125,18 @@ const spreads = [
       eye: ['opticNerveR'], ch: ['chiasm'], nas: NASAL, tr: ['tractR'], mey: ['radInfR'], sup: ['radSupR'], v1: ['v1supR', 'v1infR'],
     },
     quiz: {
-      question: "Un adenoma dell'ipofisi comprime il chiasma sulla linea mediana. Quale difetto del campo visivo provoca?",
+      predict: true,
+      question: "Un adenoma dell'ipofisi comprime il chiasma sulla linea mediana. Quale difetto del campo visivo prevedi?",
       options: ['Cecità di un occhio', 'Emianopsia bitemporale', 'Emianopsia omonima', 'Quadrantopsia omonima superiore'],
       correct: 1,
+      why: [
+        'Un occhio intero si perde solo prima del chiasma, sul nervo ottico.',
+        null,
+        "L'emianopsia omonima viene dal tratto ottico in poi, dove ogni lato porta la metà opposta del campo.",
+        "La quadrantopsia omonima superiore viene dall'ansa di Meyer, nella radiazione ottica.",
+      ],
       explain: 'Si interrompono le fibre crociate delle emiretine nasali, che guardano le due metà temporali del campo.',
+      reveal: 1,
     },
     caption: 'Gli anelli rossi segnano i punti di lesione, tutti a destra. Nei dischi, in scuro, ciò che ciascun occhio non vede più.',
     instruction: 'SCEGLI DOVE TAGLIARE LA VIA · I DISCHI MOSTRANO I DUE CAMPI VISIVI',
@@ -239,6 +247,7 @@ async function lesionMode({ model, controls }) {
     info.text = l?.info ?? 'Nessuna lesione: i due occhi vedono tutto il campo. Arancio: metà sinistra; blu: metà destra.';
   };
   return {
+    choose: (i) => select(i),
     enter() {
       model.show(LESION_BASE);
       select(null);

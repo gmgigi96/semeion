@@ -47,6 +47,7 @@ function gazeSelector({ base, options, looks = {}, pick = {}, idle = '' }) {
       info.text = o?.info ?? idle;
     };
     return {
+      choose: (i) => select(i),
       enter() {
         select(null);
         model.onClick = (id) => id in pick && select(pick[id]);
@@ -76,9 +77,12 @@ const spreads = [
       rs: lr('rs'), rm: lr('rm'), ri: lr('ri'), oi: lr('oi'), lev: lr('lev'), os: lr('os'), rl: lr('rl'),
     },
     quiz: {
-      question: 'Quale muscolo è innervato dal nervo trocleare?',
-      options: ['Il retto laterale', "L'obliquo superiore", "L'obliquo inferiore", "L'elevatore della palpebra"],
-      correct: 1,
+      question: 'Indica il muscolo innervato dal nervo trocleare.',
+      point: lr('os'),
+      why: {
+        ...Object.fromEntries(lr('rl').map((id) => [id, "Il retto laterale spetta all'abducente."])),
+        ...Object.fromEntries(lr('rs', 'rm', 'ri', 'oi', 'lev').map((id) => [id, "Questo spetta all'oculomotore."])),
+      },
       explain: "Il retto laterale spetta all'abducente, tutti gli altri all'oculomotore.",
     },
     caption: 'Orbite, muscoli e tronco encefalico reali (BodyParts3D); nuclei e tratto intracranico dei nervi ricostruiti.',
@@ -224,10 +228,18 @@ const spreads = [
       os: lr('os'), rl: lr('rl'),
     },
     quiz: {
-      question: "Dove contraggono sinapsi le fibre parasimpatiche dell'oculomotore dirette allo sfintere della pupilla?",
-      options: ['Nel nucleo di Edinger-Westphal', 'Nel ganglio ciliare', 'Nel seno cavernoso', "Nell'anello tendineo dello Zinn"],
+      predict: true,
+      question: "Si interrompe l'abducente di destra. Dove devierà l'occhio destro?",
+      options: ['In fuori e in basso', 'Verso il naso', "Un po' più in alto", 'Non devia'],
       correct: 1,
-      explain: 'Vi arrivano con la radice breve, dal ramo inferiore; ne escono i nervi ciliari brevi.',
+      why: [
+        "In fuori e in basso va con la lesione dell'oculomotore.",
+        null,
+        "Più in alto ed extraruotato va con la lesione del trocleare.",
+        'Senza il retto laterale prevale il retto mediale.',
+      ],
+      explain: "Manca il retto laterale: prevale il retto mediale e l'occhio devia verso il naso; diplopia orizzontale.",
+      reveal: 2,
     },
     caption: "Nervo e muscoli paralizzati si scuriscono; l'occhio destro prende la posizione imposta dai muscoli rimasti.",
     instruction: 'INTERROMPI UN NERVO DI DESTRA E CONFRONTA I DUE OCCHI',

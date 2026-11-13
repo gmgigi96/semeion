@@ -19,6 +19,45 @@ const EFF = ['eff1', 'eff2', 'eff3'];
 const GLASS = { rectus: { opacity: 0.2, litOpacity: 0.3 }, vasti: { opacity: 0.12, litOpacity: 0.2 }, quadTendon: { opacity: 0.3, litOpacity: 0.4 } };
 const SOFT = { rectus: { opacity: 0.5, litOpacity: 0.7 }, vasti: { opacity: 0.4, litOpacity: 0.6 } };
 
+// Corda della pagina sull'organo del Golgi: quanto si contrae il quadricipite. Oltre la
+// soglia la contrazione minaccia l'integrità del muscolo e scatta il riflesso miotatico
+// inverso (il primo piano passa al circuito nel midollo): il muscolo cede e la corda
+// sfugge di mano. L'esito resta finché non si torna a tirare (`low` ricorda il punto
+// più basso raggiunto dalla corda dopo il riflesso).
+const SOGLIA = 0.82;
+const IB_ROUTE = ['ib1', 'aff2', 'aff3', 'cIb'];
+const tendonCord = {
+  label: 'CONTRAZIONE DEL QUADRICIPITE',
+  ends: ['riposo', 'massima'],
+  spring: true,
+  marks: [{ at: SOGLIA, label: 'soglia' }],
+  format: (v) => (v < 0.04 ? '' : v < SOGLIA ? 'il tendine si stira' : 'contrazione eccessiva'),
+  react(v, prev) {
+    if (prev?.reflex) {
+      const low = Math.min(prev.low ?? v, v);
+      if (v < low + 0.04) return { ...prev, release: false, low };
+    }
+    if (v < 0.04) return { info: 'Muscolo a riposo: il tendine e l’organo del Golgi non sono stirati.' };
+    if (v < SOGLIA) {
+      return {
+        lit: [...QUAD, 'quadTendon', ...GTO],
+        activity: { rectus: 1 },
+        info: 'La contrazione stira il tendine e l’organo del Golgi, in serie; il muscolo non è a rischio.',
+      };
+    }
+    return {
+      reflex: true,
+      release: true,
+      focus: FOCUS.plate,
+      lit: [...QUAD, ...GTO, 'rfBranch', 'femoral', 'plexus', 'ganglion', 'rootPost', 'inIb', 'mnExt'],
+      links: [...IB_ROUTE, 'cIbMn'],
+      activity: { inIb: 1, mnExt: -1, rectus: -1 },
+      labels: { inIb: 'interneurone Ib', mnExt: 'α' },
+      info: 'Contrazione eccessiva: la fibra Ib eccita l’interneurone inibitorio, che inibisce il motoneurone alfa. Il muscolo cede.',
+    };
+  },
+};
+
 const spreads = [
   {
     title: 'Il fuso neuromuscolare',
@@ -84,15 +123,24 @@ const spreads = [
       inia: ['inIa'], hams: ['hams', 'mnFlex'],
     },
     quiz: {
-      question: 'Perché il riflesso patellare è definito monosinaptico?',
+      predict: true,
+      question: 'Il quadricipite si contrae. E i muscoli posteriori della coscia?',
       options: [
-        'Perché coinvolge un solo muscolo',
-        "Perché c'è un'unica sinapsi, tra neurone sensitivo gangliare e motoneurone alfa",
-        'Perché usa un solo segmento del midollo',
-        'Perché il fuso ha una sola fibra sensitiva',
+        'Si contraggono anche loro',
+        'Vengono rilasciati: i loro motoneuroni alfa sono inibiti',
+        'Non ricevono alcun segnale',
+        'Si contraggono subito dopo il quadricipite',
       ],
       correct: 1,
-      explain: "L'inibizione reciproca dell'antagonista richiede invece un interneurone inibitorio Ia.",
+      why: [
+        "Si opporrebbero all'estensione della gamba.",
+        null,
+        'Ricevono un segnale inibitorio, da un interneurone.',
+        "L'antagonista non si contrae: viene rilasciato.",
+      ],
+      explain:
+        "Un collaterale della fibra Ia eccita un interneurone inibitorio Ia, che inibisce i motoneuroni alfa dell'antagonista: è l'inibizione reciproca.",
+      reveal: 2,
     },
     caption: 'Arto inferiore destro, colonna e midollo reali; in alto la sezione lombare ingrandita con i neuroni del circuito. Radici e gangli L2-L4 sono ricostruiti.',
     instruction: 'AVVIA IL RIFLESSO, POI GUARDA IL CIRCUITO NEL MIDOLLO',
@@ -156,9 +204,10 @@ const spreads = [
       explain: 'Il gamma contrae i poli del fuso; la fibra Ia, stirata, potenzia poi il motoneurone alfa già eccitato dalla via discendente.',
     },
     caption: "L'organo tendineo, ricostruito e ingrandito, è alla giunzione tra il ventre del retto femorale e il tendine del quadricipite (mesh reali).",
-    instruction: 'GUARDA IL RECETTORE, POI SEGUI I DUE CIRCUITI',
+    instruction: 'TIRA LA CORDA: CONTRAI IL QUADRICIPITE FINO ALLA SOGLIA',
     view: { yaw: -0.3 },
     mode: selector({
+      cord: tendonCord,
       base: [...AXIAL, ...LEG, ...QUAD, ...KNEE, ...ROOTS, ...FEM, ...SPINDLE, ...GTO, ...PLATE, 'cst', 'mnExt', 'mnGamma', 'inIb'],
       looks: GLASS,
       idle: 'Il fuso è in parallelo con le fibre muscolari, l’organo tendineo in serie: il primo misura la lunghezza, il secondo la tensione.',
@@ -186,16 +235,6 @@ const spreads = [
             { ids: ['rootPostP', 'ganglionP'], links: ['cIb'], text: 'La contrazione diventa eccessiva: la fibra Ib entra con la radice dorsale.' },
             { ids: ['inIb'], links: ['cIb'], text: "Eccita l'interneurone inibitorio di tipo Ib: il riflesso è necessariamente disinaptico." },
             { ids: ['mnExt'], links: ['cIbMn'], text: "L'interneurone inibisce il motoneurone alfa dello stesso muscolo: la contrazione cede." },
-          ],
-        },
-        {
-          label: 'Dal tendine al midollo', stepTime: 2.4,
-          steps: [
-            { ids: [...QUAD, 'quadTendon', ...GTO], text: 'Il muscolo si contrae troppo: il tendine si stira.' },
-            { ids: ['rfBranch', 'femoral', 'plexus'], links: ['ib1', 'aff2'], text: 'Le fibre Ib risalgono con il nervo femorale.' },
-            { ids: ['ganglion', 'rootPost'], links: ['aff3'], text: 'Ganglio spinale e radice dorsale.' },
-            { ids: ['inIb', 'mnExt', 'postHorn'], links: ['cIb', 'cIbMn'], text: 'Interneurone inibitorio Ib, poi motoneurone alfa.' },
-            { ids: QUAD, activity: { rectus: -1 }, text: 'La contrazione del muscolo è inibita: stiramenti e strappi sono evitati.' },
           ],
         },
       ],
@@ -261,7 +300,7 @@ const spreads = [
       pain: ['sciatic', 'rootSac', 'inEx'], mnflex: ['mnFlex', 'hams'], mnext: ['mnExt', ...QUAD], part: ['partition'], extL: ['mnExtL', 'quadL'], flexL: ['mnFlexL', 'hamsL'],
     },
     quiz: {
-      question: 'Che cosa accade sul lato opposto a quello dello stimolo doloroso?',
+      question: "Il piede destro calpesta qualcosa che fa male. Che cosa fa l'arto sinistro?",
       options: [
         'Eccitazione dei flessori e inibizione degli estensori',
         'Eccitazione degli estensori e inibizione dei flessori',
@@ -269,6 +308,12 @@ const spreads = [
         'Nulla: il riflesso è monolaterale',
       ],
       correct: 1,
+      why: [
+        "Questo accade sul lato offeso.",
+        null,
+        'Gli estensori sono eccitati, non inibiti.',
+        'Il riflesso è bilaterale: passa al lato opposto.',
+      ],
       explain: "L'arto opposto si estende per reggere il peso, mentre quello offeso si flette e si allontana dallo stimolo.",
     },
     caption: 'I due arti e il midollo lombare. Per semplicità i motoneuroni di flessori ed estensori stanno sulla stessa sezione; nel vero occupano più segmenti lombo-sacrali.',

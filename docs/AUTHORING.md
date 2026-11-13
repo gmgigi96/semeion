@@ -136,7 +136,55 @@ a un'interazione che fa ragionare (una via da seguire, una lesione, un blocco).
 - 60-100 parole per pagina: è un libro da esplorare, non un riassunto degli appunti.
 - Non usare frecce o simboli fuori dal latino esteso (`→ ↑ ▲`): il font non li ha.
   Per le sequenze usare `›`.
-- Quiz: 4 opzioni, una corretta, `explain` di una frase.
+- Quiz: 4 opzioni, una corretta, `explain` di una frase. Con `why` si spiega anche perché
+  ciascuna opzione sbagliata non va (una frase breve, `null` per quella giusta): compare a
+  chi la sceglie, al posto del generico «riprova».
+- **Previsione** (`predict: true`): la domanda chiede che cosa succederà, prima di
+  guardarlo. Chi legge sceglie (una spunta, che può cambiare), il modello avvia l'opzione
+  `reveal` del comportamento della pagina destra, poi un'aletta «Perché?» si solleva e
+  scopre l'esito, il `why` della scelta e `explain`; la risposta giusta diventa verde.
+  Va bene per lesioni, riflessi, vie da seguire: domande con un esito che il modello
+  mostra. L'aletta occupa spazio: tenere il testo sotto le 90 parole, la domanda corta
+  e i `why` di una riga. Se la pagina non basta, la console lo segnala con
+  `[pagina] <capitolo>/<n>: la domanda esce dal fondo`.
+- **Indica sul modello** (`point: ['idParte', …]`, senza `options`): la risposta è una
+  struttura da toccare sul modello. Ogni tocco sbagliato dice che cosa si è indicato (il
+  nome della parte) e, se c'è, `why[idParte]`; dopo tre tentativi la risposta si accende.
+  Il clic arriva anche al comportamento della pagina destra, quindi un `pick` mostra
+  l'informazione della parte toccata. Le parti indicate devono essere solide (non `ghost`),
+  visibili nella pagina e abbastanza grandi da colpire: niente solchi o fili sottili.
+- **Etichette da trascinare** (`tags: [{ label, ids }]`, senza `options`): cartellini da
+  portare sulle strutture del modello. Al posto giusto il cartellino prende la spunta e un
+  cordino rosso lo lega al punto in cui è stato lasciato; altrove la pagina dice che cosa
+  c'è lì e di quale cartellino è il posto. 3-5 etichette, strutture grandi e ben separate.
+  `explain` compare quando sono tutte a posto.
+
+### Il riepilogo «Da scoprire»
+
+Il motore aggiunge in fondo a ogni capitolo una doppia pagina di riepilogo, senza modello,
+all'indirizzo `#<id>/<n+1>` (con `n` doppie pagine: gli indirizzi delle pagine non cambiano).
+Non si scrive nulla a mano: è costruita da `buildSummary` in `src/spread.js` con ciò che il
+capitolo ha già.
+
+- **Sinistra**: una voce per doppia pagina, con il titolo e la domanda. La casella prende la
+  spunta rossa quando la domanda è risolta: risposta giusta, previsione verificata sotto
+  l'aletta, struttura indicata (anche dopo i tre tentativi), tutte le etichette al loro posto.
+- **Destra**: per ogni figura i comandi della pagina del modello (pulsanti e corde), quelli
+  provati in rosso e sottolineati a penna, con il conto «2 di 5». I comandi di una pagina si
+  conoscono dopo averla aperta almeno una volta.
+- Ogni voce si tocca per tornare a quella pagina. Nell'indice, accanto a ogni capitolo
+  cominciato, c'è «2/5» (domande risolte) in rosso, o la spunta a capitolo finito; toccarlo
+  apre il riepilogo.
+- Lo stato sta in `localStorage` (`semeion:scoperte`), con ogni accesso in try/catch: senza
+  storage il libro ricorda le scoperte solo finché la pagina resta aperta.
+
+Nei comportamenti della pagina destra non serve nulla di speciale: `chipsInto` e `cordInto`
+annotano da sé i loro comandi e ogni volta che chi legge li usa; `selector` conta anche le
+opzioni scelte toccando il modello (`pick`) e quella avviata da una previsione. Un pulsante che
+rimette solo a posto (per esempio «Ricuci il plesso») si esclude con `explore: false` nella sua
+descrizione. Per una scoperta che non passa da un pulsante o da una corda, un comportamento su
+misura può usare `explore(controls)` di `src/modes.js`: `offer('etichetta')` mentre costruisce i
+controlli (la mette nell'elenco), `found('etichetta')` quando chi legge la scopre.
 
 ## Il file del capitolo
 
@@ -151,6 +199,10 @@ const spreads = [
     body: "Il {nervo frenico|phrenic} nasce da {C3, C4 e C5|roots} …",
     terms: { phrenic: ['phrenic'], roots: ['c3', 'c4', 'c5'] }, // chiave -> id di parti del modello
     quiz: { question: '…?', options: ['…', '…', '…', '…'], correct: 1, explain: '…' },
+    // oppure una previsione, verificata dall'opzione 2 della pagina destra:
+    // quiz: { predict: true, question: '…?', options: […], correct: 1, why: ['…', null, '…', '…'], explain: '…', reveal: 2 },
+    // oppure da indicare sul modello: quiz: { question: 'Indica …', point: ['idParte'], why: { altraParte: '…' }, explain: '…' },
+    // oppure etichette da trascinare: quiz: { question: 'Porta …', tags: [{ label: 'elice', ids: ['helix'] }, …], explain: '…' },
     caption: 'Didascalia della figura.',
     instruction: 'ISTRUZIONE DI UNA RIGA, IN MAIUSCOLO',
     view: { yaw: 0.3, zoom: 1.15 },      // facoltativo: vista propria di questa pagina
@@ -190,6 +242,51 @@ sceglierne uno accende parti, vie e indicatori.
     `labels` (`{ id: 'testo' }`, etichette sul modello).
   - **A passi**: `steps: [{ ids, links, activity, text }]` e `stepTime` in secondi; i passi
     si accendono uno dopo l'altro e il commento mostra `k/n · text`.
+- `cord`: una corda da tirare sotto i pulsanti, per una quantità continua (vedi sotto).
+
+### Corde e cursori: comandi continui
+
+Quando la pagina parla di una quantità che cresce o cala (una pressione, una forza, l'altezza
+di un suono), al posto di due o tre pulsanti «poco / tanto» si può dare a chi legge una
+**corda**: una corda rossa tesa tra due pioli, con un manico chiaro a forma d'osso da
+afferrare e far scorrere; toccando la corda in un punto il manico salta lì. Il modello
+risponde a ogni movimento. È geometria della pagina come i pulsanti, quindi funziona con
+il mouse, al tocco e in VR; trascinarla non fa ruotare il modello.
+
+```js
+mode: selector({
+  base: […], options: […],
+  cord: {
+    label: 'CONTRAZIONE DEL QUADRICIPITE',   // titoletto in maiuscoletto rosso
+    ends: ['riposo', 'massima'],             // le due estremità, accanto ai pioli
+    min: 0, max: 1, value: 0,                // intervallo e valore iniziale (rest: riposo, predefinito value)
+    spring: true,                            // lasciata, torna da sola a riposo
+    marks: [{ at: 0.82, label: 'soglia' }],  // tacche facoltative
+    format: (v) => '…',                      // lettura accanto al titoletto, facoltativa
+    react(v, prima) {                        // valore -> opzione statica, come quelle di `options`
+      if (v < 0.82) return { lit: ['rectus'], activity: { rectus: 1 }, info: '…' };
+      return { release: true, focus: FOCUS.plate, links: ['cIb', 'cIbMn'], info: '…' };
+    },
+  },
+}),
+```
+
+- `react` riceve il valore e il risultato precedente (`prima`, per ricordare uno stato, per
+  esempio un riflesso già scattato) e ritorna un'opzione statica (`lit`, `show`, `links`,
+  `info`, `activity`, `dead`, `scale`, `labels`, `focus`) che prende il posto di quella
+  scelta: i pulsanti si spengono. Il modello cambia solo quando cambia il risultato.
+  `release: true` strappa la corda di mano e la riporta a riposo (un muscolo che cede).
+- In `selector` scegliere un pulsante (anche con la `choose(i)` di una previsione) riporta la corda a riposo.
+- Esempi: `src/chapters/riflessi.js` (organo del Golgi, corda a molla con soglia),
+  `src/chapters/orecchio-medio.js` (pressione da -1 a 1 nel comportamento su misura
+  `earMode`), `src/chapters/sistema-uditivo.js` (altezza del suono e punto di massima
+  risonanza, con `setTone` nel modello).
+- Nei comportamenti su misura: `cordInto(controls, y, spec, onChange)` di `src/modes.js`
+  mette la corda a quota `y` e ritorna `{ height, value, held, set(v), release(), update() }`;
+  `update()` va chiamata a ogni fotogramma dalla `update` del comportamento, `set(v)` muove
+  il manico da codice senza chiamare `onChange`. La corda vera e propria è `cord()` in `src/ui.js`.
+- Spazio: la corda è alta circa 0,1 pagine. Con la corda tenere i pulsanti su una riga e
+  il commento sotto le due righe, altrimenti tocca la didascalia.
 
 ### Primi piani
 
@@ -225,9 +322,12 @@ async function mioModo({ model, controls, def }) {
     enter() { /* stato iniziale: model.show([...]), model.lookFn = (part) => ({ … }) */ },
     update() { /* a ogni fotogramma, facoltativo */ },
     onHoverSet(ids) { /* facoltativo: parti indicate dal testo */ },
+    choose(i) { /* facoltativo: attiva l'opzione i; serve al `reveal` di una previsione */ },
   };
 }
 ```
+
+Per una quantità continua usare `cordInto` (vedi «Corde e cursori»).
 
 `src/chapters/brachial.js` contiene esempi (taglio in un punto, percorso a ritroso).
 

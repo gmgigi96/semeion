@@ -42,6 +42,11 @@
 //    inferiore, radiazione acustica;
 //  - due sezioni schematiche ingrandite: un giro del canale cocleare e l'organo
 //    del Corti.
+//  - tonotopia (setTone): perle rosse lungo il dotto cocleare che si gonfiano e
+//    vibrano attorno al punto di massima risonanza. È un indicatore, non una
+//    struttura: posizione lineare lungo il dotto (giro basale toni alti, apice
+//    bassi, come gli appunti e la voce "Cochlea"), ampiezza e larghezza del picco
+//    STIMATE e solo didattiche.
 //
 // FONTI LETTE (voci di Wikipedia in inglese, lette via API; le anatomiche derivano
 // in parte dal Gray 1918 di pubblico dominio), https://en.wikipedia.org/wiki/… :
@@ -103,6 +108,12 @@ const PERI_V = 0x7fa8e0, PERI_T = 0x9a86d8, ENDO = 0x2fb4c8;
 // del canale (mm), angolo percorso (gradi)]. Giro basale misurato, poi tracciato
 // dentro la cupola della mesh.
 const LINE = [[-41.37,2.80,1578.77,1.00,0],[-40.76,1.68,1577.90,1.00,20],[-40.03,0.65,1577.42,1.00,39],[-39.34,-0.24,1577.22,1.00,59],[-38.72,-1.09,1577.28,1.00,78],[-38.23,-1.91,1577.56,1.00,98],[-37.80,-2.65,1578.14,1.00,118],[-37.51,-3.28,1578.96,1.00,137],[-37.35,-3.57,1580.02,1.00,157],[-37.41,-3.47,1581.16,1.00,177],[-37.63,-2.94,1582.16,1.00,196],[-38.02,-2.16,1582.77,1.00,216],[-38.63,-1.33,1582.91,1.00,235],[-39.25,-0.73,1582.59,1.00,255],[-39.74,-0.14,1582.16,0.95,275],[-40.22,0.03,1581.74,0.84,295],[-40.58,-0.17,1581.24,0.70,315],[-40.79,-0.55,1580.81,0.57,335],[-40.84,-0.85,1580.42,0.50,355],[-40.77,-1.03,1579.99,0.50,375],[-40.65,-1.31,1579.65,0.49,395],[-40.49,-1.68,1579.44,0.48,415],[-40.31,-2.09,1579.38,0.48,435],[-40.14,-2.48,1579.47,0.47,455],[-40.01,-2.82,1579.70,0.47,475],[-39.94,-3.08,1580.03,0.46,495],[-39.93,-3.21,1580.43,0.46,515],[-39.99,-3.23,1580.83,0.45,535],[-40.12,-3.12,1581.20,0.45,555],[-40.30,-2.92,1581.48,0.44,575],[-40.52,-2.65,1581.65,0.43,595],[-40.74,-2.35,1581.70,0.43,615],[-40.96,-2.06,1581.61,0.42,635],[-41.14,-1.82,1581.41,0.42,655],[-41.28,-1.65,1581.13,0.41,675],[-41.36,-1.58,1580.80,0.41,695],[-41.38,-1.62,1580.46,0.40,715],[-41.33,-1.75,1580.16,0.40,735],[-41.23,-1.96,1579.94,0.39,755],[-41.11,-2.21,1579.81,0.39,775],[-40.99,-2.48,1579.79,0.38,795],[-40.88,-2.73,1579.87,0.38,815],[-40.80,-2.93,1580.03,0.37,835],[-40.76,-3.07,1580.25,0.36,855],[-40.76,-3.14,1580.49,0.36,875],[-40.81,-3.13,1580.72,0.35,895],[-40.89,-3.05,1580.92,0.35,915],[-40.99,-2.93,1581.06,0.34,935],[-41.11,-2.78,1581.13,0.34,955],[-41.23,-2.62,1581.13,0.33,975]];
+// giro del dotto cocleare che contiene il punto u della linea d'asse (0 inizio del
+// giro basale, 1 apice): gli stessi confini (punti 18 e 36) delle parti ductBase/Mid/Apex
+export const ductTurnAt = (u) => {
+  const i = u * (LINE.length - 1);
+  return i < 18 ? 'ductBase' : i < 36 ? 'ductMid' : 'ductApex';
+};
 // asse della chiocciola (verso l'apice), centro del giro basale e della cupola
 const AX = V(0.869, -0.035, 0.493).normalize();
 const MOD = P(39.68, -0.94, 1579.85);
@@ -287,6 +298,20 @@ export class AuditoryModel extends AnatomyModel {
     for (const [id, name, color, i0, i1] of turns) {
       const pts = shifted(i0, i1, 0, 0.66);
       this.addPart(id, name, color, [tubeOf(pts, i0, 0.3, 110)]);
+    }
+    // tonotopia: perle lungo il dotto che si gonfiano e vibrano attorno al punto di
+    // massima risonanza (vedi setTone); u va da 0 (inizio del giro basale) a 1 (apice)
+    const curve = new THREE.CatmullRomCurve3(shifted(0, n, 0, 0.66));
+    const mat = new THREE.MeshStandardMaterial({ color: 0xd43d3d, emissive: 0xd43d3d, emissiveIntensity: 0.45, roughness: 0.4 });
+    mat.clippingPlanes = this.clipPlanes;
+    const bead = new THREE.SphereGeometry(1, 14, 10);
+    this.tone = { u: null, at: 0, on: 0, beads: [] };
+    for (let i = 0; i < 120; i++) {
+      const u = i / 119;
+      const m = new THREE.Mesh(bead, mat);
+      m.visible = false;
+      this.inner.add(m);
+      this.tone.beads.push({ m, u, p: curve.getPoint(u), r: r[Math.round(u * n)] * 0.3 });
     }
     // elicotrema: le due scale si continuano l'una nell'altra all'apice
     const tan = c[n].clone().sub(c[n - 1]).normalize();
@@ -510,8 +535,15 @@ export class AuditoryModel extends AnatomyModel {
     Object.assign(this.stateTarget, { ohc: osc ? 0 : scene.ohc ?? 0, osc: osc ? 1 : 0 });
   }
 
+  // Punto della membrana basilare che risuona di più: u da 0 (giro basale, toni alti)
+  // a 1 (apice, toni bassi); null lo spegne.
+  setTone(u) {
+    this.tone.u = u;
+  }
+
   reset() {
     super.reset();
+    this.setTone(null);
     this.setScene();
     this.setFocus('cochlea');
   }
@@ -543,6 +575,18 @@ export class AuditoryModel extends AnatomyModel {
         r.mesh.scale.y = s;
         r.mesh.position.y = r.rest.y + r.half * (1 - s);
       }
+    }
+    // tonotopia: il picco si gonfia attorno al punto scelto e vibra lungo l'asse
+    const tn = this.tone;
+    tn.on += ((tn.u == null ? 0 : 1) - tn.on) * k;
+    if (tn.u != null) tn.at = tn.on < 0.05 ? tn.u : tn.at + (tn.u - tn.at) * Math.min(1, k * 2);
+    const duct = this.visible.has('ductMid');
+    for (const b of tn.beads) {
+      const g = Math.exp(-(((b.u - tn.at) / 0.022) ** 2)) * tn.on;
+      b.m.visible = duct && g > 0.04;
+      if (!b.m.visible) continue;
+      b.m.scale.setScalar(b.r * (0.9 + 1.1 * g));
+      b.m.position.copy(b.p).addScaledVector(AX, b.r * 1.3 * g * Math.sin(this.clock * Math.PI * 2 * 2.2));
     }
     // le etichette delle parti delle sezioni seguono `side`, non `inner`
     this.side.updateWorldMatrix(true, true);

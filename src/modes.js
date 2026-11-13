@@ -1,14 +1,27 @@
 // Comportamenti riutilizzabili della pagina destra: una fila di pulsanti, una
 // riga di commento e, per i modelli generici, la scelta di un'opzione che
 // accende parti, vie e passi in sequenza.
-import { makeText, chip, chipRow } from './ui.js';
+import { makeText, chip, chipRow, cord } from './ui.js';
 
 export const M = 0.09; // margine di pagina
 export const W = 1 - 2 * M; // giustezza
 
+// Scoperte: la doppia pagina mette in `controls.userData.explore` le funzioni
+// `offer(etichetta)` (un comando che c'è) e `found(etichetta)` (un comando provato),
+// che il riepilogo del capitolo elenca. Pulsanti e corde le chiamano da sé; un
+// comportamento su misura chiama `found` per scoperte che non passano di qui.
+export const explore = (controls) => controls.userData.explore ?? { offer() {}, found() {} };
+
+// Ogni pulsante conta come comando da provare, salvo `explore: false` (per esempio
+// un pulsante che rimette a posto).
 export async function chipsInto(controls, specs) {
   const chips = [];
-  for (const s of specs) chips.push(await chip(s.label, { onClick: s.onClick }));
+  const ex = explore(controls);
+  for (const s of specs) {
+    const counts = s.explore !== false;
+    if (counts) ex.offer(s.label);
+    chips.push(await chip(s.label, { onClick: () => (counts && ex.found(s.label), s.onClick?.()) }));
+  }
   const row = chipRow(chips, W);
   controls.add(row.group);
   return { chips, height: row.height };
@@ -23,6 +36,21 @@ export async function infoText(controls, y) {
   return t;
 }
 
+// Corda con manico (vedi `cord` in src/ui.js) sotto i pulsanti, a quota y.
+// `onChange(v)` riceve i valori che vengono da chi legge.
+// La corda conta come comando da provare con il suo titoletto, in minuscolo
+// (il titoletto è in maiuscoletto).
+export async function cordInto(controls, y, spec, onChange) {
+  const ex = explore(controls);
+  const label = spec.label ?? '';
+  const name = label ? label.charAt(0) + label.slice(1).toLowerCase() : spec.ends?.join(' / ') || 'corda';
+  ex.offer(name);
+  const c = await cord({ ...spec, width: W, onChange: (v) => (ex.found(name), onChange?.(v)) });
+  c.group.position.y = y;
+  controls.add(c.group);
+  return c;
+}
+
 // Scelta di un'opzione su un AnatomyModel.
 //   base      parti sempre visibili nella pagina
 //   looks     aspetto di base per parte, es. { v3: { opacity: 0.4 } }
@@ -31,7 +59,14 @@ export async function infoText(controls, y) {
 //             steps: [{ ids, links, text }] si accendono uno dopo l'altro
 //   pick      { idParte: indiceOpzione } per scegliere cliccando il modello
 //   initial   opzione attiva all'ingresso (null = nessuna)
-export function selector({ base, options, looks = {}, pick = {}, initial = null, labels = {}, idle = '' }) {
+//   cord      { label, ends, min, max, value, spring, format, react }: un comando continuo
+//             sotto i pulsanti (vedi `cord` in ui.js). Quando chi legge lo muove,
+//             react(v, prima) riceve il valore (e il risultato precedente) e ritorna
+//             un'opzione statica (lit, show, links, info, activity, dead, scale, labels,
+//             focus) che prende il posto di quella scelta; con `release: true` nel
+//             risultato la corda sfugge di mano e torna a riposo. Scegliere un pulsante
+//             riporta la corda a riposo.
+export function selector({ base, options, looks = {}, pick = {}, initial = null, labels = {}, idle = '', cord: cordSpec = null }) {
   return async ({ model, controls, def }) => {
     let sel = null;
     // primo piano: quello del passo, altrimenti dell'opzione, altrimenti della pagina
@@ -46,15 +81,14 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
       controls,
       options.map((o, i) => ({ label: o.label, onClick: () => select(sel === i && !o.steps ? null : i) }))
     );
-    const info = await infoText(controls, -height - 0.03);
+    let live = null; // l'opzione che viene dalla corda, finché nessun pulsante è scelto
+    let liveKey = '';
+    const rope = cordSpec && (await cordInto(controls, -height - 0.022, cordSpec, (v) => pull(v)));
+    const info = await infoText(controls, -height - 0.03 - (rope ? rope.height + 0.012 : 0));
+    const current = () => live ?? options[sel];
 
     const stepOf = (o) => Math.min(o.steps.length - 1, Math.floor((model.time - t0) / (o.stepTime ?? 1.1)));
-    const select = (i) => {
-      sel = i;
-      t0 = model.time;
-      shownStep = -1;
-      const o = options[i];
-      chips.forEach((c, j) => c.setActive(j === i));
+    const apply = (o) => {
       model.show([...base, ...(o?.show ?? []), ...(o?.lit ?? []), ...(o?.steps?.flatMap((s) => s.ids) ?? [])]);
       model.setActivity(o?.activity ?? {});
       model.setLabels(o?.labels ?? labels);
@@ -64,13 +98,40 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
         info.text = o?.info ?? idle;
       }
     };
+    const select = (i) => {
+      sel = i;
+      live = null;
+      liveKey = '';
+      t0 = model.time;
+      shownStep = -1;
+      chips.forEach((c, j) => c.setActive(j === i));
+      rope?.set(cordSpec.rest ?? cordSpec.value ?? cordSpec.min ?? 0);
+      apply(options[i]);
+    };
+    // la corda prende il posto dei pulsanti; il modello cambia solo se cambia l'esito
+    const pull = (v) => {
+      const o = cordSpec.react(v, live);
+      if (sel !== null) {
+        sel = null;
+        chips.forEach((c) => c.setActive(false));
+      }
+      live = o;
+      if (o.release) rope.release();
+      const key = JSON.stringify(o);
+      if (key === liveKey) return;
+      liveKey = key;
+      apply(o);
+    };
 
     return {
+      // la previsione verificata sul modello vale come aver provato quell'opzione
+      choose: (i) => (explore(controls).found(options[i]?.label), select(i)),
       enter() {
         select(initial);
-        model.onClick = (id) => id in pick && select(pick[id]);
+        // scegliere un'opzione toccando il modello vale come provarla
+        model.onClick = (id) => id in pick && (explore(controls).found(options[pick[id]]?.label), select(pick[id]));
         model.lookFn = (part) => {
-          const o = options[sel];
+          const o = current();
           const look = { ...looks[part.id] };
           if (!o) return look;
           if (o.dead?.includes(part.id)) return { ...look, dead: true };
@@ -90,6 +151,7 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
       },
       // le sequenze avanzano col tempo: aggiorna commento e vie visibili
       update() {
+        rope?.update();
         const o = options[sel];
         if (!o?.steps) return;
         const k = stepOf(o);

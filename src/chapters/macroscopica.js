@@ -92,10 +92,14 @@ const spreads = [
       "La corteccia è percorsa da solchi che delimitano i giri. Sulla faccia laterale tre solchi primari guidano la divisione in lobi. Il {solco laterale di Silvio|lat} contorna il polo temporale e separa il {lobo frontale|fr} dal {temporale|te}. Il {solco centrale di Rolando|cen} nasce poco sopra il solco laterale, sale in alto e leggermente indietro e separa il lobo frontale dal {parietale|pa}. Il {solco parieto-occipitale|po} nasce sulla faccia mediale e oltrepassa il margine superiore: da qui una linea immaginaria fino all'incisura preoccipitale delimita il {lobo occipitale|oc}.",
     terms: { lat: ['lateral'], cen: ['central'], po: ['parietoOcc'], fr: FRONTAL, te: TEMPORAL, pa: PARIETAL, oc: ['occipital'] },
     quiz: {
-      question: 'Quale solco separa il lobo frontale dal lobo parietale?',
-      options: ['Il solco laterale di Silvio', 'Il solco centrale di Rolando', 'Il solco parieto-occipitale', 'Il solco precentrale'],
-      correct: 1,
-      explain: 'Il solco laterale separa invece il frontale dal temporale.',
+      question: 'Porta ogni lobo al suo posto sulla faccia laterale.',
+      tags: [
+        { label: 'lobo frontale', ids: FRONTAL },
+        { label: 'lobo parietale', ids: PARIETAL },
+        { label: 'lobo temporale', ids: TEMPORAL },
+        { label: 'lobo occipitale', ids: OCCIPITAL },
+      ],
+      explain: 'Il solco centrale separa il frontale dal parietale, il solco laterale il frontale dal temporale.',
     },
     caption: 'Emisfero sinistro, faccia laterale. Ogni lobo ha una famiglia di colori; in scuro i solchi primari.',
     instruction: 'SCEGLI UN LOBO, ANCHE CLICCANDO UN GIRO',

@@ -331,7 +331,7 @@ const NAMED = ['SS', 'LT', 'AX', 'RAD', 'MCN', 'MED', 'ULN'];
 
 async function lesionMode({ model, controls }) {
   let fibres = null;
-  const { chips, height } = await chipsInto(controls, [{ label: 'Ricuci il plesso', onClick: () => cut(null) }]);
+  const { chips, height } = await chipsInto(controls, [{ label: 'Ricuci il plesso', onClick: () => cut(null), explore: false }]);
   const head = makeText('', { font: FONT.bold, fontSize: 0.023, anchorX: 'center', color: 0xb3261e });
   head.position.set(W / 2, -height - 0.028, head.position.z);
   controls.add(head);

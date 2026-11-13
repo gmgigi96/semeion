@@ -65,9 +65,9 @@ const spreads = [
       ant: ANT, post: POST, fn: FN, scp: ['scp'], mcp: ['mcp'], icp: ['icp'],
     },
     quiz: {
-      question: 'Quale peduncolo collega il cervelletto al ponte?',
-      options: ['Il superiore', 'Il medio', "L'inferiore", 'Nessuno: passa dal mesencefalo'],
-      correct: 1,
+      question: 'Indica il peduncolo che collega il cervelletto al ponte.',
+      point: ['mcp'],
+      why: { scp: 'Il superiore sale al mesencefalo.', icp: "L'inferiore scende al bulbo." },
       explain: 'Il superiore sale al mesencefalo, l’inferiore scende al bulbo.',
     },
     caption: 'Cervelletto e tronco encefalico reali, visti da dietro e di lato: ogni lobulo è un pezzo.',

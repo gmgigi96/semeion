@@ -33,7 +33,7 @@ const spreads = [
       thal: ['thalamus', 'intralam'], hyp: ['hypothalamus'], cord: ['cord'],
     },
     quiz: {
-      question: 'Che cosa osservarono Moruzzi e Magoun stimolando ad alta frequenza la formazione reticolare?',
+      question: 'Che cosa videro Moruzzi e Magoun stimolando la rete?',
       options: [
         'Un tracciato lento e sincrono, come nel sonno',
         'La de-sincronizzazione del tracciato corticale',

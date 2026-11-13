@@ -3,8 +3,8 @@
 // del suono); l'ultima doppia pagina, sulla via acustica centrale, segue gli
 // appunti «Vie vestibolo-cocleari (3X)», paragrafo «Via cocleare».
 // Parti reali e ricostruite, con le fonti: vedi src/models/sistema-uditivo.js.
-import { chipsInto, infoText } from '../modes.js';
-import { AuditoryModel, STEM_VIEW } from '../models/sistema-uditivo.js';
+import { chipsInto, infoText, cordInto } from '../modes.js';
+import { AuditoryModel, STEM_VIEW, ductTurnAt } from '../models/sistema-uditivo.js';
 
 const DUCTS = ['ductBase', 'ductMid', 'ductApex'];
 const COCH = ['cochleaR', 'labyrinth', 'stapes', 'nerveTip', 'scalaV', 'scalaT', ...DUCTS, 'helico', 'modiolus', 'ganglion', 'roundWindow'];
@@ -25,24 +25,44 @@ const SHELL = { cochleaR: { opacity: 0.24, litOpacity: 0.5 } };
 // motore (`zoom`, vedi AnatomyModel.zoomTo), lo stato del modello (`scene`, anche per
 // singolo passo), le parti da togliere (`hide`). `rest`: parti mostrate con `base`
 // quando nessuna opzione è scelta. `keep`: parti che non si attenuano.
-function stage({ focus, base = [], rest = [], options, looks = {}, pick = {}, idle = '', initial = null, keep = [] }) {
+// `cord` (come in `selector`, vedi src/modes.js): una corda sotto i pulsanti; `react(v)`
+// ritorna un'opzione statica, che può avere anche `tone` (vedi setTone nel modello).
+function stage({ focus, base = [], rest = [], options, looks = {}, pick = {}, idle = '', initial = null, keep = [], cord = null }) {
   const never = new Set(keep);
   return async ({ model, controls }) => {
     let sel = null;
+    let live = null;
+    let liveKey = '';
     let t0 = 0;
     let shownStep = -1;
     const { chips, height } = await chipsInto(
       controls,
       options.map((o, i) => ({ label: o.label, onClick: () => select(sel === i && !o.steps ? null : i) }))
     );
-    const info = await infoText(controls, -height - 0.03);
+    const rope = cord && (await cordInto(controls, -height - 0.022, cord, (v) => pull(v)));
+    const info = await infoText(controls, -height - 0.03 - (rope ? rope.height + 0.012 : 0));
+    const current = () => live ?? options[sel];
     const stepOf = (o) => Math.min(o.steps.length - 1, Math.floor((model.time - t0) / (o.stepTime ?? 1.1)));
     const select = (i) => {
       sel = i;
+      live = null;
+      liveKey = '';
       t0 = model.time;
       shownStep = -1;
-      const o = options[i];
       chips.forEach((c, j) => c.setActive(j === i));
+      apply(options[i]);
+    };
+    // la corda prende il posto dei pulsanti
+    const pull = (v) => {
+      if (sel !== null) chips.forEach((c) => c.setActive(false));
+      sel = null;
+      live = cord.react(v);
+      const key = JSON.stringify(live);
+      if (key === liveKey) return;
+      liveKey = key;
+      apply(live);
+    };
+    const apply = (o) => {
       const hidden = new Set(o?.hide ?? []);
       const ids = o ? [...base, ...(o.show ?? []), ...(o.lit ?? []), ...(o.steps?.flatMap((s) => s.ids) ?? [])] : [...base, ...rest];
       model.show(ids.filter((id) => !hidden.has(id)));
@@ -50,6 +70,7 @@ function stage({ focus, base = [], rest = [], options, looks = {}, pick = {}, id
       model.zoomTo(o?.zoom ?? null);
       model.setLabels(o?.labels ?? {});
       model.setScene(o?.scene);
+      model.setTone(o?.tone ?? null);
       if (!o?.steps) {
         model.showLinks(o?.links ?? []);
         info.text = o?.info ?? idle;
@@ -60,7 +81,7 @@ function stage({ focus, base = [], rest = [], options, looks = {}, pick = {}, id
         select(initial);
         model.onClick = (id) => id in pick && select(pick[id]);
         model.lookFn = (part) => {
-          const o = options[sel];
+          const o = current();
           const look = { ...looks[part.id] };
           if (!o) return look;
           if (o.dead?.includes(part.id)) return { ...look, dead: true };
@@ -76,6 +97,7 @@ function stage({ focus, base = [], rest = [], options, looks = {}, pick = {}, id
         };
       },
       update() {
+        rope?.update();
         const o = options[sel];
         if (!o?.steps) return;
         const k = stepOf(o);
@@ -88,6 +110,25 @@ function stage({ focus, base = [], rest = [], options, looks = {}, pick = {}, id
     };
   };
 }
+
+// Corda dell'altezza del suono: sposta lungo il dotto cocleare il punto di massima
+// risonanza della membrana basilare (u = 0 inizio del giro basale, 1 apice).
+const TURN_NAME = { ductBase: 'giro basale', ductMid: 'giro intermedio', ductApex: 'giro apicale' };
+const TURN_INFO = {
+  ductBase: 'Toni alti: entrano in risonanza le corde acustiche corte del giro basale, dove la membrana basilare è larga 100 micron.',
+  ductMid: 'Toni intermedi: risuonano corde acustiche di lunghezza intermedia, nel giro intermedio.',
+  ductApex: 'Toni bassi: risuonano le corde acustiche lunghe del giro apicale, dove la membrana basilare è larga 400-500 micron.',
+};
+const toneCord = {
+  label: 'ALTEZZA DEL SUONO',
+  ends: ['bassi', 'alti'],
+  value: 0.5,
+  format: (v) => `massima risonanza: ${TURN_NAME[ductTurnAt(1 - v)]}`,
+  react(v) {
+    const turn = ductTurnAt(1 - v);
+    return { show: COCH, hide: ['scalaV', 'scalaT'], lit: [turn], tone: Math.round((1 - v) * 300) / 300, info: TURN_INFO[turn] };
+  },
+};
 
 const spreads = [
   {
@@ -195,7 +236,7 @@ const spreads = [
       explain: 'Le capellute esterne funzionano da amplificatori: nel punto di massima risonanza sono massimamente eccitate e affinano la discriminazione tonale.',
     },
     caption: "L'onda pressoria nella chiocciola reale; poi, nell'organo del Corti ingrandito, il movimento (esagerato) delle capellute esterne.",
-    instruction: "SEGUI L'ONDA, POI GUARDA LE CELLULE CAPELLUTE",
+    instruction: "SEGUI L'ONDA, TIRA LA CORDA DEI TONI, GUARDA LE CELLULE",
     view: { yaw: 0, zoom: 1.15 },
     mode: stage({
       focus: 'cochlea',
@@ -203,7 +244,8 @@ const spreads = [
       looks: SHELL,
       keep: ['labyrinth', 'cochleaR', ...THUMB],
       initial: 0,
-      idle: 'Scegli un pulsante: la chiocciola per l’onda e i toni, l’organo del Corti per le cellule.',
+      idle: 'Scegli un pulsante: la chiocciola per l’onda, l’organo del Corti per le cellule; con la corda, i toni.',
+      cord: toneCord,
       options: [
         {
           label: 'Onda pressoria', show: COCH, hide: DUCTS, stepTime: 2.4,
@@ -215,8 +257,6 @@ const spreads = [
             { ids: ['roundWindow'], links: ['w-rw'], text: 'La membrana secondaria del timpano protrude verso la cassa: è lo sfogo pressorio.' },
           ],
         },
-        { label: 'Toni alti', show: COCH, hide: ['scalaV', 'scalaT'], lit: ['ductBase'], labels: { ductBase: 'toni alti' }, info: 'Giro basale: membrana basilare larga 100 micron, corde acustiche corte, che entrano in risonanza con i toni alti.' },
-        { label: 'Toni bassi', show: COCH, hide: ['scalaV', 'scalaT'], lit: ['ductApex'], labels: { ductApex: 'toni bassi' }, info: 'Giro apicale: membrana basilare larga 400-500 micron, corde acustiche lunghe, che risuonano con i toni bassi.' },
         {
           label: 'Capellute esterne', focus: 'corti', show: [...THUMB, ...CORTI], stepTime: 4,
           steps: [
