@@ -47,6 +47,7 @@ function gazeSelector({ base, options, looks = {}, pick = {}, idle = '' }) {
       info.text = o?.info ?? idle;
     };
     return {
+      choose: (i) => select(i),
       enter() {
         select(null);
         model.onClick = (id) => id in pick && select(pick[id]);
@@ -224,10 +225,18 @@ const spreads = [
       os: lr('os'), rl: lr('rl'),
     },
     quiz: {
-      question: "Dove contraggono sinapsi le fibre parasimpatiche dell'oculomotore dirette allo sfintere della pupilla?",
-      options: ['Nel nucleo di Edinger-Westphal', 'Nel ganglio ciliare', 'Nel seno cavernoso', "Nell'anello tendineo dello Zinn"],
+      predict: true,
+      question: "Si interrompe l'abducente di destra. Dove devierà l'occhio destro?",
+      options: ['In fuori e in basso', 'Verso il naso', "Un po' più in alto", 'Non devia'],
       correct: 1,
-      explain: 'Vi arrivano con la radice breve, dal ramo inferiore; ne escono i nervi ciliari brevi.',
+      why: [
+        "In fuori e in basso va con la lesione dell'oculomotore.",
+        null,
+        "Più in alto ed extraruotato va con la lesione del trocleare.",
+        'Senza il retto laterale prevale il retto mediale.',
+      ],
+      explain: "Manca il retto laterale: prevale il retto mediale e l'occhio devia verso il naso; diplopia orizzontale.",
+      reveal: 2,
     },
     caption: "Nervo e muscoli paralizzati si scuriscono; l'occhio destro prende la posizione imposta dai muscoli rimasti.",
     instruction: 'INTERROMPI UN NERVO DI DESTRA E CONFRONTA I DUE OCCHI',

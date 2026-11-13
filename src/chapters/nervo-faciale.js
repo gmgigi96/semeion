@@ -162,10 +162,18 @@ const spreads = [
       "Uscito dal foro stilo-mastoideo, il {tronco|trunk} perfora la loggia parotidea ed entra nella {parotide|parotid}, dove si divide nella {branca temporo-faciale|temp} e nella {branca cervico-faciale|cerv}, per i muscoli mimici. Una lesione spegne ciò che sta a valle: più è prossimale, più funzioni coinvolge. Poiché la porzione superiore del nucleo motore riceve fibre piramidali dei due lati, una lesione sopra il nucleo risparmia i {muscoli della fronte e dell'occhio|up}; una lesione del nervo paralizza {metà del viso|half}. Interrompi il nervo e osserva che cosa si spegne.",
     terms: { trunk: ['fnTrunk'], parotid: ['parotid'], temp: ['tempFac'], cerv: ['cervFac'], up: ['mUpR', 'mUpL'], half: FACE_R },
     quiz: {
+      predict: true,
       question: 'Un paziente non muove la metà inferiore sinistra del viso, ma corruga la fronte dai due lati. Dove è la lesione?',
       options: ['Nel nervo faciale sinistro', 'Sopra il nucleo, nelle fibre piramidali di destra', 'Al foro stilo-mastoideo destro', 'Nella corda del timpano sinistra'],
       correct: 1,
+      why: [
+        'Una lesione del nervo paralizza tutta la metà del viso, fronte compresa.',
+        null,
+        'Il foro stilo-mastoideo destro paralizzerebbe la metà destra, fronte compresa.',
+        'La corda del timpano porta gusto e salivazione, non la mimica.',
+      ],
       explain: 'La porzione inferiore del nucleo riceve solo fibre controlaterali; la superiore anche omolaterali.',
+      reveal: 0,
     },
     caption: 'Anello rosso: punto della lesione. Le strutture a valle si scuriscono.',
     instruction: 'SCEGLI IL PUNTO DELLA LESIONE, DALLA CORTECCIA AL FORO STILO-MASTOIDEO',

@@ -426,7 +426,7 @@ export async function quiz({ question, options, correct, explain, why = [], pred
     height: -y + 0.01,
     update() {
       const now = performance.now();
-      const dt = Math.min(0.05, (now - last) / 1000);
+      const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       // al passaggio l'aletta si stacca appena dalla pagina: invita a sollevarla
       const goal = open ? OPEN : armed && hover ? 0.22 : 0;

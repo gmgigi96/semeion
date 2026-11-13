@@ -42,6 +42,7 @@ function earMode({ base, options, looks = {}, pick = {}, idle = '', rest = {}, i
       info.text = o?.info ?? idle;
     };
     return {
+      choose: (i) => select(i),
       enter() {
         select(initial);
         model.onClick = (id) => id in pick && select(pick[id]);
@@ -130,10 +131,18 @@ const spreads = [
       "Poiché normalmente la tuba è chiusa, passando da bassa ad alta quota, o viceversa, la pressione che incide sulla faccia interna della {membrana del timpano|tm} diventa diversa da quella del meato acustico esterno. Per eguagliarle bisogna far entrare aria nella {tuba|tube}: la aprono fonazione, tosse, sbadiglio e deglutizione. In immersione ogni 10 m aggiungono 1 atm, mentre nella cassa resta 1 atm: da qui il dolore alla membrana. L'apertura impedisce anche il ristagno delle secrezioni delle ghiandole tubariche e della cassa, che scendono per gravità verso la {rinofaringe|naso}.",
     terms: { tm: ['tm'], tube: TUBE, naso: ['nasopharynx'] },
     quiz: {
-      question: 'Di quanto aumenta la pressione ogni 10 m di immersione?',
-      options: ['0,1 atm', '0,5 atm', '1 atm', '10 atm'],
-      correct: 2,
-      explain: "A 10 m l'acqua preme con 2 atm contro 1 atm nella cassa, finché la tuba non si apre.",
+      predict: true,
+      question: "Scendi a 10 m sott'acqua con la tuba chiusa. Che cosa fa la membrana del timpano?",
+      options: ["Si sposta verso l'esterno", "Si sposta verso l'interno", 'Resta ferma', 'Si apre la tuba da sola'],
+      correct: 1,
+      why: [
+        "Verso l'esterno va salendo di quota, quando fuori la pressione scende.",
+        null,
+        "Fuori 2 atm, nella cassa 1 atm: la differenza la sposta.",
+        'Normalmente la tuba è chiusa: la aprono deglutizione, sbadiglio, fonazione e tosse.',
+      ],
+      explain: "Ogni 10 m si aggiunge 1 atm: l'acqua spinge la membrana verso l'interno e compare il dolore, finché la tuba non si apre.",
+      reveal: 1,
     },
     caption: 'Membrana, ossicini e tuba visti dal davanti, con la cartilagine in trasparenza. La deformazione della membrana è esagerata.',
     instruction: 'CAMBIA LA PRESSIONE ESTERNA, POI DEGLUTISCI',
