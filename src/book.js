@@ -189,7 +189,8 @@ export class Book {
     this.spinePivot.add(this.spine);
     this.group.add(this.spinePivot);
 
-    this.group.add(ribbon());
+    this.ribbon = ribbon();
+    this.group.add(this.ribbon);
 
     // foglio che gira
     this.flipPivot = new THREE.Group();
@@ -226,6 +227,9 @@ export class Book {
   flip(dir) {
     return new Promise((resolve) => {
       this.flipPivot.visible = true;
+      // il nastro resta dov'era: mentre il foglio gira si disegna sopra di lui
+      this.ribbon.material.depthTest = false;
+      this.ribbon.renderOrder = 10;
       this.flipAnim = { t: 0, dir, resolve };
     });
   }
@@ -239,6 +243,8 @@ export class Book {
     this.flipPivot.rotation.z = angle;
     if (a.t >= 1) {
       this.flipPivot.visible = false;
+      this.ribbon.material.depthTest = true;
+      this.ribbon.renderOrder = 0;
       this.flipAnim = null;
       a.resolve();
     }
