@@ -26,11 +26,9 @@ const SUBCLAVIAN = ['subclavianR', 'subclavianL'];
 const LUNGS = ['lungR', 'lungL'];
 const YELLOW = 0xe6bd2e;
 
-// Primo piano: all'ingresso nella pagina il modello viene ingrandito attorno a un punto (mm Z-Anatomy).
-const closeUp = (center, scale, height, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return { ...api, enter() { api.enter(); ctx.model.focus(center, scale, height); } };
-};
+// Primo piano del motore attorno a un punto dato in mm Z-Anatomy (stessa terna del modello:
+// distanza dal piano mediano, verso dietro, verso l'alto), portato all'altezza `height`.
+const closeUp = ([a, b, h], scale, height) => ({ at: [a * 0.0015, (h - 1095) * 0.0015, -b * 0.0015], scale, height });
 
 const spreads = [
   {
@@ -76,8 +74,8 @@ const spreads = [
     },
     caption: 'Bulbo e ponte in trasparenza, ingranditi: nuclei, radicole e gangli sono mesh reali.',
     instruction: 'SCEGLI UN NUCLEO (ANCHE CLICCANDOLO) E RUOTA IL TRONCO ENCEFALICO',
-    view: { yaw: 0.6 },
-    mode: closeUp([0, 14, 1566], 8.5, 0.4, selector({
+    view: { yaw: 0.6, focus: closeUp([0, 14, 1566], 7.5, 0.4) },
+    mode: selector({
       base: [...STEM, 'nucAmb', 'nucDors', 'nucSol', 'nucSpV', 'nucXI', 'nucXII', ...HEAD, 'auricular', 'meningeal'],
       pick: { nucAmb: 0, nucDors: 1, nucSol: 2, nucSpV: 3, gJug: 4, gNod: 4 },
       idle: 'Rosso: ambiguo. Blu: motore dorsale. Verde: tratto solitario. Arancio: radice discendente del trigemino.',
@@ -88,7 +86,7 @@ const spreads = [
         { label: 'Radice discendente del V', lit: ['nucSpV', 'gJug', 'auricular', 'meningeal'], info: 'Sensibilità somatica: meningi della fossa cranica posteriore (ramo meningeo), padiglione, meato acustico esterno e timpano (ramo auricolare).' },
         { label: 'Gangli', lit: ['gJug', 'gNod'], info: 'Arancio: ganglio superiore o giugulare, sensitivo somatico, nella fossa giugulare. Viola: ganglio inferiore o nodoso, sensitivo viscerale, più oblungo.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Nel collo: il fascio vascolo-nervoso',
@@ -106,8 +104,8 @@ const spreads = [
     },
     caption: 'Il collo ingrandito, visto da destra. Vasi, laringe e nervi IX, XI e XII sono mesh reali; il laringeo superiore è ricostruito.',
     instruction: 'SCEGLI UN RAPPORTO O UN RAMO DEL VAGO CERVICALE',
-    view: { yaw: -1.0 },
-    mode: closeUp([8, -6, 1498], 3.3, 0.42, selector({
+    view: { yaw: -1.0, focus: closeUp([8, -6, 1498], 3.3, 0.3) },
+    mode: selector({
       base: ['skullBase', 'spineC', ...STEM, ...HEAD, ...CERV, 'vxPhar', 'ix', 'xii', 'xi', ...SLN, ...GALEN, ...CARTILAGE, 'cricothyroid', 'thyroid', 'tracheaC', 'esoC', 'constrictor',
         ...CAROTID, ...JUGULAR],
       looks: { thyroid: { opacity: 0.45, litOpacity: 0.8 }, constrictor: { opacity: 0.55, litOpacity: 1 }, skullBase: { opacity: 0.07 } },
@@ -121,7 +119,7 @@ const spreads = [
         { label: 'Laringeo superiore', lit: [...SLN, 'cricothyroid', 'gNod', ...GALEN], info: 'All’altezza del grande corno dell’osso ioide si divide: ramo esterno al crico-tiroideo, ramo interno sensitivo. In grigio: ansa di Galeno.' },
         { label: 'Rami faringei', lit: ['vxPhar', 'constrictor', 'gNod'], info: 'Innervazione motoria della faringe, dei muscoli dell’ugola e dell’elevatore del velo palatino; sensitiva di oro- e laringo-faringe.' },
       ],
-    })),
+    }),
   },
   {
     title: 'I due ricorrenti, asimmetrici',
@@ -138,8 +136,8 @@ const spreads = [
     },
     caption: 'Base del collo e mediastino superiore, ingranditi. Vasi, trachea, esofago e laringe reali; nervi ricostruiti su di essi.',
     instruction: 'SEGUI UN RICORRENTE, POI RUOTA IL MODELLO PER VEDERE LE DUE ANSE',
-    view: { yaw: 0.25 },
-    mode: closeUp([-2, 2, 1420], 3.3, 0.42, selector({
+    view: { yaw: 0.25, focus: closeUp([-2, 2, 1420], 3, 0.32) },
+    mode: selector({
       base: [...TRACHEA, 'bronchiTop', 'esoC', 'esoM', 'arch', 'aortaAscTop', 'aortaDescTop', 'brachioceph', ...SUBCLAVIAN, 'ccaR', 'ccaL', ...CARTILAGE, 'cricothyroid', ...INTRINSIC, 'thyroid',
         ...CERV, ...THOR, ...REC_R, ...REC_L],
       looks: { thyroid: { opacity: 0.4, litOpacity: 0.75 }, thyroidCart: { opacity: 0.45 }, cricoid: { opacity: 0.6 } },
@@ -169,7 +167,7 @@ const spreads = [
         { label: 'Muscoli della laringe', lit: ['recRUp', 'recLUp', ...INTRINSIC], info: 'Il ricorrente innerva tutti i muscoli intrinseci della laringe e la mucosa sottoglottica; solo il crico-tiroideo (verde) è del laringeo superiore.' },
         { label: 'Lesione alla tiroide', show: ['cutRecR'], lit: ['cutRecR', ...REC_R, 'thyroid', 'cricothyroid'], dead: ['intrinsicR'], info: 'Ricorrente destro interrotto dietro la tiroide: i muscoli intrinseci di quel lato si spengono (raucedine); il crico-tiroideo è risparmiato.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Torace e addome',
@@ -187,8 +185,8 @@ const spreads = [
     },
     caption: 'Mediastino e stomaco. Giallo chiaro: vago destro e ciò che ne deriva; ocra: vago sinistro. Cuore, polmoni e diaframma in trasparenza.',
     instruction: 'SEGUI UN VAGO FINO ALLO STOMACO, POI GUARDA IL MODELLO DA DIETRO',
-    view: { yaw: -0.5 },
-    mode: closeUp([-10, -5, 1252], 1.75, 0.4, selector({
+    view: { yaw: -0.5, focus: closeUp([-10, -5, 1252], 1.6, 0.36) },
+    mode: selector({
       base: ['tracheaT', ...BRONCHI, 'esoM', 'esoLow', 'arch', 'aortaAscTop', 'aortaAscLow', 'aortaDescTop', 'aortaDescLow', 'heart', ...LUNGS, 'diaphragm', 'stomach', 'spineT',
         ...THOR, 'recLLoop', 'recRLoop', ...PULM, ...PLEX, ...TRUNKS, ...GASTRIC, 'cardiac', 'cardPlex'],
       looks: {
@@ -222,7 +220,7 @@ const spreads = [
         { label: 'Cuore', lit: ['cardiac', 'cardPlex', 'heart'], links: ['toHeart'], info: 'Nervi cardiaci superiore, medio e inferiore: la componente parasimpatica toracica fa capo al nucleo ambiguo.' },
         { label: 'Stomaco', lit: [...TRUNKS, ...GASTRIC, 'stomach'], info: 'Tronco anteriore: parete anteriore, soprattutto piccola curvatura. Tronco posteriore: parete posteriore, soprattutto grande curvatura.' },
       ],
-    })),
+    }),
   },
 ];
 
