@@ -21,11 +21,9 @@ const SOFT = {
   parotid: { opacity: 0.55, litOpacity: 0.8 }, parotidLow: { opacity: 0.55, litOpacity: 0.8 },
 };
 
-// Primo piano: all'ingresso nella pagina il modello viene ingrandito attorno a un punto (mm Z-Anatomy).
-const closeUp = (center, scale, height, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return { ...api, enter() { api.enter(); ctx.model.focus(center, scale, height); } };
-};
+// Primo piano del motore attorno a un punto dato in mm Z-Anatomy (stessa terna del modello:
+// distanza dal piano mediano, verso dietro, verso l'alto), portato all'altezza `height`.
+const closeUp = ([a, b, h], scale, height) => ({ at: [a * 0.0034, (h - 1470) * 0.0034, -b * 0.0034], scale, height });
 
 const spreads = [
   {
@@ -41,7 +39,8 @@ const spreads = [
     },
     caption: 'Lato destro: nervo, vasi, muscoli, lingua e parotide sono mesh reali (Z-Anatomy); il tratto nel collo è ricostruito.',
     instruction: 'SCEGLI UNA COMPONENTE · TRASCINA IL MODELLO PER RUOTARLO',
-    mode: closeUp([14, -8, 1550], 1.5, 0.36, selector({
+    view: { focus: closeUp([14, -8, 1550], 1.5, 0.36) },
+    mode: selector({
       base: [...SKULL, ...STEM, ...NERVE, ...GANGLIA, ...NUCLEI, ...VESSELS, 'ijv', 'stylo', ...PHARYNX, ...TONGUE, 'tonsil', 'parotid', 'parotidLow', 'hyoid',
         ...BRANCHES, ...PAROTID_WAY, 'atn', 'tympanic'],
       looks: SOFT,
@@ -53,7 +52,7 @@ const spreads = [
         { label: 'Sensitiva viscerale', lit: ['gInf', 'ixFor', 'ixCist', 'ixBulb', 'ixNeck', 'nucSol', 'nHering', 'sinus', 'glomo', 'rFar', 'nasopharynx', 'rTons', 'tonsil', 'nTymp'], info: 'Ganglio petroso (inferiore): istmo delle fauci, rinofaringe, cassa del timpano e tuba, glomo e seno carotideo.' },
         { label: 'Gustativa', lit: ['gInf', ...NERVE, 'nucGust', 'rLing', 'tonguePost'], info: 'Ganglio petroso: calici gustativi delle papille vallate e foliate e delle vallecule glosso-epiglottiche.' },
       ],
-    })),
+    }),
   },
   {
     title: 'I nuclei nel bulbo',
@@ -68,8 +67,8 @@ const spreads = [
     },
     caption: 'Bulbo e ponte in trasparenza, ingranditi. Nuclei e fibre radicolari sono quelli, schematici, di Z-Anatomy.',
     instruction: 'SCEGLI UN NUCLEO (ANCHE CLICCANDOLO) E RUOTA IL TRONCO ENCEFALICO',
-    view: { yaw: 0.45 },
-    mode: closeUp([0, 18, 1570], 4.8, 0.42, selector({
+    view: { yaw: 0.45, focus: closeUp([0, 18, 1570], 4.8, 0.33) },
+    mode: selector({
       base: ['pons', 'medulla', ...NUCLEI, 'ixBulb', 'ixCist'],
       pick: { nucAmb: 0, nucSal: 1, nucSol: 2, nucGust: 3, nucSpV: 4 },
       idle: 'Le fibre radicolari (ocra) lasciano il bulbo dal solco dei nervi misti, dietro l’oliva.',
@@ -80,7 +79,7 @@ const spreads = [
         { label: 'Gustativo', lit: ['nucGust', 'ixBulb'], info: 'Porzione rostrale del nucleo del tratto solitario: sensibilità viscerale speciale gustativa, dal ganglio petroso.' },
         { label: 'Radice discendente del V', lit: ['nucSpV', 'ixBulb'], info: 'Condiviso con il trigemino: sensibilità somatica dell’orecchio esterno. Ganglio: superiore o giugulare.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Dal bulbo al collo',
@@ -95,8 +94,8 @@ const spreads = [
     },
     caption: 'Dal bulbo al foro giugulare il nervo è la mesh reale; da sotto i gangli alla lingua è ricostruito sui vasi e sullo stilofaringeo reali.',
     instruction: 'SEGUI IL DECORSO O ISOLA UN TRATTO (ANCHE CLICCANDOLO)',
-    view: { yaw: -1.6 },
-    mode: closeUp([22, -6, 1540], 2.7, 0.42, selector({
+    view: { yaw: -1.6, focus: closeUp([22, -6, 1540], 2.7, 0.36) },
+    mode: selector({
       base: ['petrous', 'medulla', 'pons', ...NERVE, ...GANGLIA, 'forame', 'ica', 'sinus', 'cca', 'eca', 'ijv', 'stylo', ...PHARYNX, ...TONGUE, 'hyoid', 'nHering', 'nTymp'],
       looks: { ...SOFT, eca: { opacity: 0.3 }, ijv: { opacity: 0.55, litOpacity: 0.6 } },
       pick: { ixCist: 1, forame: 1, gSup: 1, gInf: 1, ixFor: 2, ijv: 2, ica: 2, ixNeck: 3, stylo: 3, tonguePost: 3 },
@@ -118,7 +117,7 @@ const spreads = [
         { label: 'Tra i due vasi', lit: ['ixFor', 'ixNeck', 'ijv', 'ica', 'nHering'], info: 'Vena giugulare interna lateralmente, carotide interna medialmente; più in basso si aggiunge il vago (non mostrato).' },
         { label: 'Verso la lingua', lit: ['ixNeck', 'stylo', 'tonguePost'], info: 'Raggiunge la radice della lingua con una concavità rivolta superiormente.' },
       ],
-    })),
+    }),
   },
   {
     title: 'La via della parotide',
@@ -133,8 +132,8 @@ const spreads = [
     },
     caption: 'Rocca destra ingrandita. Chiocciola, ossicini, timpano, faciale, mandibolare e parotide reali; la via parasimpatica è ricostruita.',
     instruction: 'SEGUI LA VIA O SCEGLI UNA TAPPA (ANCHE CLICCANDOLA)',
-    view: { yaw: -0.75 },
-    mode: closeUp([38, -5, 1571], 4, 0.42, selector({
+    view: { yaw: -0.75, focus: closeUp([38, -5, 1571], 4, 0.32) },
+    mode: selector({
       base: ['petrous', 'ixCist', 'ixFor', 'ixNeck', ...GANGLIA, ...PAROTID_WAY, 'rTub', ...EAR, 'vii', 'gspn', 'v3', 'atn', 'parotid'],
       looks: { parotid: { opacity: 0.6, litOpacity: 0.9 } },
       pick: { nTymp: 1, plesso: 1, rTub: 1, cochlea: 1, lpn: 2, gspn: 2, otic: 3, atn: 3, parotid: 3 },
@@ -156,7 +155,7 @@ const spreads = [
         { label: 'Piccolo petroso', lit: ['lpn', 'gspn', 'vii'], info: 'Decorre parallelo al nervo grande petroso superficiale (del faciale), con cui scambia anastomosi.' },
         { label: 'Ganglio otico', lit: ['otic', 'v3', 'atn', 'parotid'], links: ['postgang'], info: 'In fossa infratemporale. Le fibre postgangliari raggiungono la loggia parotidea con il nervo auricolo-temporale.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Seno carotideo, faringe, lingua',
@@ -174,8 +173,8 @@ const spreads = [
     },
     caption: 'Carotidi, stilofaringeo, costrittori, lingua e tonsilla reali; i rami del nervo sono ricostruiti su queste strutture.',
     instruction: 'SCEGLI UN RAMO (ANCHE CLICCANDOLO) E RUOTA IL MODELLO',
-    view: { yaw: -0.5 },
-    mode: closeUp([18, -24, 1525], 2.4, 0.36, selector({
+    view: { yaw: -0.5, focus: closeUp([18, -24, 1525], 2.1, 0.33) },
+    mode: selector({
       base: ['ixFor', 'ixNeck', 'gInf', ...VESSELS, 'glomo', 'stylo', ...PHARYNX, 'nasopharynx', ...TONGUE, 'tonsil', 'epiglottis', 'hyoid', ...BRANCHES],
       looks: SOFT,
       pick: { nHering: 0, sinus: 0, glomo: 0, rFar: 1, nasopharynx: 1, rStylo: 2, stylo: 2, rTons: 3, tonsil: 3, rLing: 4, tonguePost: 4 },
@@ -188,7 +187,7 @@ const spreads = [
         { label: 'Nervi linguali', lit: ['rLing', 'tonguePost', 'epiglottis'], info: 'Radice della lingua e tonsilla linguale; papille vallate e foliate, calici delle vallecule glosso-epiglottiche.' },
         { label: 'Gag reflex', lit: ['rFar', 'rLing', 'rTons', 'ixNeck', 'tonguePost', 'constrSup', 'constrLow'], info: 'Afferenza: glossofaringeo (stimolo sul dorso della lingua o in gola). Efferenza: vago, che contrae faringe e laringe.' },
       ],
-    })),
+    }),
   },
 ];
 
