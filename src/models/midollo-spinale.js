@@ -260,70 +260,29 @@ const REAL = {
   rubro: tract('fascio rubro-spinale', 0xe58a2e), vestLat: tract('fascio vestibolo-spinale laterale', 0xd9a82e), retMed: tract('fascio reticolo-spinale mediale', 0xb5651d),
 };
 
-// Parti per regione: un'inquadratura ravvicinata nasconde le regioni che uscirebbero
-// dall'alto o attraverserebbero la base.
-const R_TOP = ['occipital', 'medulla', 'vAtlas', 'vAxis', 'cordTop', 'postRootTop', 'antRootTop', 'ganglionTop', 'sleevesTop', 'duraTop'];
-const R_CERV = ['cervEnl', 'vCerv', 'postRootCerv', 'antRootCerv', 'ganglionCerv', 'sleevesCerv'];
-const R_THOR = ['cordThor', 'vThorUp', 'postRoot', 'antRoot', 'ganglion', 'sleeves', 'duraMid'];
-const R_LOW = ['lumbEnl', 'vThorLow', 'postRootLow', 'antRootLow', 'ganglionLow', 'caudaRoots', 'conus', 'vL1', 'vL2', 'vLumb', 'sacrum', 'coccyx', 'cauda', 'filum', 'coccLig', 'duraLow', 'cistern'];
-// Inquadratura sulla sezione: `drop` è quanto scende il bordo vicino della piastra inclinata.
-const plateView = (s, drop) => ({ s, y: PLATE.top - drop, y0: 0.04, z: PLATE.z, rod: [0.04 + s * (drop - PLATE.h), 0] });
-// Inquadrature: ingrandimento, punto (quota y e z del modello) che va a `y0` sopra la base,
-// parti da nascondere, asta [altezza, z] che regge il modello.
-const VIEWS = {
-  home: { s: 1, y: 0, y0: 0, z: 0, rod: [0.1, -0.03] },
-  top: { s: 5.2, y: Y(1488), y0: 0.07, z: 0.014, rod: [0.07, 0], hide: [...R_CERV, ...R_THOR, ...R_LOW] },
-  cerv: { s: 3.6, y: Y(1402), y0: 0.07, z: 0.004, rod: [0.07, 0], hide: [...R_THOR, ...R_LOW] },
-  low: { s: 2, y: Y(848), y0: 0.07, z: -0.004, rod: [0.07, 0], hide: [...R_TOP, ...R_CERV, ...R_THOR] },
-  tail: { s: 2.4, y: Y(848), y0: 0.07, z: -0.004, rod: [0.07, 0], hide: [...R_TOP, ...R_CERV, ...R_THOR, 'lumbEnl', 'vThorLow', 'postRootLow', 'antRootLow', 'ganglionLow'] },
-  meninges: plateView(4.8, 0.03),
-  white: plateView(7, 0.018),
-  grey: plateView(7.6, 0.018),
+// Primi piani (vedi AnatomyModel.zoomTo). Lungo il midollo: un punto dell'asse (quota in
+// mm e z del modello) ingrandito al centro della pagina; ciò che resta fuori lo taglia il motore.
+const along = (u, scale, z = 0, height) => ({ at: [0, Y(u), z], scale, height });
+// Sulla sezione: `drop` è quanto scende il bordo vicino della piastra inclinata, che resta appena sopra la base.
+const onSection = (scale, drop) => ({ at: [0, PLATE.top - drop, PLATE.z], scale, height: 0.04 });
+export const FOCUS = {
+  top: along(1488, 5.2, 0.014, 0.07),
+  cerv: along(1402, 3.6, 0.004, 0.07),
+  lumbar: along(1181, 2.8, -0.012),
+  conus: along(1095, 3.2, 0.004),
+  cauda: along(1010, 2, -0.004),
+  cistern: along(990, 2.4, -0.004),
+  filum: along(952, 2.4, -0.02),
+  meninges: onSection(4.8, 0.03),
+  white: onSection(7, 0.018),
+  grey: onSection(7.6, 0.018),
 };
 
 export class SpinalCord extends AnatomyModel {
   constructor() {
     super({ tilt: -0.5 });
-    this.addStand({ radius: 0.13, z: 0 });
-    // asta: fuori da `inner`, che viene ingrandito e spostato dalle inquadrature
-    this.rod = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 1, 12), new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: 1, roughness: 0.25 }));
-    this.rod.geometry.translate(0, 0.5, 0);
-    this.rod.castShadow = true;
-    this.rod.scale.y = 0.08;
-    this.spin.add(this.rod);
-    this.home = 'home';
-    this.view = VIEWS.home;
-    this.plateIds = new Set(['antHorn', 'postHorn', 'canal', 'denticulateTop', 'pllTop', 'flavaTop', ...Object.keys(TRACT_LOOPS)]);
+    this.addStand({ radius: 0.13, z: 0, rod: [0, 0.02, 0.1, -0.03] });
     this.ready = this.#build();
-  }
-
-  // Le pagine scelgono l'inquadratura con un segnaposto tra le parti da mostrare
-  // ('@low', '@cerv'…); senza segnaposto vale quella della pagina (`home`).
-  show(ids) {
-    const key = ids.find((id) => id[0] === '@')?.slice(1) ?? this.home;
-    this.view = VIEWS[key] ?? VIEWS.home;
-    const hidden = (id) => this.view.hide?.includes(id) || (this.view.hide && this.plateIds.has(id));
-    super.show(ids.filter((id) => id[0] !== '@' && !hidden(id)));
-  }
-
-  reset() {
-    super.reset();
-    this.home = 'home';
-    this.view = VIEWS.home;
-  }
-
-  update(dt, camera, realDt = dt) {
-    const { s, y, y0, z, rod } = this.view;
-    const k = 1 - Math.exp(-Math.min(realDt, 0.5) * 5);
-    const inner = this.inner;
-    inner.scale.setScalar(inner.scale.x + (s - inner.scale.x) * k);
-    // il punto (y, z) resta fermo a y0 sopra la base mentre l'ingrandimento cambia
-    const ty = y0 - s * y, tz = -s * z;
-    inner.position.y += (ty - inner.position.y) * k;
-    inner.position.z += (tz - inner.position.z) * k;
-    this.rod.position.set(0, 0.02, rod[1]);
-    this.rod.scale.y += (rod[0] - 0.02 - this.rod.scale.y) * k;
-    super.update(dt, camera, realDt);
   }
 
   async #build() {
@@ -333,10 +292,7 @@ export class SpinalCord extends AnatomyModel {
     this.#inflate('cauda', 0.45 * S);
     this.#meninges();
     this.#lowRoots();
-    // tutto ciò che appartiene alla sezione ingrandita sparisce nei primi piani del midollo intero
-    const before = new Set(this.parts.keys());
     this.#section();
-    for (const id of this.parts.keys()) if (!before.has(id)) this.plateIds.add(id);
   }
 
   // Ingrossa un tubo spostando ogni vertice lungo la sua normale.

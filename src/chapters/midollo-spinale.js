@@ -1,6 +1,6 @@
 // Capitolo "Midollo spinale". Testi dagli appunti di neuroanatomia (Midollo spinale).
 import { selector } from '../modes.js';
-import { SpinalCord } from '../models/midollo-spinale.js';
+import { SpinalCord, FOCUS } from '../models/midollo-spinale.js';
 
 const BONES = ['occipital', 'vAtlas', 'vAxis', 'vCerv', 'vThorUp', 'vThorLow', 'vL1', 'vL2', 'vLumb', 'sacrum', 'coccyx'];
 const CORD = ['cordTop', 'cervEnl', 'cordThor', 'lumbEnl', 'conus'];
@@ -17,13 +17,6 @@ const DOWN_TRACTS = ['cstLat', 'cstAnt', 'rubro', 'vestLat', 'retMed'];
 const SULCI = ['fma', 'sla', 'slp', 'sip', 'smp'];
 const RINGS = ['pia', 'liquor', 'arachnoid', 'duraRing', 'epidural'];
 const GLASS = { cordTop: { opacity: 0.22 } };
-
-// Il modello è condiviso dalle pagine: ognuna dichiara la propria inquadratura di partenza
-// (le opzioni possono cambiarla con un segnaposto '@…' tra le parti da mostrare).
-const framed = (home, mode) => async (ctx) => {
-  const m = await mode(ctx);
-  return { ...m, enter() { ctx.model.home = home; m.enter(); } };
-};
 
 const spreads = [
   {
@@ -48,37 +41,37 @@ const spreads = [
     caption: 'Midollo, radici e scheletro reali (Z-Anatomy), visti da dietro. Ogni pulsante porta in primo piano un tratto.',
     instruction: 'SCEGLI UN TRATTO DEL MIDOLLO · TRASCINA PER RUOTARE',
     view: { yaw: 2.55 },
-    mode: framed('home', selector({
+    mode: selector({
       base: [...BONES, 'medulla', ...CORD, ...ROOTS, 'filum', 'coccLig', ...CAUDA],
       pick: { medulla: 0, cordTop: 0, cervEnl: 1, lumbEnl: 2, conus: 3, filum: 4, coccLig: 4, cauda: 5, caudaRoots: 5 },
       idle: 'Dal forame magno a L2: il midollo occupa solo una parte del canale vertebrale.',
       options: [
         {
-          label: 'Limite craniale', show: ['@top'], lit: ['medulla', 'cordTop', 'vAtlas', 'occipital', ...ROOTS_TOP],
+          label: 'Limite craniale', focus: FOCUS.top, lit: ['medulla', 'cordTop', 'vAtlas', 'occipital', ...ROOTS_TOP],
           info: "Al forame magno il midollo si continua con il midollo allungato; in chirurgia il repere è l'articolazione atlanto-occipitale.",
         },
         {
-          label: 'Rig. cervicale', show: ['@cerv'], lit: ['cervEnl', ...ROOTS_CERV],
+          label: 'Rig. cervicale', focus: FOCUS.cerv, lit: ['cervEnl', ...ROOTS_CERV],
           info: "Da C5 a T1: qui nasce la rete di nervi del plesso brachiale, per l'arto superiore.",
         },
         {
-          label: 'Rig. lombo-sacrale', show: ['@low'], lit: ['lumbEnl', 'postRootLow', 'antRootLow', 'caudaRoots'],
+          label: 'Rig. lombo-sacrale', focus: FOCUS.lumbar, lit: ['lumbEnl', 'postRootLow', 'antRootLow', 'caudaRoots'],
           info: "Porzione lombo-sacrale: qui nascono i plessi lombare e sacrale, per l'arto inferiore.",
         },
         {
-          label: 'Cono', show: ['@tail'], lit: ['conus', 'vL2'],
+          label: 'Cono', focus: FOCUS.conus, lit: ['conus', 'vL2'],
           info: 'A livello di L2 il midollo da cilindrico si fa conico: è il cono terminale.',
         },
         {
-          label: 'Filum', show: ['@tail'], lit: ['filum', 'coccLig'],
+          label: 'Filum', focus: FOCUS.filum, lit: ['filum', 'coccLig'],
           info: "Restringimento filiforme che parte dall'apice del cono, dato da atrofia midollare.",
         },
         {
-          label: 'Cauda equina', show: ['@low'], lit: CAUDA,
+          label: 'Cauda equina', focus: FOCUS.cauda, lit: CAUDA,
           info: 'Radici sensitive e motorie che scendono verticali e si esauriscono man mano che trovano il proprio forame intervertebrale.',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'Le meningi e i mezzi di fissità',
@@ -96,8 +89,8 @@ const spreads = [
     },
     caption: 'In basso la sezione ingrandita con le meningi; sopra, il tratto reale C1-C4 nel sacco durale.',
     instruction: 'SCEGLI UNA MENINGE, POI SCENDI ALLA CISTERNA',
-    view: { yaw: 2.75 },
-    mode: framed('meninges', selector({
+    view: { yaw: 2.75, focus: FOCUS.meninges },
+    mode: selector({
       base: ['section', 'grey', ...RINGS, 'cordTop', ...ROOTS_TOP, ...PLATE_ROOTS, 'sleevesTop', 'duraTop', 'denticulateTop', 'pllTop', 'flavaTop'],
       pick: { duraRing: 0, sleevesTop: 0, epidural: 1, pllTop: 1, flavaTop: 1, arachnoid: 2, liquor: 2, pia: 3, denticulateTop: 3, filum: 4, coccLig: 5 },
       idle: "Dall'esterno: spazio peridurale, dura madre, aracnoide, spazio subaracnoideo, pia madre.",
@@ -119,15 +112,15 @@ const spreads = [
           info: 'La pia aderisce al midollo; i legamenti denticolati attraversano lo spazio subaracnoideo e si fissano alla dura in una serie di arcate.',
         },
         {
-          label: 'Cisterna', show: ['@tail', ...LOW_BONES, 'conus', 'duraLow', 'filum', 'coccLig', ...CAUDA], lit: ['cistern', 'duraLow'],
+          label: 'Cisterna', focus: FOCUS.cistern, show: [...LOW_BONES, 'conus', 'duraLow', 'filum', 'coccLig', ...CAUDA], lit: ['cistern', 'duraLow'],
           info: 'Sotto il cono dura e aracnoide restano attaccate alla colonna: un grande spazio pieno di liquor, attorno a filum e cauda, fino a S2.',
         },
         {
-          label: 'Leg. coccigeo', show: ['@tail', ...LOW_BONES, 'conus', 'duraLow', 'filum', 'cistern'], lit: ['coccLig', 'coccyx', 'filum'],
+          label: 'Leg. coccigeo', focus: FOCUS.filum, show: [...LOW_BONES, 'conus', 'duraLow', 'filum', 'cistern'], lit: ['coccLig', 'coccyx', 'filum'],
           info: 'Da S2 il filum è avvolto anche da dura e aracnoide: il legamento coccigeo aderisce alla faccia dorsale del coccige.',
         },
       ],
-    })),
+    }),
   },
   {
     title: 'La sostanza grigia: corna e lamine',
@@ -145,8 +138,8 @@ const spreads = [
     },
     caption: 'Sezione C4-C5 vista da dietro: il contorno del grigio è quello delle mesh reali, le lamine sono ricostruite.',
     instruction: 'SCEGLI UNA LAMINA SULLA SEZIONE',
-    view: { yaw: 2.9 },
-    mode: framed('grey', selector({
+    view: { yaw: 2.9, focus: FOCUS.grey },
+    mode: selector({
       base: ['section', 'grey', ...LAMINAE, ...SEGMENT],
       looks: GLASS,
       pick: { lam1: 0, lam2: 1, lam3: 1, lam4: 2, lam5: 3, lam6: 3, lam7: 4, lam8: 4, lam9: 5, lam10: 6 },
@@ -181,7 +174,7 @@ const spreads = [
           info: "Impari: commessura grigia e sostanza gelatinosa centrale, attorno al canale centrale dell'ependima.",
         },
       ],
-    })),
+    }),
   },
   {
     title: 'La sostanza bianca: solchi e cordoni',
@@ -204,8 +197,8 @@ const spreads = [
     },
     caption: 'Le aree colorate sono le sezioni vere delle colonne dei fasci di Z-Anatomy, che salgono nel tratto C1-C4.',
     instruction: 'SCEGLI UN CORDONE O UN GRUPPO DI FASCI',
-    view: { yaw: 2.9 },
-    mode: framed('white', selector({
+    view: { yaw: 2.9, focus: FOCUS.white },
+    mode: selector({
       base: ['section', 'grey', ...SULCI, ...SEGMENT],
       looks: GLASS,
       pick: { funAnt: 1, funLat: 2, funPost: 3, gracile: 3, cuneate: 3, cba: 6, cbp: 6 },
@@ -246,7 +239,7 @@ const spreads = [
           info: 'La commessura bianca anteriore separa la commessura grigia dal fondo della fessura anteriore; la posteriore, poco evidente, dal solco mediano posteriore.',
         },
       ],
-    })),
+    }),
   },
 ];
 
