@@ -155,24 +155,7 @@ export class NervoFaciale extends AnatomyModel {
   constructor() {
     super({ tilt: -0.5 });
     this.addStand({ radius: 0.2, z: -0.02, rod: [0, 0.02, 0.19, -0.075] });
-    this.rod = this.inner.children.at(-1);
     this.ready = this.#build();
-  }
-
-  // Primo piano: il punto `c` (mm) va sull'asse di rotazione, all'altezza `h`,
-  // e il modello è ingrandito di `k`. `reset` lo riporta a posto.
-  focus(c, k, h = 0.36) {
-    const p = mm(...c).multiplyScalar(k);
-    this.inner.scale.setScalar(k);
-    this.inner.position.set(-p.x, h - p.y, -p.z);
-    this.rod.visible = false;
-  }
-
-  reset() {
-    super.reset();
-    this.inner.position.set(0, 0, 0);
-    this.inner.scale.setScalar(1);
-    this.rod.visible = true;
   }
 
   async #build() {
