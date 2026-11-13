@@ -600,6 +600,7 @@ export class AuditoryModel extends AnatomyModel {
       label.position.y += (label.userData.lift ??= Math.max(0.012, m.userData.size.y / 2 + 0.008));
       label.position.applyMatrix4(m.parent.matrixWorld);
       this.overlay.worldToLocal(label.position);
+      label.userData.lead.visible = false; // qui la posizione è propria: niente linea di richiamo
     }
   }
 }

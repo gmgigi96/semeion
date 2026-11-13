@@ -13,6 +13,10 @@ export const W = 1 - 2 * M; // giustezza
 // comportamento su misura chiama `found` per scoperte che non passano di qui.
 export const explore = (controls) => controls.userData.explore ?? { offer() {}, found() {} };
 
+// Un comportamento su misura che sceglie un'opzione toccando il modello (`pick`) la conta
+// come provata con `picked(controls, etichetta)`: scegliere sul modello vale come il pulsante.
+export const picked = (controls, label) => label && explore(controls).found(label);
+
 // Ogni pulsante conta come comando da provare, salvo `explore: false` (per esempio
 // un pulsante che rimette a posto).
 export async function chipsInto(controls, specs) {
@@ -287,9 +291,12 @@ export function cutter({
       model.setLabels({});
       onReveal?.(model, null);
       info.text = say(c);
-      quiz?.cut?.(c && { label: c.out.label, truth: c.out.truth });
+      quiz?.cut?.(c && { label: c.out.label, truth: c.out.truth, at: saved(c) });
       if (c && !asks) reveal();
     };
+    // il taglio in forma da salvare (JSON), per rifarlo con `replay` alla prossima visita
+    const round = (v) => v.toArray().map((x) => +x.toFixed(5));
+    const saved = (c) => ({ point: round(c.point), normal: round(c.normal ?? new THREE.Vector3(0, 0, 1)), path: c.path ?? null, part: c.part ?? null });
     // il confronto: il modello mostra l'esito vero
     const reveal = () => {
       if (!cut || shown) return;
@@ -311,6 +318,19 @@ export function cutter({
 
     return {
       reveal,
+      // rifà un taglio salvato (vedi `saved`); false se non è più valido
+      replay(at) {
+        const vec = (a) => Array.isArray(a) && a.length === 3 && a.every(Number.isFinite) && new THREE.Vector3(...a);
+        const point = vec(at?.point);
+        if (!point) return false;
+        if (at.path ? !paths.includes(at.path) : !parts.includes(at.part)) return false;
+        const c = { point, normal: vec(at.normal) || new THREE.Vector3(0, 0, 1), path: at.path ?? undefined, part: at.part ?? undefined };
+        c.hits = lesion ? lesion(point, sampled()) : c.path ? sphere(point) : new Set();
+        const out = outcome(c, model);
+        if (!out || out.reason) return false;
+        apply({ ...c, out });
+        return true;
+      },
       enter() {
         model.show(base);
         apply(null);

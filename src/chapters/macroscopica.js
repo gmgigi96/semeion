@@ -1,6 +1,6 @@
 // Capitolo "Encefalo: anatomia macroscopica". Testi dagli appunti di
 // neuroanatomia (Macroscopica).
-import { selector, chipsInto, infoText } from '../modes.js';
+import { selector, chipsInto, infoText, picked } from '../modes.js';
 import { Macroscopica } from '../models/macroscopica.js';
 
 const FRONTAL = ['sfg', 'mfg', 'ifg', 'precentral', 'orbital'];
@@ -36,14 +36,16 @@ async function insulaMode({ model, controls }) {
     chips.forEach((c, j) => c.setActive(j === i));
     info.text = options[i].info;
   };
+  // toccare opercoli e insula sul modello vale come il pulsante corrispondente
+  const touch = (i) => (picked(controls, options[i].label), select(i));
   return {
     enter() {
       select(0);
       model.show(base);
       model.onClick = (id) => {
-        if (OPERCULA.includes(id) || id === 'lateral') select(options[sel].open ? 0 : 1);
-        else if (id === 'insulaS') select(2);
-        else if (id === 'insulaL') select(3);
+        if (OPERCULA.includes(id) || id === 'lateral') touch(options[sel].open ? 0 : 1);
+        else if (id === 'insulaS') touch(2);
+        else if (id === 'insulaL') touch(3);
       };
       model.lookFn = (part) => {
         const o = options[sel];

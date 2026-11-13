@@ -3,7 +3,7 @@
 // Parti reali e ricostruite, con le fonti: vedi src/models/orecchio-esterno.js.
 // Non sono negli appunti, e compaiono solo nei commenti ai pulsanti: i territori
 // cutanei dei singoli nervi sul padiglione e il decorso dei nervi e dell'arteria.
-import { chipsInto, infoText } from '../modes.js';
+import { chipsInto, infoText, picked } from '../modes.js';
 import { OuterEarModel, AURICLE, DRUM, TEMPORAL, FOCUS } from '../models/orecchio-esterno.js';
 
 const TENSA = ['tmAS', 'tmPS', 'tmPI', 'tmAI'];
@@ -39,7 +39,8 @@ function earMode({ base, options, looks = {}, pick = {}, idle = '', initial = nu
     return {
       enter() {
         select(initial);
-        model.onClick = (id) => id in pick && select(pick[id]);
+        // scegliere toccando il modello vale come provare il pulsante
+        model.onClick = (id) => id in pick && (picked(controls, options[pick[id]]?.label), select(pick[id]));
         model.lookFn = (part) => {
           const o = options[sel];
           const look = { ...looks[part.id], ...o?.looks?.[part.id] };

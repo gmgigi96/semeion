@@ -176,7 +176,17 @@ a un'interazione che fa ragionare (una via da seguire, una lesione, un blocco).
 
   Facoltativi: `hint` (l'invito prima del taglio), `done` («Taglio», «Chiusa»), `again`,
   `legend` (tavola `'modello'`). La tavola occupa più di una previsione con l'aletta: tenere il
-  testo sotto le 90 parole e il titolo su una riga, e guardare la console.
+  testo sotto le 90 parole e il titolo su una riga, e guardare la console. La riga di stato
+  («Chiusa: …») e l'elenco della tavola `'modello'` («Segnati: …») vanno a capo secondo il
+  testo: ciò che sta sotto si sposta da sé (due righe sono sempre riservate).
+
+- **Domanda già risolta.** Tornando su una pagina la cui domanda è risolta (nelle scoperte, vedi
+  sotto), la domanda si apre risolta: la risposta giusta in verde, l'aletta sollevata con la
+  previsione di allora (e il modello che la mostra), la struttura indicata, i cartellini al loro
+  posto con il cordino, il taglio rifatto e confrontato con la previsione di allora. In alto a
+  destra compare «rifai», scritto a mano: riporta la domanda da capo e rimette a posto il modello
+  (la spunta nel riepilogo resta). Non serve nulla nel capitolo: `onSolved(esito)` di `quiz`
+  salva ciò che basta per ridisegnarla.
 
 ### Il riepilogo «Da scoprire»
 
@@ -196,15 +206,25 @@ capitolo ha già.
   cominciato, c'è «2/5» (domande risolte) in rosso, o la spunta a capitolo finito; toccarlo
   apre il riepilogo.
 - Lo stato sta in `localStorage` (`semeion:scoperte`), con ogni accesso in try/catch: senza
-  storage il libro ricorda le scoperte solo finché la pagina resta aperta.
+  storage il libro ricorda le scoperte solo finché la pagina resta aperta. Per ogni pagina:
+  `q` (risolta), `a` (l'esito con cui è stata risolta), `all` (i comandi), `seen` (quelli provati).
+- **Azzerare**: nell'indice, sotto il conto delle domande, «Azzera l'avanzamento di tutto il
+  libro»; nel riepilogo di un capitolo, sotto il conto, «Azzera questo capitolo». Il primo
+  tocco chiede conferma («Tocca di nuovo…: non si torna indietro»), il secondo, entro cinque
+  secondi, cancella domande risolte e comandi provati e ridisegna la pagina (`ctx.refresh()`).
+  L'elenco dei comandi di ogni pagina resta.
 
 Nei comportamenti della pagina destra non serve nulla di speciale: `chipsInto` e `cordInto`
 annotano da sé i loro comandi e ogni volta che chi legge li usa; `selector` conta anche le
 opzioni scelte toccando il modello (`pick`) e quella avviata da una previsione. Un pulsante che
 rimette solo a posto (per esempio «Ricuci il plesso») si esclude con `explore: false` nella sua
-descrizione. Per una scoperta che non passa da un pulsante o da una corda, un comportamento su
-misura può usare `explore(controls)` di `src/modes.js`: `offer('etichetta')` mentre costruisce i
-controlli (la mette nell'elenco), `found('etichetta')` quando chi legge la scopre.
+descrizione. Un comportamento su misura che sceglie un'opzione toccando il modello (il suo
+`model.onClick`, un `pick` proprio) o con la `choose(i)` di una previsione la conta con
+`picked(controls, etichetta)` di `src/modes.js`, con l'etichetta del pulsante corrispondente
+(vedi `gazeSelector` in `nervi-oculomotori.js`, `earMode` in `orecchio-medio.js`). Per una
+scoperta che non passa da un pulsante o da una corda si usa `explore(controls)`:
+`offer('etichetta')` mentre costruisce i controlli (la mette nell'elenco), `found('etichetta')`
+quando chi legge la scopre.
 
 ## Il file del capitolo
 
@@ -350,10 +370,14 @@ mode: cutter({
 - Il segno del taglio è `model.markCut(punto, normale, raggio)`, che `reset()` toglie;
   `model.nearestPart(punto, ids)` dice in quale parte cade un punto.
 - Un comportamento su misura può usare la stessa domanda: riceve `quiz` fra gli argomenti,
-  chiama `quiz.cut({ label, truth })` (o `quiz.cut(null)`), legge `quiz.state` (`'idle'`,
+  chiama `quiz.cut({ label, truth, at })` (o `quiz.cut(null)`), legge `quiz.state` (`'idle'`,
   `'mark'`, `'shown'`) e `quiz.marks`, chiama `quiz.toggle(id)` per la tavola `'modello'`, e
   ritorna `reveal()`, che la domanda chiama al confronto (vedi `lesionMode` in
   `src/chapters/plesso-brachiale.js`).
+- Per rifare il taglio alla prossima visita (domanda già risolta): `at` è un oggetto da salvare
+  in JSON che descrive il taglio, e il comportamento ritorna anche `replay(at)`, che lo rifà e
+  ritorna `true` (o `false` se non è più valido; allora la domanda ridisegna solo la tavola).
+  `cutter` lo fa da sé (`at` = punto, normale, via o parte); `lesionMode` salva `{ id, t }`.
 
 ### Primi piani
 
@@ -423,6 +447,9 @@ export class MioModello extends AnatomyModel {
   laterali vanno trovate per tentativi con uno scatto.
 - **Coordinate**: x laterale (destra del paziente +), y verso l'alto, z anteriore. Unità libere,
   ma il modello deve stare in circa **x ±0.45, y 0…0.8, z ±0.35**, appoggiato sulla base a y = 0.
+- **Etichette** (`setLabels`, `labels` delle opzioni): se a schermo due etichette si
+  coprirebbero, la più alta sale sopra l'altra e una linea di richiamo sottile la lega alla sua
+  parte (`#unstackLabels` in `src/model.js`). Non serve sfalsarle a mano.
 - **`addPart(id, nome, colore, geometrie, opzioni)`**: una parte ha un nome e una o più
   geometrie (di solito i due lati, con `both(g)`). Opzioni: `ghost: true` per un involucro
   trasparente di contesto che non intercetta il puntatore; `opacity`; `double: true` per

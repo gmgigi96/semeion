@@ -3,7 +3,7 @@
 // polarizzazione, accoppiamento dei canali). Gli appunti non descrivono la
 // coclea né l'organo del Corti: il capitolo segue ciò che contengono.
 // Parti reali e ricostruite, con le fonti: vedi src/models/orecchio-interno.js.
-import { chipsInto, infoText } from '../modes.js';
+import { chipsInto, infoText, picked } from '../modes.js';
 import { InnerEarModel, SKULL_VIEW, SKULL_YAW } from '../models/orecchio-interno.js';
 
 const BONY = ['vestibule', 'canalLat', 'canalAnt', 'canalPost', 'cochlea'];
@@ -52,7 +52,8 @@ function labMode({ focus, base, options, looks = {}, pick = {}, idle = '', initi
       enter() {
         model.setFocus(focus);
         select(initial);
-        model.onClick = (id) => id in pick && select(pick[id]);
+        // scegliere toccando il modello vale come provare il pulsante
+        model.onClick = (id) => id in pick && (picked(controls, options[pick[id]]?.label), select(pick[id]));
         model.lookFn = (part) => {
           const o = options[sel];
           const look = { ...looks[part.id] };

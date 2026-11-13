@@ -87,6 +87,8 @@ export const FOCUS = {
   wide: { at: at(...HOME), scale: 1, height: 0.27 },
   tube: { at: at(-31, -9, 1574), scale: 1.3, height: 0.3 },
   ear: { at: at(-44.5, 3.5, 1580), scale: 2.2, height: 0.3 },
+  // membrana e martello da vicino, per vederli spinti dalla pressione
+  drum: { at: at(-46.5, 4.5, 1579.5), scale: 2.9, height: 0.32, stand: false },
 };
 
 // Superficie ottenuta trascinando un profilo chiuso lungo una curva. `profile(u)`
@@ -381,7 +383,8 @@ export class MiddleEarModel extends AnatomyModel {
     const s = this.ear;
     const wave = Math.sin(this.clock * Math.PI * 2 * 1.6);
     const swing = 0.085 * s.sound * (1 - 0.6 * s.tt) * wave;
-    const still = 0.13 * s.tt + 0.2 * s.press;
+    // la pressione sposta catena e membrana molto più che nel vero, per vederle
+    const still = 0.13 * s.tt + 0.34 * s.press;
     const q = new THREE.Quaternion().setFromAxisAngle(r.axis, (swing + still) * r.sign);
     for (const b of r.bones) {
       b.mesh.position.copy(b.rest).sub(r.A1).applyQuaternion(q).add(r.A1);

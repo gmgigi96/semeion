@@ -689,6 +689,7 @@ export class InnerEarModel extends AnatomyModel {
       label.position.y += (label.userData.lift ??= Math.max(0.02, part.top - part.center.y + 0.012));
       label.position.applyMatrix4(m.parent.matrixWorld);
       this.overlay.worldToLocal(label.position);
+      label.userData.lead.visible = false; // qui la posizione è propria: niente linea di richiamo
     }
   }
 }

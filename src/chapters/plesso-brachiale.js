@@ -4,7 +4,7 @@
 // le interazioni lavorano sul grafo dei segmenti del plesso.
 import * as THREE from 'three';
 import { makeText, FONT } from '../ui.js';
-import { W, chipsInto, infoText, explore } from '../modes.js';
+import { W, chipsInto, infoText, explore, picked } from '../modes.js';
 import { PlessoBrachiale, ROOTS, LEVEL_COLORS, VARIANTS, NERVE, DIM, DEAD, LIT, TERMINALS } from '../models/plesso-brachiale.js';
 
 const SPINE = ['vC3', 'vC4', 'vC5', 'vC6', 'vC7', 'vT1', 'vT2', 'vT3', 'discs'];
@@ -202,7 +202,8 @@ async function fibresMode({ model, controls }) {
         const on = seg.roots.includes(sel) && model.time - t0 > seg.depth * 0.14;
         return on ? { color: LEVEL_COLORS[sel], glow: 0.4 } : { color: DIM };
       };
-      model.onClick = (id) => ROOTS.includes(id) && select(id);
+      // toccare una radice sul modello vale come il suo pulsante
+      model.onClick = (id) => ROOTS.includes(id) && (picked(controls, id), select(id));
     },
   };
 }
@@ -292,9 +293,12 @@ async function terminalsMode({ model, controls }) {
         const on = path.has(seg.id) && model.time - t0 > (top - seg.depth) * 0.14;
         return on ? { color: LIT, glow: 0.5 } : { color: DIM };
       };
+      // toccare un nervo terminale sul modello vale come il suo pulsante
       model.onClick = (id) => {
         const t = id === 'MedL' || id === 'MedM' ? 'MED' : id;
-        if (TERMINALS.includes(t)) select(t);
+        if (!TERMINALS.includes(t)) return;
+        picked(controls, label(t)[0].toUpperCase() + label(t).slice(1));
+        select(t);
       };
     },
   };
@@ -366,7 +370,8 @@ async function lesionMode({ model, controls, quiz }) {
     shown = !asks;
     chips[0].group.visible = !!id;
     labels();
-    quiz?.cut?.(id && { label: model.segs.get(id).name, truth: down() });
+    // `at` basta a rifare lo stesso taglio alla prossima visita (vedi `replay`)
+    quiz?.cut?.(id && { label: model.segs.get(id).name, truth: down(), at: { id, t: +t.toFixed(5) } });
     if (!id) {
       head.text = '';
       info.text = 'Nessuna lesione: tutte le fibre conducono.';
@@ -392,6 +397,13 @@ async function lesionMode({ model, controls, quiz }) {
   }
   return {
     reveal,
+    // un taglio salvato da una visita precedente
+    replay(at) {
+      if (!model.segs.has(at?.id) || !Number.isFinite(at.t)) return false;
+      const len = model.segs.get(at.id).len;
+      cut(at.id, Math.min(len * 0.88, Math.max(len * 0.12, at.t)));
+      return true;
+    },
     enter() {
       model.show([...SPINE, 'rib1', 'clavicleG', 'scapula', 'humerus', ...PLEXUS]);
       cut(null);

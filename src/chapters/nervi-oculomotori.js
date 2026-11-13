@@ -3,7 +3,7 @@
 // Le azioni dei singoli muscoli (pagina 4) e la posizione dell'occhio nelle
 // paralisi (pagina 5) non sono negli appunti: vedi le fonti in testa a
 // src/models/nervi-oculomotori.js.
-import { selector, chipsInto, infoText } from '../modes.js';
+import { selector, chipsInto, infoText, picked } from '../modes.js';
 import { OculomotorModel } from '../models/nervi-oculomotori.js';
 
 const lr = (...ids) => ids.flatMap((id) => [`${id}R`, `${id}L`]);
@@ -47,10 +47,12 @@ function gazeSelector({ base, options, looks = {}, pick = {}, idle = '' }) {
       info.text = o?.info ?? idle;
     };
     return {
-      choose: (i) => select(i),
+      // la previsione verificata sul modello vale come aver provato quell'opzione
+      choose: (i) => (picked(controls, options[i]?.label), select(i)),
       enter() {
         select(null);
-        model.onClick = (id) => id in pick && select(pick[id]);
+        // scegliere toccando il modello vale come provare il pulsante
+        model.onClick = (id) => id in pick && (picked(controls, options[pick[id]]?.label), select(pick[id]));
         model.lookFn = (part) => {
           const o = options[sel];
           const look = { ...looks[part.id] };

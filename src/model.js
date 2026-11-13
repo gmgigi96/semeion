@@ -260,7 +260,7 @@ export class AnatomyModel {
 
   // { id: testo }: etichette sempre rivolte a chi guarda.
   setLabels(map) {
-    for (const t of this.labels.values()) t.visible = t.userData.on = false;
+    for (const t of this.labels.values()) t.visible = t.userData.on = t.userData.lead.visible = false;
     for (const [id, text] of Object.entries(map)) {
       let t = this.labels.get(id);
       if (!t) {
@@ -275,7 +275,17 @@ export class AnatomyModel {
         t.renderOrder = 30;
         const p = this.parts.get(id);
         t.userData.anchor = new THREE.Vector3(p.center.x, p.top, p.center.z);
-        this.overlay.add(t);
+        t.userData.raise = 0; // spostamento verso l'alto a schermo, per non coprire un'altra etichetta
+        // linea di richiamo dalla parte all'etichetta spostata
+        const lead = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
+          new THREE.LineBasicMaterial({ color: 0x9c2f22, transparent: true, opacity: 0.75, depthTest: false })
+        );
+        lead.frustumCulled = false;
+        lead.renderOrder = 29;
+        lead.visible = false;
+        t.userData.lead = lead;
+        this.overlay.add(t, lead);
         this.labels.set(id, t);
       }
       t.text = text;
@@ -460,6 +470,61 @@ export class AnatomyModel {
       this.overlay.worldToLocal(t.position);
       t.position.y += 0.012; // scarto fisso, anche se `inner` è ingrandito
       t.quaternion.copy(q);
+    }
+    this.#unstackLabels(camera, realDt);
+  }
+
+  // Etichette che a schermo si coprirebbero: dal basso verso l'alto, ciascuna sale sopra
+  // quelle già posate con cui si sovrappone in orizzontale, e una linea di richiamo la lega
+  // alla sua parte. Lo spostamento è a schermo (lungo l'alto della camera) e scorre morbido.
+  #unstackLabels(camera, dt) {
+    const shown = [...this.labels.values()].filter((t) => t.visible && t.userData.on && t.textRenderInfo);
+    for (const t of this.labels.values()) if (!shown.includes(t)) t.userData.lead.visible = false;
+    if (!shown.length) return;
+    this.overlay.updateWorldMatrix(true, false);
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    const s = new THREE.Vector3().setFromMatrixScale(this.overlay.matrixWorld);
+    const scale = Math.abs(s.x);
+    const ndc = (v) => v.clone().project(camera);
+    const boxes = shown.map((t) => {
+      const w = this.overlay.localToWorld(t.position.clone());
+      const [x0, y0, x1, y1] = t.textRenderInfo.blockBounds;
+      const p = ndc(w);
+      // misure a schermo: larghezza e altezza del testo, e quanto vale un'unità del mondo in alto
+      const perUp = ndc(w.clone().addScaledVector(up, 0.01)).y - p.y;
+      const half = Math.abs(ndc(w.clone().addScaledVector(right, ((x1 - x0) * scale) / 2)).x - p.x);
+      const h = Math.abs(perUp) * (((y1 - y0) * scale) / 0.01);
+      return { t, w, x: p.x, y: p.y, half, h, perUp: perUp / 0.01 };
+    });
+    boxes.sort((a, b) => a.y - b.y);
+    const placed = [];
+    const pad = 0.012; // margine tra due etichette, in coordinate dello schermo
+    for (const b of boxes) {
+      let y = b.y;
+      // sale finché non si sovrappone più a nessuna etichetta già posata
+      for (let k = 0; k < placed.length + 1; k++) {
+        const hit = placed.find((o) => Math.abs(o.x - b.x) < o.half + b.half && y < o.top + pad && y + b.h > o.y - pad);
+        if (!hit) break;
+        y = hit.top + pad;
+      }
+      placed.push({ x: b.x, y, top: y + b.h, half: b.half });
+      const goal = b.perUp > 1e-6 ? (y - b.y) / b.perUp : 0;
+      const u = b.t.userData;
+      u.raise += (goal - u.raise) * (1 - Math.exp(-Math.min(dt, 0.1) * 10));
+      if (Math.abs(goal - u.raise) < 1e-5) u.raise = goal;
+      const at = b.w.clone().addScaledVector(up, u.raise);
+      b.t.position.copy(this.overlay.worldToLocal(at.clone()));
+      // linea di richiamo: dal punto sopra la parte al piede dell'etichetta
+      const lead = u.lead;
+      lead.visible = u.raise > 0.004;
+      if (lead.visible) {
+        const from = this.overlay.worldToLocal(b.w.clone().addScaledVector(up, -0.01));
+        const to = this.overlay.worldToLocal(at.clone().addScaledVector(up, 0.001));
+        lead.geometry.attributes.position.setXYZ(0, from.x, from.y, from.z);
+        lead.geometry.attributes.position.setXYZ(1, to.x, to.y, to.z);
+        lead.geometry.attributes.position.needsUpdate = true;
+      }
     }
   }
 }

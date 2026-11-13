@@ -2,7 +2,7 @@
 // (Orecchio medio: tuba uditiva e riflesso di attenuazione). Gli appunti non
 // descrivono le pareti della cassa: il capitolo segue ciò che contengono.
 // Parti reali e ricostruite, con le fonti: vedi src/models/orecchio-medio.js.
-import { chipsInto, infoText, cordInto } from '../modes.js';
+import { chipsInto, infoText, cordInto, picked } from '../modes.js';
 import { MiddleEarModel, FOCUS } from '../models/orecchio-medio.js';
 
 const MALLEUS = ['malleusHead', 'manubrium'];
@@ -22,9 +22,11 @@ const EAR_MUSCLES = ['tt', 'cochleariform', 'stapedius', 'pyramid'];
 // `cord` (come in `selector`, vedi src/modes.js): una corda che regola la pressione
 // esterna; `react(v)` ritorna un'opzione con il suo `ear`. I pulsanti con `ear.press`
 // spostano la corda, e deglutendo la corda torna a zero insieme alla membrana.
+// `focus` di un'opzione (anche di quella che viene dalla corda): il primo piano del motore
+// mentre è scelta; senza, quello della pagina (`view.focus`).
 function earMode({ base, options, looks = {}, pick = {}, idle = '', rest = {}, initial = null, keep = [], cord = null }) {
   const never = new Set(keep);
-  return async ({ model, controls }) => {
+  return async ({ model, controls, def }) => {
     let sel = null;
     let live = null;
     let t0 = 0;
@@ -40,6 +42,7 @@ function earMode({ base, options, looks = {}, pick = {}, idle = '', rest = {}, i
       model.show([...base, ...(o?.show ?? []), ...(o?.lit ?? [])]);
       model.setLabels(o?.labels ?? {});
       model.setEar(ear);
+      model.zoomTo(o?.focus !== undefined ? o.focus : def?.view?.focus ?? null);
       info.text = o?.info ?? idle;
     };
     const select = (i) => {
@@ -59,10 +62,12 @@ function earMode({ base, options, looks = {}, pick = {}, idle = '', rest = {}, i
       apply(live, { ...rest, ...live.ear });
     };
     return {
-      choose: (i) => select(i),
+      // la previsione verificata sul modello vale come aver provato quell'opzione
+      choose: (i) => (picked(controls, options[i]?.label), select(i)),
       enter() {
         select(initial);
-        model.onClick = (id) => id in pick && select(pick[id]);
+        // scegliere toccando il modello vale come provare il pulsante
+        model.onClick = (id) => id in pick && (picked(controls, options[pick[id]]?.label), select(pick[id]));
         model.lookFn = (part) => {
           const o = current();
           const look = { ...looks[part.id] };
@@ -165,7 +170,7 @@ const spreads = [
       explain: "Ogni 10 m si aggiunge 1 atm: l'acqua spinge la membrana verso l'interno e compare il dolore, finché la tuba non si apre.",
       reveal: 1,
     },
-    caption: 'Membrana, ossicini e tuba visti dal davanti, con la cartilagine in trasparenza. La deformazione della membrana è esagerata.',
+    caption: 'Membrana, ossicini e tuba visti dal davanti, con la cartilagine in trasparenza. Spostamento di membrana e martello molto esagerato.',
     instruction: 'TIRA LA CORDA DELLA PRESSIONE, POI DEGLUTISCI',
     view: { yaw: -0.5, focus: FOCUS.tube },
     mode: earMode({
@@ -174,27 +179,30 @@ const spreads = [
       keep: [...TUBE, ...CHAIN, 'cochlea'],
       idle: 'La tuba è chiusa: la cassa del timpano è isolata dalla rinofaringe.',
       cord: {
-        label: 'PRESSIONE FUORI, RISPETTO ALLA CASSA',
+        // titoletto breve: la lettura che lo segue resta lontana dal manico in fondo corsa
+        label: 'PRESSIONE ESTERNA',
         ends: ['quota', 'immersione'],
         min: -1,
         max: 1,
         value: 0,
         // ogni 10 m d'acqua aggiungono 1 atm
         format: (v) => (v >= 0.05 ? `${(Math.round(v * 10) / 10).toLocaleString('it')} atm in più, come a ${Math.round(v * 10)} m` : v <= -0.05 ? 'più bassa' : 'uguale'),
+        // con una differenza di pressione si guardano da vicino membrana e martello
         react(v) {
           const lit = ['tm', ...MALLEUS];
+          const focus = FOCUS.drum;
           if (v >= 0.05) {
             // a 10 m (1 atm in più) gli appunti segnalano il dolore
             const pain = v >= 0.95 ? ' e compare il dolore' : '';
-            return { ear: { press: v }, lit, info: `Fuori la pressione è più alta che nella cassa: la membrana è spinta verso l'interno${pain}.` };
+            return { ear: { press: v }, lit, focus, info: `Fuori la pressione è più alta che nella cassa: la membrana è spinta verso l'interno${pain}.` };
           }
-          if (v <= -0.05) return { ear: { press: v }, lit, info: "Fuori la pressione scende, nella cassa no: la membrana è spinta verso l'esterno." };
+          if (v <= -0.05) return { ear: { press: v }, lit, focus, info: "Fuori la pressione scende, nella cassa no: la membrana è spinta verso l'esterno." };
           return { ear: { press: 0 }, info: 'Le due pressioni sono uguali: la membrana è a riposo.' };
         },
       },
       options: [
-        { label: 'Sali di quota', ear: { press: -1 }, lit: ['tm', ...MALLEUS], info: "Fuori la pressione scende, nella cassa no: la membrana è spinta verso l'esterno." },
-        { label: 'Immersione a 10 m', ear: { press: 1 }, lit: ['tm', ...MALLEUS], info: "Fuori 2 atm, nella cassa 1 atm: l'acqua spinge la membrana verso l'interno e compare il dolore." },
+        { label: 'Sali di quota', ear: { press: -1 }, lit: ['tm', ...MALLEUS], focus: FOCUS.drum, info: "Fuori la pressione scende, nella cassa no: la membrana è spinta verso l'esterno." },
+        { label: 'Immersione a 10 m', ear: { press: 1 }, lit: ['tm', ...MALLEUS], focus: FOCUS.drum, info: "Fuori 2 atm, nella cassa 1 atm: l'acqua spinge la membrana verso l'interno e compare il dolore." },
         { label: 'Deglutisci', swallow: true, lit: ['lumen', 'tm'], info: "La tuba si apre: l'aria passa tra rinofaringe e cassa, le due pressioni si eguagliano e la membrana torna a riposo." },
       ],
     }),

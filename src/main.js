@@ -269,6 +269,7 @@ function build(i) {
     toc: () => goTo(0),
     openChapter: (c) => goTo(CHAPTERS[c].first),
     go: (k) => goTo(k),
+    refresh: () => redraw(),
   };
   if (page.toc) return buildToc(CHAPTERS, PARTS, ctx);
   if (page.summary) return buildSummary(page.chapter, { ...ctx, number: CHAPTERS.indexOf(page.chapter) + 1 });
@@ -333,6 +334,22 @@ async function goTo(i, animate = true) {
   growTarget = 1;
   busy = false;
   refreshBar();
+}
+
+// Ridisegna sul posto la pagina aperta, senza sfogliare (per esempio dopo aver
+// azzerato le scoperte, che l'indice e i riepiloghi mostrano).
+async function redraw() {
+  if (busy || !current) return;
+  busy = true;
+  clearHover();
+  const next = await build(index);
+  book.left.remove(current.left);
+  book.right.remove(current.right);
+  book.left.add(next.left);
+  book.right.add(next.right);
+  current = next;
+  next.enter();
+  busy = false;
 }
 
 // --- aprire e chiudere il libro ------------------------------------------------

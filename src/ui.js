@@ -20,6 +20,7 @@ export const ACCENT = 0x9c3d1f;
 export const MARKER = 0xf0c24a;
 export const GOOD = 0x2f7d4f;
 export const BAD = 0xb23a2a;
+const PEN = 0x2c3e66; // l'inchiostro blu degli inviti a mano («tocca…», «rifai»)
 
 // Quote sopra la carta, per evitare z-fighting.
 const Z_FILL = 0.0008;
@@ -266,15 +267,25 @@ export function underline(x0, x1, y, color = ACCENT) {
 //   cut: { board: 'campo' | 'corpo' | 'modello' }  «Taglia qui»: si taglia la via sul modello, si
 //                                                  segna il deficit previsto, poi si confronta
 //                                                  (vedi cutQuiz); onCompare() mostra l'esito sul modello
-// onSolved() viene chiamata una volta, quando la domanda è risolta: risposta giusta,
-// aletta sollevata dopo la previsione, struttura indicata (o accesa dopo tre tentativi),
-// tutte le etichette a posto. È ciò che il riepilogo del capitolo spunta.
+// onSolved(esito) viene chiamata quando la domanda è risolta: risposta giusta, aletta
+// sollevata dopo la previsione, struttura indicata (o accesa dopo tre tentativi), tutte le
+// etichette a posto, previsione di un taglio esatta (o tre confronti). È ciò che il
+// riepilogo del capitolo spunta; `esito` (un oggetto da salvare in JSON) basta a ridisegnare
+// la domanda risolta.
+// Domanda già risolta in una visita precedente: `saved` è quell'esito ({} se non c'è). La
+// domanda si apre risolta (risposta giusta segnata, aletta aperta, cartellini al loro posto,
+// taglio e confronto rifatti) e in alto a destra compare «rifai», che la riporta da capo e
+// chiama onRedo() (la pagina rimette a posto il modello). Le parti che toccano il modello si
+// ridisegnano in `resume()`, che la pagina chiama dopo aver avviato il suo comportamento.
+// Altri ganci: meshes(id) le mesh di una parte (per i cordini delle etichette),
+// onReplay(at) rifà sul modello un taglio salvato (ritorna false se non sa farlo).
 export async function quiz(def, width, hooks = {}) {
   if (def.point) return pointQuiz(def, width, hooks);
   if (def.tags) return tagQuiz(def, width, hooks);
   if (def.cut) return cutQuiz(def, width, hooks);
   const { question, options, correct, explain, why = [], predict = false } = def;
-  const { onPredict, onSolved } = hooks;
+  const { onPredict, onSolved, onRedo } = hooks;
+  let saved = hooks.saved ?? null;
   const group = new THREE.Group();
   let y = 0;
   const kicker = makeText(predict ? 'PREDICI' : 'DOMANDA', {
@@ -284,6 +295,9 @@ export async function quiz(def, width, hooks = {}) {
     letterSpacing: 0.14,
   });
   group.add(kicker);
+  let again = null; // «rifai»: diverso per la domanda classica e per la previsione
+  const redo = await redoMark(width, () => again());
+  group.add(redo.group);
   y -= 0.03;
   const q = makeText(question, { fontSize: 0.027, font: FONT.semi, maxWidth: width, lineHeight: 1.35 });
   q.position.y = y;
@@ -301,6 +315,16 @@ export async function quiz(def, width, hooks = {}) {
   let solved = false;
   let chosen = null;
   let flap = null;
+  // risposta giusta della domanda classica
+  const right = (r) => {
+    solved = true;
+    redo.show(true);
+    r.inner.material.color.set(GOOD);
+    r.text.color = GOOD;
+    r.hit.material.opacity = 0;
+    feedback.color = GOOD;
+    feedback.text = `Esatto. ${explain}`;
+  };
   for (const [i, label] of options.entries()) {
     const row = new THREE.Group();
     row.position.y = y;
@@ -312,6 +336,7 @@ export async function quiz(def, width, hooks = {}) {
     const h = Math.max(bounds(t).h, BOX) + 0.016;
     const hit = layer(new THREE.Mesh(new THREE.PlaneGeometry(width, h), flat(MARKER, 0)), 1);
     hit.position.set(width / 2, -h / 2 + 0.008, Z_FILL / 4);
+    const r = { row, tick, text: t, inner, hit };
     hit.userData.ui = {
       hover: (on) => (hit.material.opacity = on && !solved ? 0.18 : 0),
       cursor: 'pointer',
@@ -320,31 +345,48 @@ export async function quiz(def, width, hooks = {}) {
         if (predict) {
           // la previsione si può cambiare finché l'aletta è chiusa
           chosen = i;
-          rows.forEach((r, j) => (r.tick.visible = j === i));
+          rows.forEach((o, j) => (o.tick.visible = j === i));
           flap.arm();
           onPredict?.(i);
           return;
         }
-        const ok = i === correct;
-        inner.material.color.set(ok ? GOOD : BAD);
-        t.color = ok ? GOOD : BAD;
-        feedback.color = ok ? GOOD : BAD;
-        feedback.text = ok ? `Esatto. ${explain}` : why[i] ? `Non proprio. ${why[i]} Riprova.` : 'Non proprio: riguarda il modello e riprova.';
-        if (ok) {
-          solved = true;
-          hit.material.opacity = 0;
-          onSolved?.();
+        if (i === correct) {
+          right(r);
+          onSolved?.({});
+          return;
         }
+        inner.material.color.set(BAD);
+        t.color = BAD;
+        feedback.color = BAD;
+        feedback.text = why[i] ? `Non proprio. ${why[i]} Riprova.` : 'Non proprio: riguarda il modello e riprova.';
       },
     };
     row.add(hit);
     group.add(row);
-    rows.push({ row, tick, text: t, inner, hit });
+    rows.push(r);
     y -= h;
   }
+  // da capo: caselle vuote, testi neri, niente esito
+  const clearRows = () => {
+    for (const r of rows) {
+      r.inner.material.color.set(0xfffdf6);
+      r.text.color = INK;
+      r.tick.visible = false;
+      r.tick.material.color.set(ACCENT);
+    }
+  };
   if (!predict) {
     feedback.position.y = y - 0.012;
     group.add(feedback);
+    if (saved) right(rows[correct]);
+    again = () => {
+      solved = false;
+      saved = null;
+      redo.show(false);
+      clearRows();
+      feedback.text = '';
+      onRedo?.();
+    };
     return { group, height: -y + 0.09 };
   }
 
@@ -374,7 +416,7 @@ export async function quiz(def, width, hooks = {}) {
   const fk = makeText('PERCHÉ?', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
   const ft = makeText("Solleva l'aletta per la risposta", { fontSize: 0.027, font: FONT.semi, maxWidth: inW * 0.78, lineHeight: 1.25 });
   const fs = makeText('…dopo la tua previsione.', { fontSize: 0.021, font: FONT.italic, color: INK_SOFT, maxWidth: inW * 0.78 });
-  const fh = makeText('solleva qui', { fontSize: 0.02, font: FONT.italic, color: 0x2c3e66, anchorX: 'right' });
+  const fh = makeText('solleva qui', { fontSize: 0.02, font: FONT.italic, color: PEN, anchorX: 'right' });
   await Promise.all([ready(fk), ready(ft), ready(fs), ready(fh)]);
   const faceH = 0.03 + bounds(ft).h + 0.012 + bounds(fs).h;
   const cardH = Math.max(innerH, faceH) + 2 * pad;
@@ -411,7 +453,7 @@ export async function quiz(def, width, hooks = {}) {
   // freccia tracciata a mano verso l'angolo da sollevare
   const ax = width - pad - 0.04;
   const ay = -pad - 0.034;
-  const arrowMat = flat(0x2c3e66, 0.9);
+  const arrowMat = flat(PEN, 0.9);
   const tipX = width - pad + 0.002;
   const tipY = -cardH + pad + 0.006;
   const arrow = new THREE.Group();
@@ -435,7 +477,7 @@ export async function quiz(def, width, hooks = {}) {
   const OPEN = 1.15;
   const reveal = () => {
     solved = true;
-    onSolved?.();
+    redo.show(true);
     [verdict.text, answer.text] = verdictFor(chosen);
     verdict.color = chosen === correct ? GOOD : BAD;
     ready(verdict).then(() => answer.position.set(pad, top - pad - bounds(verdict).h - 0.008, Z_TEXT));
@@ -451,25 +493,52 @@ export async function quiz(def, width, hooks = {}) {
     click: () => {
       if (!armed) return;
       open = true;
-      if (!solved) reveal();
+      if (!solved) {
+        reveal();
+        onSolved?.({ chosen });
+      }
     },
     get cursor() {
       return armed ? 'pointer' : 'default';
     },
   };
   pocket.userData.ui = { click: () => (open = false), cursor: 'pointer' };
+  const ARMED = 'Ora guarda il modello, poi controlla.';
   flap = {
     arm() {
       if (armed) return;
       armed = true;
-      fs.text = 'Ora guarda il modello, poi controlla.';
+      fs.text = ARMED;
     },
   };
   y -= cardH;
+  // risolta in una visita precedente: la previsione di allora, con l'aletta già sollevata
+  if (saved) {
+    chosen = Number.isInteger(saved.chosen) && saved.chosen >= 0 && saved.chosen < options.length ? saved.chosen : correct;
+    rows[chosen].tick.visible = true;
+    armed = open = true;
+    angle = OPEN;
+    fs.text = ARMED;
+    reveal();
+  }
+  again = () => {
+    solved = armed = open = false;
+    saved = null;
+    chosen = null;
+    redo.show(false);
+    clearRows();
+    verdict.text = answer.text = '';
+    fs.text = '…dopo la tua previsione.';
+    onRedo?.();
+  };
 
   return {
     group,
     height: -y + 0.01,
+    // il modello mostra di nuovo l'esito della previsione di allora
+    resume() {
+      if (saved) onPredict?.(chosen);
+    },
     update() {
       const now = performance.now();
       const dt = Math.min(0.1, (now - last) / 1000);
@@ -490,15 +559,38 @@ export async function quiz(def, width, hooks = {}) {
   };
 }
 
+// «rifai», scritto a mano in blu in alto a destra di una domanda risolta: la riporta da
+// capo. Ritorna { group, show(on) }; nascosto finché la domanda non è risolta.
+async function redoMark(width, onClick) {
+  const group = new THREE.Group();
+  const t = makeText('rifai', { fontSize: 0.021, font: FONT.italic, color: PEN, anchorX: 'right' });
+  t.position.set(width - 0.004, 0.006, Z_TEXT);
+  await ready(t);
+  const b = bounds(t);
+  const line = underline(width - 0.004 - b.w, width - 0.004, 0.006 - b.h - 0.001, PEN);
+  const hit = layer(new THREE.Mesh(new THREE.PlaneGeometry(b.w + 0.03, 0.036), flat(MARKER, 0)), 1);
+  hit.position.set(width - 0.004 - b.w / 2, 0.006 - b.h / 2, Z_FILL / 4);
+  hit.userData.ui = {
+    hover: (on) => (hit.material.opacity = on ? 0.25 : 0),
+    click: () => group.visible && onClick(),
+    cursor: 'pointer',
+  };
+  group.add(hit, t, line);
+  group.visible = false;
+  return { group, show: (on) => (group.visible = on) };
+}
+
 // --- Indica sul modello -------------------------------------------------------
 // La risposta è una struttura: chi legge la tocca sul modello. Ogni tocco
 // sbagliato dice che cosa si è indicato e, se c'è, perché non è quella giusta;
 // dopo tre tentativi la struttura giusta si accende da sola.
-async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf = (id) => id, onReveal, onSolved } = {}) {
+async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf = (id) => id, onReveal, onSolved, onRedo, saved = null } = {}) {
   const group = new THREE.Group();
   let y = 0;
   const kicker = makeText('INDICA SUL MODELLO', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
   group.add(kicker);
+  const redo = await redoMark(width, () => again());
+  group.add(redo.group);
   y -= 0.03;
   const q = makeText(question, { fontSize: 0.027, font: FONT.semi, maxWidth: width, lineHeight: 1.35 });
   q.position.y = y;
@@ -507,13 +599,14 @@ async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf
   y -= bounds(q).h + 0.018;
 
   // invito, con una freccia a mano che punta alla pagina del modello
-  const hint = makeText('tocca la struttura sul modello', { fontSize: 0.023, font: FONT.italic, color: 0x2c3e66 });
+  const HINT = 'tocca la struttura sul modello';
+  const hint = makeText(HINT, { fontSize: 0.023, font: FONT.italic, color: PEN });
   hint.position.set(0.004, y, Z_TEXT);
   await ready(hint);
   const hb = bounds(hint);
   const ax = hb.w + 0.02;
   const ay = y - hb.h / 2;
-  const arrowMat = flat(0x2c3e66, 0.9);
+  const arrowMat = flat(PEN, 0.9);
   const arrow = new THREE.Group();
   arrow.add(
     new THREE.Mesh(stroke(bezier([ax, ay - 0.004], [ax + 0.05, ay + 0.016], [ax + 0.1, ay + 0.002]), 0.0026), arrowMat),
@@ -530,20 +623,52 @@ async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf
   const answer = nameOf(point[0]);
   let solved = false;
   let tries = 0;
+  // trovata (id), oppure accesa dopo tre tentativi (shown)
+  const found = (id) => {
+    solved = true;
+    redo.show(true);
+    feedback.color = GOOD;
+    feedback.text = `Esatto: ${nameOf(id)}. ${explain}`;
+    hint.text = 'trovata';
+    hint.color = GOOD;
+    arrowMat.opacity = 0;
+  };
+  const shown = (said) => {
+    solved = true;
+    redo.show(true);
+    feedback.color = BAD;
+    feedback.text = `${said}La risposta giusta ora è accesa sul modello: ${answer}. ${explain}`;
+    hint.text = '';
+    arrowMat.opacity = 0;
+  };
+  if (saved) {
+    if (saved.shown) shown('');
+    else found(point.includes(saved.id) ? saved.id : point[0]);
+  }
+  const again = () => {
+    solved = false;
+    saved = null;
+    tries = 0;
+    redo.show(false);
+    feedback.text = '';
+    hint.text = HINT;
+    hint.color = PEN;
+    arrowMat.opacity = 0.9;
+    onRedo?.();
+  };
   return {
     group,
     height: -y + 0.11,
+    // risolta dopo tre tentativi in una visita precedente: la risposta torna accesa
+    resume() {
+      if (saved?.shown) onReveal?.(point);
+    },
     // chiamata dallo spread a ogni clic su una parte del modello
     point(id) {
       if (solved) return;
       if (point.includes(id)) {
-        solved = true;
-        onSolved?.();
-        feedback.color = GOOD;
-        feedback.text = `Esatto: ${nameOf(id)}. ${explain}`;
-        hint.text = 'trovata';
-        hint.color = GOOD;
-        arrowMat.opacity = 0;
+        found(id);
+        onSolved?.({ id });
         return;
       }
       tries += 1;
@@ -553,11 +678,8 @@ async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf
         feedback.text = `${said} Riprova.`;
         return;
       }
-      solved = true;
-      onSolved?.();
-      feedback.text = `${said} La risposta giusta ora è accesa sul modello: ${answer}. ${explain}`;
-      hint.text = '';
-      arrowMat.opacity = 0;
+      shown(`${said} `);
+      onSolved?.({ shown: true });
       onReveal?.(point);
     },
   };
@@ -568,11 +690,13 @@ async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf
 // Al posto giusto il cartellino torna nella sua casella e un cordino rosso lo lega
 // alla struttura, come le etichette a mano di una tavola anatomica.
 const CORD = 0x9c2f22;
-async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = (id) => id, onSolved } = {}) {
+async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = (id) => id, onSolved, onRedo, saved = null, meshes = () => [] } = {}) {
   const group = new THREE.Group();
   let y = 0;
   const kicker = makeText('TRASCINA LE ETICHETTE', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
   group.add(kicker);
+  const redo = await redoMark(width, () => again());
+  group.add(redo.group);
   y -= 0.03;
   const q = makeText(question, { fontSize: 0.027, font: FONT.semi, maxWidth: width, lineHeight: 1.35 });
   q.position.y = y;
@@ -645,14 +769,18 @@ async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = 
           const id = under?.ui?.id;
           if (!id) return; // lasciato nel vuoto: torna a posto
           if (tag.ids.includes(id)) {
-            it.placed = id;
             // il cordino si appunta dove è stato lasciato il cartellino, e segue il modello
-            it.pin = { object: under.object, local: under.object.worldToLocal(under.hit.point.clone()) };
-            tick.visible = true;
+            place(it, id, under.object, under.object.worldToLocal(under.hit.point.clone()));
             done += 1;
             feedback.color = GOOD;
             feedback.text = done === tags.length ? `Tutte al loro posto. ${explain ?? ''}` : `«${tag.label}»: esatto.`;
-            if (done === tags.length) onSolved?.();
+            if (done === tags.length) {
+              redo.show(true);
+              // dove sono appuntati i cordini: parte, mesh della parte, punto nella mesh
+              onSolved?.({
+                pins: items.map((o) => [o.placed, Math.max(0, meshes(o.placed).indexOf(o.pin.object)), ...o.pin.local.toArray().map((v) => +v.toFixed(5))]),
+              });
+            }
             return;
           }
           feedback.color = BAD;
@@ -666,6 +794,31 @@ async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = 
   y -= Math.ceil(tags.length / 2) * (tagH + 0.016) + 0.006;
   feedback.position.y = y;
   group.add(feedback);
+  function place(it, id, object, local) {
+    it.placed = id;
+    it.pin = object && { object, local };
+    it.tick.visible = true;
+  }
+  // risolta in una visita precedente: le spunte subito, i cordini quando il modello è pronto
+  const solvedBefore = () => {
+    for (const it of items) it.tick.visible = true;
+    done = tags.length;
+    redo.show(true);
+    feedback.color = GOOD;
+    feedback.text = `Tutte al loro posto. ${explain ?? ''}`;
+  };
+  if (saved) solvedBefore();
+  const again = () => {
+    saved = null;
+    for (const it of items) {
+      it.placed = it.pin = null;
+      it.tick.visible = false;
+    }
+    done = 0;
+    redo.show(false);
+    feedback.text = '';
+    onRedo?.();
+  };
 
   const up = new THREE.Vector3(0, 1, 0);
   const a = new THREE.Vector3();
@@ -674,6 +827,17 @@ async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = 
   return {
     group,
     height: -y + 0.08,
+    // i cordini di allora, appuntati dove erano stati lasciati (o al centro della parte)
+    resume() {
+      if (!saved) return;
+      for (const [i, it] of items.entries()) {
+        const [id, k, x, y, z] = Array.isArray(saved.pins?.[i]) ? saved.pins[i] : [];
+        const ok = it.tag.ids.includes(id) && meshes(id)[k];
+        const at = ok ? id : it.tag.ids[0];
+        const local = ok && [x, y, z].every(Number.isFinite) ? new THREE.Vector3(x, y, z) : new THREE.Vector3();
+        place(it, at, meshes(at)[ok ? k : 0], local);
+      }
+    },
     update() {
       const now = performance.now();
       const dt = Math.min(0.1, (now - last) / 1000);
@@ -881,7 +1045,6 @@ export async function cord({ label = '', ends = ['', ''], width, min = 0, max = 
 // Facoltativi: `hint` (l'invito prima del taglio), `done` («Taglio»), `again` (l'invito
 // dopo il confronto) e, per la tavola «modello», `legend` (come leggere l'esito sul modello).
 // La domanda è risolta con una previsione esatta, o dopo tre confronti.
-const PEN = 0x2c3e66; // l'inchiostro blu degli inviti, come in «indica sul modello»
 const HATCH_SIZE = 0.011; // passo del tratteggio sulla pagina
 let hatchMap = null;
 function hatchTexture() {
@@ -1072,11 +1235,15 @@ async function bodyBoard(width, kinds) {
   return { group, regions, height: 0.034 + H + 0.03, describe };
 }
 
-async function cutQuiz({ question, cut: spec, explain = '' }, width, { nameOf = (id) => id, onCompare, onSolved } = {}) {
+async function cutQuiz({ question, cut: spec, explain = '' }, width, hooks = {}) {
+  const { nameOf = (id) => id, onCompare, onSolved, onRedo, onReplay } = hooks;
+  let saved = hooks.saved ?? null;
   const group = new THREE.Group();
   let y = 0;
   const kicker = makeText('TAGLIA E PREVEDI', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
   group.add(kicker);
+  const redo = await redoMark(width, () => again());
+  group.add(redo.group);
   y -= 0.03;
   const q = makeText(question, { fontSize: 0.027, font: FONT.semi, maxWidth: width, lineHeight: 1.35 });
   q.position.y = y;
@@ -1098,8 +1265,7 @@ async function cutQuiz({ question, cut: spec, explain = '' }, width, { nameOf = 
   arrow.position.z = Z_TEXT;
   for (const o of [arrow, ...arrow.children]) o.renderOrder = 5;
   group.add(status, arrow);
-  // la riga di stato può andare a capo: due righe
-  y -= 0.064;
+  const statusTop = y;
 
   // --- la tavola ---------------------------------------------------------------
   // le sagome lasciano a destra una colonna per «Confronta» e la legenda
@@ -1115,33 +1281,45 @@ async function cutQuiz({ question, cut: spec, explain = '' }, width, { nameOf = 
     g.add(list);
     board = { group: g, regions: [], height: 0.064, list, describe: (keys) => [...keys].map(nameOf) };
   }
-  board.group.position.y = y;
   group.add(board.group);
 
   // «Confronta» e la legenda dei segni: accanto alla tavola o sotto
   const go = await chip('Confronta', { onClick: () => compare() });
   const legend = makeText('', { fontSize: 0.0185, font: FONT.italic, color: INK_SOFT, lineHeight: 1.25 });
-  if (aside) {
-    const x = aside + 0.03;
-    go.group.position.set(x + go.w / 2, y - 0.04 - go.h / 2, 0);
-    legend.maxWidth = width - x;
-    legend.position.set(x, y - 0.04 - go.h - 0.014, Z_TEXT);
-    y -= board.height + 0.006;
-  } else {
-    y -= board.height + 0.006;
-    go.group.position.set(go.w / 2, y - go.h / 2, 0);
-    legend.maxWidth = width - go.w - 0.03;
-    legend.anchorY = 'middle';
-    legend.position.set(go.w + 0.02, y - go.h / 2, Z_TEXT);
-    y -= go.h + 0.012;
-  }
-  group.add(go.group, legend);
+  legend.maxWidth = aside ? width - aside - 0.03 : width - go.w - 0.03;
+  if (!aside) legend.anchorY = 'middle';
   const verdict = makeText('', { fontSize: 0.0215, font: FONT.italic, maxWidth: width, lineHeight: 1.32 });
-  verdict.position.y = y;
-  group.add(verdict);
+  group.add(go.group, legend, verdict);
+
+  // Impaginazione: la riga di stato e l'elenco della tavola «modello» vanno a capo secondo
+  // il testo (il nome di un taglio può essere lungo), quindi ciò che sta sotto si sposta
+  // ogni volta che uno dei due cambia. Due righe sono sempre riservate, così la pagina non
+  // salta a ogni taglio; solo una terza riga spinge giù il resto.
+  const linesH = (t, min) => Math.max(min, t.textRenderInfo ? bounds(t).h + 0.012 : 0);
+  const layout = () => {
+    let yy = statusTop - linesH(status, 0.064);
+    board.group.position.y = yy;
+    const boardH = onModel ? linesH(board.list, board.height) : board.height;
+    if (aside) {
+      const x = aside + 0.03;
+      go.group.position.set(x + go.w / 2, yy - 0.04 - go.h / 2, 0);
+      legend.position.set(x, yy - 0.04 - go.h - 0.014, Z_TEXT);
+      yy -= boardH + 0.006;
+    } else {
+      yy -= boardH + 0.006;
+      go.group.position.set(go.w / 2, yy - go.h / 2, 0);
+      legend.position.set(go.w + 0.02, yy - go.h / 2, Z_TEXT);
+      yy -= go.h + 0.012;
+    }
+    verdict.position.y = yy;
+    return yy;
+  };
+  status.addEventListener('synccomplete', layout);
+  if (onModel) board.list.addEventListener('synccomplete', layout);
+  y = layout();
 
   // --- stato --------------------------------------------------------------------
-  let current = null; // il taglio: { label, truth }
+  let current = null; // il taglio: { label, truth, at }
   let shown = false;
   let tries = 0;
   let solved = false;
@@ -1222,7 +1400,9 @@ async function cutQuiz({ question, cut: spec, explain = '' }, width, { nameOf = 
     say();
     if (!solved && (exact || tries >= 3)) {
       solved = true;
-      onSolved?.();
+      redo.show(true);
+      // basta per rifare taglio e confronto alla prossima visita
+      onSolved?.({ label: current.label, truth: [...current.truth], marks: [...marks], at: current.at ?? null });
     }
   }
   const clear = () => {
@@ -1233,11 +1413,29 @@ async function cutQuiz({ question, cut: spec, explain = '' }, width, { nameOf = 
     legend.text = '';
     go.setActive(false);
   };
+  const again = () => {
+    solved = false;
+    saved = null;
+    tries = 0;
+    redo.show(false);
+    onRedo?.(); // la pagina ricuce la via: arriva cut(null), che ripulisce la tavola
+  };
   say();
   paint();
-  return {
+  const api = {
     group,
     height: -y + 0.09,
+    // risolta in una visita precedente: si rifanno il taglio (sul modello, se il
+    // comportamento della pagina sa rifarlo) e il confronto con la previsione di allora
+    resume() {
+      if (!saved || !Array.isArray(saved.truth)) return;
+      solved = true;
+      redo.show(true);
+      if (!(saved.at && onReplay?.(saved.at))) api.cut({ label: saved.label ?? '', truth: saved.truth });
+      if (!current) return;
+      for (const k of Array.isArray(saved.marks) ? saved.marks : []) marks.add(k);
+      compare();
+    },
     // per il comportamento della pagina destra
     get state() {
       return !current ? 'idle' : shown ? 'shown' : 'mark';
@@ -1245,10 +1443,11 @@ async function cutQuiz({ question, cut: spec, explain = '' }, width, { nameOf = 
     get marks() {
       return marks;
     },
-    // un nuovo taglio (o nessuno, con null): la tavola ricomincia da capo
+    // un nuovo taglio (o nessuno, con null): la tavola ricomincia da capo. `at` (facoltativo,
+    // da salvare in JSON) è ciò che serve al comportamento per rifare lo stesso taglio
     cut(c) {
       clear();
-      current = c && { label: c.label, truth: new Set(c.truth) };
+      current = c && { label: c.label, truth: new Set(c.truth), at: c.at };
       say();
       paint();
     },
@@ -1261,4 +1460,5 @@ async function cutQuiz({ question, cut: spec, explain = '' }, width, { nameOf = 
       return marks;
     },
   };
+  return api;
 }
