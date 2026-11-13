@@ -1,9 +1,17 @@
 // Capitolo "Nervi oculomotore, trocleare e abducente". Testi ricavati dagli
 // appunti di neuroanatomia (Nervi abducente, trocleare e oculomotore).
-// Le azioni dei singoli muscoli (pagina 4) e la posizione dell'occhio nelle
-// paralisi (pagina 5) non sono negli appunti: vedi le fonti in testa a
-// src/models/nervi-oculomotori.js.
-import { selector, chipsInto, infoText, picked } from '../modes.js';
+// Le azioni dei singoli muscoli nei pulsanti di pagina 4 (con la torsione) e la
+// posizione dell'occhio nelle paralisi (pagina 5) non sono negli appunti del
+// capitolo: vedi le fonti in testa a src/models/nervi-oculomotori.js.
+// La mosca da seguire con lo sguardo (pagine 4 e 5) usa invece le azioni dei
+// muscoli che danno gli appunti di Sistemi discendenti (vedi ACTIONS). DEDOTTO:
+// lo sguardo verso il basso con retto inferiore e obliquo superiore insieme (per
+// simmetria con l'alto, che negli appunti c'è); il peso di ciascun muscolo in una
+// direzione; nelle paralisi, che l'occhio destro si sposti dalla posizione di
+// paralisi solo per la parte di lavoro dei muscoli rimasti (e che gli occhi
+// guardino paralleli, come per un oggetto lontano).
+import * as THREE from 'three';
+import { selector, chipsInto, infoText, picked, explore } from '../modes.js';
 import { OculomotorModel } from '../models/nervi-oculomotori.js';
 
 const lr = (...ids) => ids.flatMap((id) => [`${id}R`, `${id}L`]);
@@ -22,6 +30,10 @@ const III_MUSCLES = ['rs', 'rm', 'ri', 'oi', 'lev'];
 
 // Come `selector` (opzioni statiche), ma ogni opzione può anche ruotare gli
 // occhi: gaze: { R: { abd, elev, intor }, L: { … } } in gradi.
+// Con `fly: true` davanti agli occhi c'è una mosca da trascinare: i due occhi la
+// seguono e si accendono i muscoli che lavorano in quella direzione (vedi ACTIONS).
+// Con un'opzione che interrompe un nervo (`dead`), l'occhio destro parte dalla sua
+// posizione di paralisi (`gaze.R`) e si sposta solo quanto gli permettono i muscoli rimasti.
 
 // il bulbo non si attenua mai: deve restare leggibile mentre ruota
 const KEEP = new Set(lr('sclera', 'cornea', 'iris', 'pupil', 'mark'));
@@ -29,21 +41,127 @@ const KEEP = new Set(lr('sclera', 'cornea', 'iris', 'pupil', 'mark'));
 // l'elevatore copre il bulbo dall'alto: nelle pagine sull'occhio è in trasparenza
 const LEV_GLASS = { levR: { opacity: 0.3 }, levL: { opacity: 0.3 } };
 
-function gazeSelector({ base, options, looks = {}, pick = {}, idle = '' }) {
+// Azioni dei muscoli estrinseci come le danno gli appunti (Sistemi discendenti):
+// [abduzione verso la tempia, elevazione], in unità arbitrarie. Retto superiore: in
+// alto e adduzione; obliquo inferiore: in alto e abduzione; retto inferiore: in basso e
+// adduzione; obliquo superiore: in basso e abduzione; retto mediale: adduzione; retto
+// laterale: abduzione. Lo sguardo «unicamente verso l'alto» vuole retto superiore e
+// obliquo inferiore insieme (negli appunti); per il basso, retto inferiore e obliquo
+// superiore insieme (DEDOTTO per simmetria, gli appunti non lo dicono).
+// SCHEMATIZZAZIONE: un muscolo lavora in una direzione quanto la sua azione vi
+// punta (prodotto scalare); si accende se punta per più di metà.
+const ACTIONS = { rs: [-0.5, 1], oi: [0.5, 1], ri: [-0.5, -1], os: [0.5, -1], rm: [-1, 0], rl: [1, 0] };
+const MUSCLE_NAMES = {
+  rs: 'retto superiore', oi: 'obliquo inferiore', ri: 'retto inferiore', os: 'obliquo superiore', rm: 'retto mediale', rl: 'retto laterale',
+};
+const unit = ([a, b]) => {
+  const n = Math.hypot(a, b);
+  return n ? [a / n, b / n] : [0, 0];
+};
+// quanto ciascun muscolo lavora per portare l'occhio nella direzione (abd, elev)
+const pull = (abd, elev) => {
+  const g = unit([abd, elev]);
+  return Object.fromEntries(Object.entries(ACTIONS).map(([m, a]) => {
+    const u = unit(a);
+    return [m, Math.max(0, u[0] * g[0] + u[1] * g[1])];
+  }));
+};
+const working = (abd, elev) => (Math.hypot(abd, elev) < 6 ? [] : Object.entries(pull(abd, elev)).filter(([, w]) => w > 0.5).map(([m]) => m));
+const the = (name) => (/^[aeiou]/.test(name) ? `l'${name}` : `il ${name}`);
+const list = (names) => (names.length > 1 ? `${names.slice(0, -1).join(', ')} e ${names.at(-1)}` : names[0] ?? '');
+// parole per la direzione dello sguardo, dal punto di vista del paziente
+const where = ({ L }) => {
+  const parts = [];
+  if (L.elev > 6) parts.push('in alto');
+  if (L.elev < -6) parts.push('in basso');
+  if (L.abd > 6) parts.push('a sinistra');
+  if (L.abd < -6) parts.push('a destra');
+  return parts.join(' e ');
+};
+const DIRS = ['Sguardo in alto', 'Sguardo in basso', 'Sguardo a destra', 'Sguardo a sinistra'];
+
+function gazeSelector({ base, options, looks = {}, pick = {}, idle = '', fly = false, flyIdle = '' }) {
   return async ({ model, controls }) => {
     let sel = null;
+    let flying = null; // { R, L }: sguardo che segue la mosca, finché non si sceglie un pulsante
+    const ex = explore(controls);
+    const lesions = options.some((o) => o.dead);
+    if (fly) for (const d of lesions ? ['Mosca con un nervo interrotto'] : DIRS) ex.offer(d);
     const { chips, height } = await chipsInto(
       controls,
       options.map((o, i) => ({ label: o.label, onClick: () => select(sel === i ? null : i) }))
     );
     const info = await infoText(controls, -height - 0.03);
+    // muscoli accesi dalla mosca, per lato: { rsR: 0.9, … }
+    let lit = {};
+    const aim = (gaze) => {
+      const o = options[sel];
+      const dead = new Set(o?.dead ?? []);
+      const out = { L: gaze.L, R: gaze.R };
+      // occhio destro con un nervo interrotto: dalla posizione di paralisi, solo quanto
+      // gli permettono i muscoli rimasti (frazione del lavoro nella direzione voluta)
+      if (dead.size) {
+        const rest = o.gaze?.R ?? {};
+        const w = pull(gaze.R.abd, gaze.R.elev);
+        const all = Object.values(w).reduce((a, b) => a + b, 0);
+        const alive = Object.entries(w).filter(([m]) => !dead.has(`${m}R`)).reduce((a, [, v]) => a + v, 0);
+        const k = all > 0 ? alive / all : 1;
+        out.R = {
+          abd: THREE.MathUtils.clamp((rest.abd ?? 0) + k * gaze.R.abd, -40, 40),
+          elev: THREE.MathUtils.clamp((rest.elev ?? 0) + k * gaze.R.elev, -35, 35),
+          intor: rest.intor ?? 0,
+        };
+      }
+      return out;
+    };
+    const follow = (p, end) => {
+      if (sel !== null && !options[sel].dead) {
+        // un muscolo scelto col pulsante: la mosca lo sostituisce
+        sel = null;
+        chips.forEach((c) => c.setActive(false));
+        model.show([...base]);
+      }
+      const want = model.gazeAt(p);
+      const got = aim(want);
+      flying = got;
+      model.setGaze('R', got.R);
+      model.setGaze('L', got.L);
+      lit = {};
+      const dead = new Set(options[sel]?.dead ?? []);
+      for (const side of ['R', 'L'])
+        for (const [m, w] of Object.entries(pull(want[side].abd, want[side].elev)))
+          if (working(want[side].abd, want[side].elev).includes(m)) lit[m + side] = w;
+      const dir = where(want);
+      if (!dir) {
+        info.text = flyIdle || idle;
+        return;
+      }
+      if (lesions && sel !== null) ex.found('Mosca con un nervo interrotto');
+      if (!lesions) {
+        if (want.L.elev > 12) ex.found(DIRS[0]);
+        if (want.L.elev < -12) ex.found(DIRS[1]);
+        if (want.L.abd < -12) ex.found(DIRS[2]);
+        if (want.L.abd > 12) ex.found(DIRS[3]);
+      }
+      const names = (side) => list(working(want[side].abd, want[side].elev).map((m) => MUSCLE_NAMES[m]));
+      // con un nervo interrotto: l'occhio destro arriva? se no, quali muscoli mancano
+      const missing = working(want.R.abd, want.R.elev).filter((m) => dead.has(`${m}R`));
+      if (dead.size && missing.length)
+        info.text = `Sguardo ${dir}: l'occhio destro non arriva, manca${missing.length > 1 ? 'no' : ''} ${list(missing.map((m) => the(MUSCLE_NAMES[m])))}. Il sinistro sì.`;
+      else if (dead.size) info.text = `Sguardo ${dir}: i muscoli che servono all'occhio destro funzionano, ma parte dalla posizione di paralisi.`;
+      else info.text = `Sguardo ${dir}. Occhio destro: ${names('R')}. Occhio sinistro: ${names('L')}.`;
+    };
     const select = (i) => {
       sel = i;
+      flying = null;
+      lit = {};
       const o = options[i];
       chips.forEach((c, j) => c.setActive(j === i));
       model.show([...base, ...(o?.show ?? []), ...(o?.lit ?? [])]);
       model.setGaze('R', o?.gaze?.R);
       model.setGaze('L', o?.gaze?.L);
+      // la mosca torna al centro: gli occhi guardano dritto (o dove li porta la lesione)
+      if (fly) model.setFly(true);
       info.text = o?.info ?? idle;
     };
     return {
@@ -51,15 +169,18 @@ function gazeSelector({ base, options, looks = {}, pick = {}, idle = '' }) {
       choose: (i) => (picked(controls, options[i]?.label), select(i)),
       enter() {
         select(null);
+        if (fly) model.onFly = follow;
         // scegliere toccando il modello vale come provare il pulsante
         model.onClick = (id) => id in pick && (picked(controls, options[pick[id]]?.label), select(pick[id]));
         model.lookFn = (part) => {
           const o = options[sel];
           const look = { ...looks[part.id] };
-          if (!o) return look;
-          if (o.dead?.includes(part.id)) return { ...look, dead: true };
-          if (o.scale?.[part.id]) look.scale = o.scale[part.id];
-          if (!o.lit || KEEP.has(part.id)) return look;
+          if (o?.dead?.includes(part.id)) return { ...look, dead: true };
+          if (o?.scale?.[part.id]) look.scale = o.scale[part.id];
+          if (KEEP.has(part.id)) return look;
+          // la mosca: accesi i muscoli che lavorano, gli altri attenuati
+          if (flying) return part.id in lit ? { ...look, glow: 0.3 + 0.4 * lit[part.id], opacity: 1 } : { ...look, dim: !o?.dead };
+          if (!o?.lit) return look;
           return o.lit.includes(part.id) ? { ...look, glow: 0.3, opacity: 1 } : { ...look, dim: true };
         };
       },
@@ -203,10 +324,12 @@ const spreads = [
       correct: 3,
       explain: "Il retto superiore riceve il ramo superiore, insieme all'elevatore della palpebra.",
     },
-    caption: "Vista da davanti: si muove l'occhio destro (a sinistra per chi guarda); il segno rosso è alle ore 12.",
-    instruction: "SCEGLI UN MUSCOLO DELL'OCCHIO DESTRO E GUARDA COME LO RUOTA",
+    caption: "Vista da davanti: l'occhio destro sta a sinistra per chi guarda; il segno rosso è alle ore 12. Trascina la mosca: gli occhi la seguono.",
+    instruction: "TRASCINA LA MOSCA, O SCEGLI UN MUSCOLO DELL'OCCHIO DESTRO",
     view: { yaw: 0, zoom: 1.5 },
     mode: gazeSelector({
+      fly: true,
+      flyIdle: 'Mosca davanti agli occhi: sguardo in posizione primaria. Trascinala in alto, in basso, di lato.',
       base: ['sphenoid', ...ORBIT, ...lr('mark', 'n3sup', 'n3inf', 'n4', 'n6o', 'cg', 'scn')],
       looks: LEV_GLASS,
       idle: 'Occhi in posizione primaria. Il nervo che comanda il muscolo scelto si accende con lui.',
@@ -244,9 +367,10 @@ const spreads = [
       reveal: 2,
     },
     caption: "Nervo e muscoli paralizzati si scuriscono; l'occhio destro prende la posizione imposta dai muscoli rimasti.",
-    instruction: 'INTERROMPI UN NERVO DI DESTRA E CONFRONTA I DUE OCCHI',
+    instruction: 'INTERROMPI UN NERVO DI DESTRA, POI FAI SEGUIRE LA MOSCA',
     view: { yaw: 0, zoom: 1.5 },
     mode: gazeSelector({
+      fly: true,
       base: ['sphenoid', ...ORBIT, ...lr('mark', 'n3', 'n3sup', 'n3inf', 'n4', 'n6', 'n6o', 'cg', 'scn')],
       looks: LEV_GLASS,
       idle: 'Nessuna lesione: i due occhi guardano dritto e le pupille sono uguali.',
