@@ -1,4 +1,9 @@
 // Capitolo "Riflessi". Testi dagli appunti di neuroanatomia (Riflessi).
+// Pagina 2: il martelletto si trascina sul legamento rotuleo. DEDOTTO, non negli
+// appunti: che un colpo altrove (rotula, tibia, ventre muscolare) non faccia partire
+// il riflesso; gli appunti dicono solo che il colpo va sull'inserzione distale del
+// quadricipite. L'estensione della gamba mostrata sul modello è quella degli appunti
+// («la gamba si estende sulla coscia»), con ampiezza e tempi scelti a vista.
 import { selector } from '../modes.js';
 import { Riflessi, FOCUS } from '../models/riflessi.js';
 
@@ -24,6 +29,10 @@ const SOFT = { rectus: { opacity: 0.5, litOpacity: 0.7 }, vasti: { opacity: 0.4,
 // inverso (il primo piano passa al circuito nel midollo): il muscolo cede e la corda
 // sfugge di mano. L'esito resta finché non si torna a tirare (`low` ricorda il punto
 // più basso raggiunto dalla corda dopo il riflesso).
+// La soglia c'è negli appunti solo a parole: gli organi del Golgi «entrano in funzione
+// solamente quando la contrazione muscolare è incompatibile con l'integrità strutturale del
+// muscolo». La sua posizione sulla corda (0,82) è ARBITRARIA, scelta per lasciare spazio
+// alla contrazione normale: gli appunti non danno un valore.
 const SOGLIA = 0.82;
 const IB_ROUTE = ['ib1', 'aff2', 'aff3', 'cIb'];
 const tendonCord = {
@@ -42,7 +51,7 @@ const tendonCord = {
       return {
         lit: [...QUAD, 'quadTendon', ...GTO],
         activity: { rectus: 1 },
-        info: 'La contrazione stira il tendine e l’organo del Golgi, in serie; il muscolo non è a rischio.',
+        info: 'La contrazione stira il tendine e l’organo del Golgi, in serie; finché non è eccessiva il riflesso non interviene.',
       };
     }
     return {
@@ -57,6 +66,32 @@ const tendonCord = {
     };
   },
 };
+
+// Il martelletto lo dà chi legge: si trascina sul legamento rotuleo e, al contatto, il
+// riflesso parte (l'opzione `option` di `selector`, come il suo pulsante). Lasciato
+// altrove torna a riposo e la pagina dice che cosa si è colpito. Il resto della pagina
+// (pulsanti, previsione con `reveal`) è quello di `selector`.
+const STRUCK = {
+  patellaR: 'la rotula', quadTendon: 'il tendine del quadricipite', tibiaR: 'la tibia', femurR: 'il femore',
+  rectus: 'il ventre del retto femorale', vasti: 'i muscoli vasti', hams: 'i muscoli posteriori della coscia',
+};
+function strikeMode(spec, { option = 0, miss }) {
+  const inner = selector(spec);
+  return async (args) => {
+    const api = await inner(args);
+    const { model } = args;
+    return {
+      ...api,
+      enter() {
+        api.enter();
+        model.setHammer({
+          onStrike: () => api.choose(option),
+          onMiss: (id) => api.say(miss(id, id && model.parts.get(id)?.name)),
+        });
+      },
+    };
+  };
+}
 
 const spreads = [
   {
@@ -142,25 +177,26 @@ const spreads = [
         "Un collaterale della fibra Ia eccita un interneurone inibitorio Ia, che inibisce i motoneuroni alfa dell'antagonista: è l'inibizione reciproca.",
       reveal: 2,
     },
-    caption: 'Arto inferiore destro, colonna e midollo reali; in alto la sezione lombare ingrandita con i neuroni del circuito. Radici e gangli L2-L4 sono ricostruiti.',
-    instruction: 'AVVIA IL RIFLESSO, POI GUARDA IL CIRCUITO NEL MIDOLLO',
-    view: { yaw: -0.3 },
-    mode: selector({
+    caption: 'Ginocchio destro, poi arto, colonna e midollo reali e, in alto, la sezione lombare ingrandita con i neuroni del circuito. Radici e gangli L2-L4 sono ricostruiti.',
+    instruction: 'PORTA IL MARTELLETTO SUL LEGAMENTO ROTULEO, POI SEGUI IL CIRCUITO',
+    view: { yaw: -0.3, focus: FOCUS.knee },
+    mode: strikeMode({
       base: [...AXIAL, ...LEG, ...QUAD, ...KNEE, 'hams', ...ROOTS, ...FEM, ...SCI, ...SPINDLE, ...PLATE, 'mnExt', 'mnFlex', 'inIa', 'hammer'],
       looks: SOFT,
-      idle: 'Un colpo sul legamento rotuleo: la gamba si estende sulla coscia.',
+      idle: 'Trascina il martelletto sul legamento rotuleo, sotto la rotula: è l’inserzione distale del quadricipite.',
       pick: { hammer: 0, patLig: 0, mnExt: 1, inIa: 2, mnFlex: 2, hams: 3 },
       options: [
         {
           label: 'Riflesso', stepTime: 2.4,
+          act: (m) => m.swingHammer(),
           steps: [
             { ids: ['hammer', 'patLig', 'quadTendon'], text: "Il martelletto colpisce l'inserzione distale del quadricipite." },
-            { ids: [...QUAD, ...SPINDLE], text: 'Il ventre muscolare si distende, e con lui la porzione equatoriale del fuso: attivazione passiva.' },
-            { ids: ['rfBranch', 'femoral', 'plexus'], links: ['aff1', 'aff2'], text: 'Lo stiramento apre i canali del sodio: il potenziale sale nel ramo periferico del neurone gangliare.' },
-            { ids: ['ganglion', 'rootPost'], links: ['aff3'], text: 'Ganglio spinale, ramo centrale, radice dorsale.' },
-            { ids: ['postHorn', 'antHorn', 'mnExt', 'rootPostP'], links: ['cIa'], text: 'Dal corno dorsale al corno ventrale: una sola sinapsi, sul motoneurone alfa.' },
-            { ids: ['rootAnt', 'rootAntP', 'plexus', 'femoral', 'rfBranch'], links: ['cMnOut', ...EFF], text: "L'assone del motoneurone alfa torna al muscolo con il nervo femorale." },
-            { ids: QUAD, activity: { rectus: 1 }, text: 'Il quadricipite si contrae: estensione della gamba sulla coscia.' },
+            { ids: [...QUAD, ...SPINDLE], focus: null, text: 'Il ventre muscolare si distende, e con lui la porzione equatoriale del fuso: attivazione passiva.' },
+            { ids: ['rfBranch', 'femoral', 'plexus'], focus: null, links: ['aff1', 'aff2'], text: 'Lo stiramento apre i canali del sodio: il potenziale sale nel ramo periferico del neurone gangliare.' },
+            { ids: ['ganglion', 'rootPost'], focus: null, links: ['aff3'], text: 'Ganglio spinale, ramo centrale, radice dorsale.' },
+            { ids: ['postHorn', 'antHorn', 'mnExt', 'rootPostP'], focus: null, links: ['cIa'], text: 'Dal corno dorsale al corno ventrale: una sola sinapsi, sul motoneurone alfa.' },
+            { ids: ['rootAnt', 'rootAntP', 'plexus', 'femoral', 'rfBranch'], focus: null, links: ['cMnOut', ...EFF], text: "L'assone del motoneurone alfa torna al muscolo con il nervo femorale." },
+            { ids: QUAD, focus: FOCUS.knee, act: (m) => m.kickLeg(), activity: { rectus: 1 }, text: 'Il quadricipite si contrae: estensione della gamba sulla coscia.' },
           ],
         },
         {
@@ -178,11 +214,16 @@ const spreads = [
           ],
         },
         {
-          label: 'Agonista e antagonista', lit: [...QUAD, 'hams', 'femoral', 'sciatic', 'rfBranch', 'hamBranch'], links: EFF,
+          label: 'Agonista e antagonista', focus: null, lit: [...QUAD, 'hams', 'femoral', 'sciatic', 'rfBranch', 'hamBranch'], links: EFF,
           activity: { rectus: 1, hams: -1 },
           info: 'Mentre il quadricipite si contrae, i muscoli posteriori della coscia, flessori della gamba, vengono rilasciati.',
         },
       ],
+    }, {
+      // gli appunti dicono solo dove va il colpo: che altrove il riflesso non parta è DEDOTTO
+      miss: (id, name) => id
+        ? `Hai colpito ${STRUCK[id] ?? name}: il riflesso non parte. Il colpo va sul legamento rotuleo, l’inserzione distale del quadricipite.`
+        : 'Il martelletto torna a riposo. Portalo sul legamento rotuleo, sotto la rotula.',
     }),
   },
   {

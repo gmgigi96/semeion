@@ -16,6 +16,10 @@
 //     media = il resto della faccia laterale e l'insula. I confini sono
 //     un'approssimazione didattica: nella realtà variano da persona a persona.
 //
+// DERIVATE DA UNA MESH REALE: parte laterale del bulbo, destra e sinistra (territorio
+// della PICA nella pagina delle occlusioni), ritagliata dalla superficie del bulbo reale
+// oltre un terzo della semilarghezza: confine didattico (vedi #medullaSides).
+//
 // RICOSTRUITI A MANO: seni della dura madre e vene profonde, che BodyParts3D
 // non contiene. Sono tubi posati su punti di repere misurati sulle mesh reali
 // (coordinate BodyParts3D in mm, convertite da `mm`):
@@ -121,7 +125,41 @@ export class SistemaVascolare extends AnatomyModel {
       this.parts.get(id).meshes.map((m) => m.geometry.clone().translate(m.position.x, m.position.y, m.position.z))
     );
     this.addPart('hemi', 'emisferi cerebrali', 0xe7c9b9, shell, { ghost: true, opacity: 0.085 });
+    this.#medullaSides();
     this.#veins();
+  }
+
+  // Parte laterale del bulbo, destra e sinistra: il territorio della PICA nella sindrome
+  // di Wallenberg (appunti: «sindrome bulbare laterale … occlusione della PICA»). È la
+  // superficie della mesh reale del bulbo oltre circa un terzo della sua semilarghezza da
+  // ciascun lato, appena sollevata: un confine didattico, non misurato su una fonte.
+  #medullaSides() {
+    const part = this.parts.get('medulla');
+    const geos = part.meshes.map((m) => m.geometry.toNonIndexed().translate(m.position.x, m.position.y, m.position.z));
+    const pos = geos.flatMap((g) => Array.from(g.attributes.position.array));
+    let half = 0;
+    let cz = 0;
+    for (let i = 0; i < pos.length; i += 3) {
+      half = Math.max(half, Math.abs(pos[i]));
+      cz += pos[i + 2] / (pos.length / 3);
+    }
+    for (const [id, side, name] of [['bulboLatR', 1, 'parte laterale del bulbo, a destra'], ['bulboLatL', -1, 'parte laterale del bulbo, a sinistra']]) {
+      const out = [];
+      for (let i = 0; i < pos.length; i += 9) {
+        const x = (pos[i] + pos[i + 3] + pos[i + 6]) / 3;
+        if (x * side < 0.35 * half) continue;
+        for (let k = 0; k < 9; k += 3) {
+          // sollevata di 0,6 mm verso l'esterno, così copre la superficie del bulbo
+          const v = new THREE.Vector3(pos[i + k], 0, pos[i + k + 2] - cz);
+          const d = v.length() || 1;
+          out.push(pos[i + k] + (v.x / d) * 0.6 * S, pos[i + k + 1], pos[i + k + 2] + (v.z / d) * 0.6 * S);
+        }
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(out, 3));
+      g.computeVertexNormals();
+      this.addPart(id, name, 0xc98d74, [g], { opacity: 0.8, double: true });
+    }
   }
 
   // Lato mancante di una mesh reale presente da un solo lato.

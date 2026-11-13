@@ -13,6 +13,7 @@ const NAV_Y = -PAGE_H + 0.055;
 // --- scoperte: ciò che chi legge ha già esplorato, ricordato dal browser ---------
 // Per ogni doppia pagina (chiave `capitolo/n`, come nell'indirizzo):
 //   q     la domanda è risolta (vedi `onSolved` in quiz, src/ui.js)
+//   a     l'esito con cui è stata risolta, per ridisegnarla risolta alla prossima visita
 //   all   i comandi della pagina destra (pulsanti e corde), annotati quando la pagina si apre
 //   seen  quelli provati
 // Si legge lo storage una volta sola; poi conta la copia in memoria, che si riscrive
@@ -31,24 +32,47 @@ function discoveries() {
   }
   return memory;
 }
+function save() {
+  try {
+    localStorage.setItem(STORE, JSON.stringify(discoveries()));
+  } catch {
+    // senza storage le scoperte restano solo in memoria
+  }
+}
 function record(key, change) {
   const all = discoveries();
   const e = all[key] && typeof all[key] === 'object' ? all[key] : {};
   if (change(e) === false) return;
   all[key] = e;
-  try {
-    localStorage.setItem(STORE, JSON.stringify(all));
-  } catch {
-    // senza storage le scoperte restano solo in memoria
+  save();
+}
+// Azzerare: si dimenticano domande risolte e comandi provati delle doppie pagine
+// `keys`; resta l'elenco dei comandi di ogni pagina (`all`), che non è una scoperta.
+function forget(keys) {
+  const all = discoveries();
+  for (const key of keys) {
+    const e = all[key];
+    if (!e || typeof e !== 'object') continue;
+    delete e.q;
+    delete e.a;
+    delete e.seen;
   }
+  save();
 }
 const keyOf = (chapter, i) => `${chapter.id}/${i + 1}`;
 function progressOf(key) {
   const e = discoveries()[key];
   const list = (v) => (Array.isArray(v) ? v.filter((x) => typeof x === 'string') : null);
-  return { q: !!e?.q, all: list(e?.all), seen: list(e?.seen) ?? [] };
+  const a = e?.a && typeof e.a === 'object' && !Array.isArray(e.a) ? e.a : {};
+  return { q: !!e?.q, a, all: list(e?.all), seen: list(e?.seen) ?? [] };
 }
-const solve = (key) => record(key, (e) => (e.q ? false : (e.q = 1)));
+// l'esito si riscrive a ogni nuova soluzione: alla prossima visita si vede l'ultima
+const solve = (key, a) =>
+  record(key, (e) => {
+    e.q = 1;
+    e.a = a && typeof a === 'object' ? a : {};
+  });
+const keysOf = (chapter) => chapter.spreads.map((_, i) => keyOf(chapter, i));
 const offer = (key, labels) =>
   record(key, (e) => (JSON.stringify(e.all) === JSON.stringify(labels) ? false : (e.all = labels)));
 const find = (key, label) =>
@@ -130,10 +154,23 @@ export async function buildSpread(def, ctx) {
   y -= gap;
 
   const key = keyOf(ctx.chapter, ctx.index);
+  const progress = progressOf(key);
+  let api = null;
   // in una previsione la scelta avvia sul modello l'opzione che la mette alla prova
   const q = await quiz(def.quiz, W, {
-    onSolved: () => solve(key),
+    // domanda già risolta: si apre risolta, con «rifai» per ricominciarla
+    saved: progress.q ? progress.a : null,
+    onSolved: (a) => solve(key, a),
+    // «rifai»: la pagina ricomincia, modello compreso
+    onRedo: () => api?.enter(),
+    // un taglio salvato si rifà sul modello, se il comportamento della pagina lo sa fare
+    onReplay: (at) => !!modeApi?.replay?.(at),
+    meshes: (id) => model.parts.get(id)?.meshes ?? [],
+    // un cartellino posato al suo posto vale come toccare quella parte (vedi `selector`)
+    onPlace: (id) => modeApi?.onPlace?.(id),
     onPredict: () => def.quiz.reveal != null && modeApi?.choose?.(def.quiz.reveal),
+    // «taglia e prevedi»: il confronto mostra sul modello l'esito del taglio
+    onCompare: () => modeApi?.reveal?.(),
     nameOf: (id) => model.parts.get(id)?.name ?? id,
     onReveal: (ids) => {
       model.hover = new Set(ids);
@@ -173,11 +210,12 @@ export async function buildSpread(def, ctx) {
     offer: (label) => label && !offered.includes(label) && offered.push(label),
     found: (label) => find(key, label),
   };
-  modeApi = await def.mode({ model, controls, def });
+  // il comportamento riceve anche la domanda: un taglio (`cutter`) le passa la via tagliata
+  modeApi = await def.mode({ model, controls, def, quiz: q });
   offer(key, offered);
   await Promise.all([ready(caption), ready(instruction), ready(kicker), ready(counter), ready(fig)]);
 
-  return {
+  api = {
     left,
     right,
     update: () => {
@@ -201,8 +239,53 @@ export async function buildSpread(def, ctx) {
           own?.(id, hit);
         };
       }
+      // una domanda già risolta ridisegna sul modello ciò che le serve
+      q.resume?.();
     },
   };
+  return api;
+}
+
+// Comando da confermare con un secondo tocco, per ciò che non si annulla (azzerare le
+// scoperte): al primo tocco la scritta chiede conferma, dopo qualche secondo torna com'era.
+function confirmLink(label, ask, onConfirm, opts = {}) {
+  const t = makeText(label, { fontSize: 0.021, font: FONT.italic, color: INK_SOFT, ...opts });
+  const hit = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, 1),
+    new THREE.MeshBasicMaterial({ color: MARKER, transparent: true, opacity: 0, depthWrite: false })
+  );
+  hit.renderOrder = 1;
+  let armed = 0;
+  let timer = null;
+  const fit = () => {
+    if (!t.textRenderInfo) return;
+    const b = bounds(t);
+    hit.scale.set(b.w + 0.02, b.h + 0.014, 1);
+    hit.position.set(t.position.x + (b.x0 + b.x1) / 2, t.position.y + (b.y0 + b.y1) / 2, 0.0004);
+  };
+  t.addEventListener('synccomplete', fit);
+  const disarm = () => {
+    armed = 0;
+    t.text = label;
+    t.color = INK_SOFT;
+  };
+  hit.userData.ui = {
+    hover: (on) => (hit.material.opacity = on ? 0.25 : 0),
+    cursor: 'pointer',
+    click: () => {
+      clearTimeout(timer);
+      if (armed && performance.now() - armed < 5000) {
+        disarm();
+        onConfirm();
+        return;
+      }
+      armed = performance.now();
+      t.text = ask;
+      t.color = ACCENT;
+      timer = setTimeout(disarm, 5000);
+    },
+  };
+  return { text: t, hit, place: (x, y) => (t.position.set(x, y, t.position.z), fit()) };
 }
 
 // Frontespizio con l'indice dei capitoli, raggruppati per parti su due colonne.
@@ -230,16 +313,27 @@ export async function buildToc(chapters, parts, ctx) {
   // avanzamento di tutto il libro, se si è già cominciato
   const sums = chapters.map(tally);
   const done = sums.reduce((a, t) => a + t.done, 0);
-  if (done) {
+  const tried = sums.reduce((a, t) => a + t.seen, 0);
+  if (done || tried) {
     await introReady;
     const all = sums.reduce((a, t) => a + t.n, 0);
     const so = makeText(
-      `Domande risolte: ${done} su ${all}. Il numero rosso accanto a ogni capitolo porta al suo riepilogo, «Da scoprire».`,
+      done
+        ? `Domande risolte: ${done} su ${all}. Il numero rosso accanto a ogni capitolo porta al suo riepilogo, «Da scoprire».`
+        : `Domande risolte: nessuna su ${all}; comandi provati: ${tried}.`,
       { fontSize: 0.0235, lineHeight: 1.4, maxWidth: W * 0.92, color: ACCENT, font: FONT.italic }
     );
     so.position.set(M, intro.position.y - bounds(intro).h - 0.04, so.position.z);
     left.add(so);
     await ready(so);
+    // azzerare tutto il libro: domande e comandi provati, con un secondo tocco di conferma
+    const reset = confirmLink('Azzera l’avanzamento di tutto il libro', 'Tocca di nuovo per azzerare tutto: non si torna indietro', () => {
+      forget(chapters.flatMap(keysOf));
+      ctx.refresh();
+    });
+    left.add(reset.text, reset.hit);
+    await ready(reset.text);
+    reset.place(M, so.position.y - bounds(so).h - 0.025);
   }
 
   // righe dell'indice: intestazioni di parte e capitoli numerati
@@ -400,6 +494,17 @@ export async function buildSummary(chapter, ctx) {
   lead.position.set(M, y, lead.position.z);
   await ready(lead);
   y -= bounds(lead).h + 0.04;
+  // azzerare il capitolo, con un secondo tocco di conferma
+  if (t.done || t.seen) {
+    const reset = confirmLink('Azzera questo capitolo', 'Tocca di nuovo per azzerarlo: non si torna indietro', () => {
+      forget(keysOf(chapter));
+      ctx.refresh();
+    });
+    left.add(reset.text, reset.hit);
+    await ready(reset.text);
+    reset.place(M, y + 0.02);
+    y -= bounds(reset.text).h + 0.024;
+  }
 
   // prima si misura tutto; se le domande non ci stanno restano nel suggerimento al passaggio
   const textW = W - 0.05;
@@ -412,7 +517,7 @@ export async function buildSummary(chapter, ctx) {
   }
   // che cosa spunta una voce, in fondo alla lista se c'è posto
   const note = makeText(
-    'Una voce prende la spunta quando la sua domanda è risolta: la risposta giusta, la previsione verificata sotto l’aletta, la struttura indicata sul modello, tutte le etichette al loro posto.',
+    'Una voce prende la spunta quando la sua domanda è risolta: la risposta giusta, la previsione verificata sotto l’aletta, la struttura indicata sul modello, tutte le etichette al loro posto, il taglio previsto bene.',
     { font: FONT.italic, fontSize: 0.0205, color: INK_SOFT, maxWidth: W, lineHeight: 1.35 }
   );
   await ready(note);

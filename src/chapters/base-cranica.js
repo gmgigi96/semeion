@@ -1,4 +1,8 @@
 // Capitolo "Base cranica". Testi dagli appunti di neuroanatomia (Base cranica).
+// Pagina 3: i cartellini dei nervi e dei vasi si portano sui fori della fossa media; posato
+// al suo posto, il cartellino accende sul modello il foro con ciò che lo attraversa
+// (l'opzione del foro, come toccarlo). La domanda «indica sul modello» è passata alla
+// pagina 4 e chiede il foro giugulare, con il contenuto della domanda che c'era.
 import { selector } from '../modes.js';
 import { BaseCranica } from '../models/base-cranica.js';
 
@@ -92,14 +96,28 @@ const spreads = [
       ovale: ['fOvale'], spin: ['fSpinosum'], lac: ['fLacerum'], hiatus: ['fHiatus'],
     },
     quiz: {
-      question: 'Indica il foro da cui il nervo mascellare lascia la fossa media.',
-      point: ['fRotundum'],
-      why: { fOvale: 'Dal forame ovale passa il mandibolare.' },
-      explain: 'Il mascellare lo percorre per entrare nella fossa pterigo-palatina; il mandibolare passa dal forame ovale.',
+      question: 'Porta ogni nervo e ogni vaso sul foro da cui passa.',
+      tags: [
+        { label: 'nervo mascellare', ids: ['fRotundum'] },
+        { label: 'nervo mandibolare', ids: ['fOvale'] },
+        { label: 'arteria meningea media', ids: ['fSpinosum'] },
+        { label: 'carotide interna', ids: ['fLacerum'] },
+        { label: 'nervo abducente', ids: ['fSof'] },
+      ],
+      why: {
+        fRotundum: 'Dal forame rotondo passa il nervo mascellare.',
+        fOvale: 'Dal forame ovale passa il nervo mandibolare.',
+        fSpinosum: 'Dal forame spinoso passano arteria e vena meningee medie.',
+        fLacerum: 'Dal forame lacero entra la carotide interna.',
+        fSof: 'La fessura orbitaria superiore porta all’orbita III, IV, VI e i rami dell’oftalmico.',
+        fHiatus: 'Dallo iato del canale faciale entra il nervo grande petroso superficiale.',
+        fOptic: 'Dal canale ottico passano nervo ottico e arteria oftalmica.',
+      },
+      explain: 'Il mascellare va nella fossa pterigo-palatina, il mandibolare nella fossa infratemporale.',
     },
     caption: 'Fossa anteriore in trasparenza, per seguire i nervi fin dentro l’orbita.',
-    instruction: 'SCEGLI UN FORO: COMPAIONO I NERVI E I VASI CHE LO ATTRAVERSANO',
-    view: { yaw: Math.PI, zoom: 1, focus: fossa(0.1, 1.06) },
+    instruction: 'PORTA I CARTELLINI SUI FORI · SCEGLI UN FORO PER VEDERE CHI LO ATTRAVERSA',
+    view: { yaw: Math.PI, zoom: 1, focus: fossa(0.1, 1.3) },
     mode: selector({
       base: [...ANT, 'sectionF', ...MID, ...CLIVUS, 'tempPost', 'pituitary', 'stem', 'fSof', 'fRotundum', 'fOvale', 'fSpinosum', 'fLacerum', 'fHiatus'],
       looks: glass([...ANT, 'sectionF'], 0.3),
@@ -128,13 +146,18 @@ const spreads = [
       iam: ['fIam'], sig: ['sigmoid'], jug: ['fJugular'],
     },
     quiz: {
-      question: 'Quali nervi attraversano la pars nervosa del foro giugulare?',
-      options: ['Faciale e vestibolo-cocleare', 'Glossofaringeo, vago e accessorio', 'Ipoglosso e accessorio', 'Trigemino e abducente'],
-      correct: 1,
-      explain: 'La pars venosa, postero-laterale, contiene il bulbo della vena giugulare.',
+      question: 'Indica il foro da cui glossofaringeo, vago e accessorio lasciano il cranio.',
+      point: ['fJugular'],
+      why: {
+        fIam: 'Nel meato acustico interno entrano faciale e vestibolo-cocleare.',
+        fHypoglossal: "Dal canale dell'ipoglosso passa il nervo ipoglosso.",
+        fMagnum: "Dal forame magno sale la radice dell'accessorio, che poi esce dal foro giugulare.",
+        fCondylar: 'Dal canale condilare passa la vena emissaria condilare.',
+      },
+      explain: 'Passano nella pars nervosa, antero-mediale; la pars venosa, postero-laterale, contiene il bulbo della vena giugulare.',
     },
     caption: 'Nervi ricostruiti dal tronco encefalico (in trasparenza) fino ai rispettivi fori.',
-    instruction: 'SCEGLI UN FORO, OPPURE SEGUI IL SANGUE DEI SENI VENOSI',
+    instruction: 'SCEGLI UN FORO O TOCCALO SUL MODELLO · SEGUI IL SANGUE DEI SENI VENOSI',
     view: { yaw: Math.PI, zoom: 1, focus: fossa(-0.09, 1.15) },
     mode: selector({
       base: [...POST, 'sectionO', 'tempMid', 'parietal', 'sectionP', 'stem', 'medulla', 'fMagnum', 'fHypoglossal', 'fJugular', 'fIam', 'fCondylar', 'fMastoid'],

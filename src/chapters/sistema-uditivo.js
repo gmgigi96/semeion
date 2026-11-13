@@ -3,7 +3,7 @@
 // del suono); l'ultima doppia pagina, sulla via acustica centrale, segue gli
 // appunti «Vie vestibolo-cocleari (3X)», paragrafo «Via cocleare».
 // Parti reali e ricostruite, con le fonti: vedi src/models/sistema-uditivo.js.
-import { chipsInto, infoText, cordInto } from '../modes.js';
+import { chipsInto, infoText, cordInto, picked } from '../modes.js';
 import { AuditoryModel, STEM_VIEW, ductTurnAt } from '../models/sistema-uditivo.js';
 
 const DUCTS = ['ductBase', 'ductMid', 'ductApex'];
@@ -79,7 +79,8 @@ function stage({ focus, base = [], rest = [], options, looks = {}, pick = {}, id
     return {
       enter() {
         select(initial);
-        model.onClick = (id) => id in pick && select(pick[id]);
+        // scegliere toccando il modello vale come provare il pulsante
+        model.onClick = (id) => id in pick && (picked(controls, options[pick[id]]?.label), select(pick[id]));
         model.lookFn = (part) => {
           const o = current();
           const look = { ...looks[part.id] };
@@ -113,10 +114,15 @@ function stage({ focus, base = [], rest = [], options, looks = {}, pick = {}, id
 
 // Corda dell'altezza del suono: sposta lungo il dotto cocleare il punto di massima
 // risonanza della membrana basilare (u = 0 inizio del giro basale, 1 apice).
+// Gli appunti danno solo i due estremi (toni alti e corde corte nel giro basale, largo 100
+// micron; toni bassi e corde lunghe nel giro apicale, 400-500 micron) e dicono che la
+// membrana basilare «si allarga progressivamente» dall'uno all'altro. DEDUZIONE: tra i due il
+// punto di massima risonanza scorre con continuità, quindi a toni via via più bassi passa per
+// il giro intermedio. Il testo del giro intermedio dice solo questo, non nomina toni medi.
 const TURN_NAME = { ductBase: 'giro basale', ductMid: 'giro intermedio', ductApex: 'giro apicale' };
 const TURN_INFO = {
   ductBase: 'Toni alti: entrano in risonanza le corde acustiche corte del giro basale, dove la membrana basilare è larga 100 micron.',
-  ductMid: 'Toni intermedi: risuonano corde acustiche di lunghezza intermedia, nel giro intermedio.',
+  ductMid: 'Tra toni alti e bassi: la membrana basilare si allarga progressivamente dal giro basale all’apicale, e qui ha una larghezza intermedia.',
   ductApex: 'Toni bassi: risuonano le corde acustiche lunghe del giro apicale, dove la membrana basilare è larga 400-500 micron.',
 };
 const toneCord = {

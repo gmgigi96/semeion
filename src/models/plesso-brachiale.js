@@ -7,6 +7,11 @@
 // divisione › tronchi secondari › nervi): ogni segmento è una parte distinta e
 // sa quali radici gli portano fibre. Da qui derivano le fibre di una radice,
 // il percorso a ritroso di un nervo e l'effetto di un taglio in un punto.
+// Per il rompicapo «Ricostruisci il plesso» il modello sa anche tendere cavi
+// tra segmenti (`setCables`, con prese invisibili attorno all'asse di ogni
+// segmento) e far correre gli impulsi delle fibre di ogni radice fino ai nervi
+// (`fib:<radice>:<nervo>`): sono vie lungo l'asse dei segmenti, ricavato dalla
+// mesh stessa, non fasci reali.
 //
 // MESH REALI (Z-Anatomy, CC BY-SA 4.0; public/meshes/plesso-brachiale.glb,
 // manifesto in meshes/plesso-brachiale.json): vertebre C3-T3 e dischi, prima e
@@ -116,6 +121,7 @@ const LABEL_AT = {
   AX: [-196, 23, 1366], MED: [-171.5, 11, 1318], ULN: [-156, 26, 1293], MCN: [-199, 16.5, 1265], RAD: [-160, 32, 1338],
 };
 const FLOOR = 0.027; // piano di taglio a metà braccio, sul piano della base
+const CABLE_TOL = 0.016; // distanza massima tra raggio e parte perché il cavo vi si agganci
 
 export const ROOTS = ['C5', 'C6', 'C7', 'C8', 'T1'];
 export const LEVEL_COLORS = {
@@ -241,6 +247,7 @@ export class PlessoBrachiale extends AnatomyModel {
   reset() {
     super.reset();
     this.setCut(null);
+    this.setCables(null);
   }
 
   async #build() {
@@ -253,6 +260,7 @@ export class PlessoBrachiale extends AnatomyModel {
     this.#ghostOf('rib1', 'rib1G', 0.5);
     this.#markers();
     for (const def of SEGS) this.#segment(def);
+    this.#fibreLinks();
     for (const [id, p] of Object.entries(LABEL_AT)) {
       const part = this.parts.get(id);
       part.center.copy(mm(...p));
@@ -490,6 +498,172 @@ export class PlessoBrachiale extends AnatomyModel {
     }
   }
 
+  // Asse di un segmento: media dei vertici a pari distanza dall'estremità
+  // prossimale, dal capo prossimale a quello distale.
+  #axis(seg) {
+    const n = Math.max(4, Math.ceil(seg.len / 0.012));
+    const bins = Array.from({ length: n }, () => [0, 0, 0, 0]);
+    for (let i = 0; i < seg.dist.length; i++) {
+      const b = bins[Math.min(n - 1, Math.floor((seg.dist[i] / seg.len) * n))];
+      b[0] += seg.P[i * 3];
+      b[1] += seg.P[i * 3 + 1];
+      b[2] += seg.P[i * 3 + 2];
+      b[3] += 1;
+    }
+    return bins.filter((b) => b[3]).map((b) => new THREE.Vector3(b[0] / b[3], b[1] / b[3], b[2] / b[3]));
+  }
+
+  // Impulsi delle fibre: per ogni radice e ogni nervo terminale che ne riceve
+  // fibre, una via (`fib:C5:RAD`) lungo gli assi dei segmenti attraversati, del
+  // colore della radice. Si vedono solo gli impulsi, anche attraverso le parti
+  // che li coprono: il tubo e la punta della via restano nascosti.
+  #fibreLinks() {
+    this.fibres = [];
+    for (const r of ROOTS)
+      for (const t of TERMINALS) {
+        if (!this.segs.get(t).roots.includes(r)) continue;
+        const chain = [t];
+        while (this.segs.get(chain[0]).kind !== 'root')
+          chain.unshift(this.segs.get(chain[0]).parents.find((p) => this.segs.get(p).roots.includes(r)));
+        const pts = [];
+        for (const id of chain)
+          for (const p of this.#axis(this.segs.get(id))) if (!pts.length || p.distanceTo(pts.at(-1)) > 0.005) pts.push(p);
+        const id = `fib:${r}:${t}`;
+        this.addLink(id, pts, { color: LEVEL_COLORS[r], r: 0.0026 });
+        const l = this.links.get(id);
+        l.group.children[0].visible = l.group.children[1].visible = false;
+        l.mat.depthTest = false;
+        l.pulse.renderOrder = 24;
+        this.fibres.push(id);
+      }
+  }
+
+  // --- cavi da tendere --------------------------------------------------------
+  // setCables({ from, to, drop }) rende afferrabili le parti `from`: chi legge ne
+  // afferra una in un punto qualsiasi e tende un cavo rosso fino a una delle parti
+  // `to`. Il cavo si aggancia alla parte `to` più vicina al raggio del puntatore
+  // (entro CABLE_TOL, unità del modello), che resta in `cableTarget` mentre lo si
+  // porta; lasciato, `drop(da, a)` (a = null se non c'è nulla) ritorna true se il
+  // collegamento è giusto: il cavo si spegne, altrimenti torna indietro.
+  // setCables(null) toglie le prese. Funziona con il mouse e al tocco.
+  setCables(spec) {
+    for (const h of this.cableUis ?? []) {
+      h.visible = false;
+      h.userData.ui = null;
+    }
+    this.cableUis = [];
+    this.cableSpec = spec;
+    this.cableTarget = null;
+    if (this.cable) this.cable.group.visible = false;
+    if (!spec) return;
+    if (!this.cable) {
+      const mat = new THREE.MeshStandardMaterial({ color: 0x9c2f22, roughness: 0.6, depthTest: false, transparent: true, clippingPlanes: this.clipPlanes });
+      const rope = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 8, 1, true), mat);
+      const plug = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), mat);
+      const knot = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), mat);
+      const group = new THREE.Group();
+      for (const m of [rope, plug, knot]) m.renderOrder = 27;
+      group.add(rope, plug, knot);
+      group.visible = false;
+      this.inner.add(group);
+      this.cable = { group, rope, plug, knot, mat, a: new THREE.Vector3(), b: new THREE.Vector3(), held: false, back: 0, fade: 0 };
+    }
+    const toLocal = (ray) => ray.clone().applyMatrix4(this.inner.matrixWorld.clone().invert());
+    // vertice più vicino al raggio fra quelli dei segmenti `ids`
+    const nearest = (local, ids) => {
+      let best = { id: null, d: Infinity, p: new THREE.Vector3() };
+      const v = new THREE.Vector3();
+      for (const id of ids) {
+        const seg = this.segs.get(id);
+        if (!seg || seg.part.shown < 0.5) continue;
+        for (let i = 0; i < seg.dist.length; i++) {
+          v.set(seg.P[i * 3], seg.P[i * 3 + 1], seg.P[i * 3 + 2]);
+          const d = local.distanceSqToPoint(v);
+          if (d < best.d) best = { id, d, p: v.clone() };
+        }
+      }
+      best.d = Math.sqrt(best.d);
+      return best;
+    };
+    const c = this.cable;
+    for (const from of spec.from) {
+      const seg = this.segs.get(from);
+      const handle = this.#handle(from);
+      const grab = {
+        start: (ray) => {
+          // il cavo parte dal punto dell'asse più vicino al raggio
+          c.a.copy(nearest(toLocal(ray), [from]).p);
+          c.b.copy(c.a);
+          c.from = from;
+          c.held = true;
+          c.back = c.fade = 0;
+          c.group.visible = true;
+          c.mat.opacity = 1;
+          this.#drawCable();
+        },
+        move: (ray) => {
+          if (!c.held) return;
+          const local = toLocal(ray);
+          const n = nearest(local, this.cableSpec?.to ?? []);
+          this.cableTarget = n.d < CABLE_TOL ? n.id : null;
+          if (this.cableTarget) c.b.copy(n.p);
+          else {
+            // il capo libero segue il puntatore sul piano che passa per la presa
+            const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(local.direction, c.a);
+            local.intersectPlane(plane, c.b);
+          }
+          this.#drawCable();
+        },
+        end: (pickUnder) => {
+          if (!c.held) return;
+          c.held = false;
+          let to = this.cableTarget;
+          if (!to) {
+            const id = pickUnder()?.ui?.id;
+            if (this.cableSpec?.to.includes(id)) to = id;
+          }
+          this.cableTarget = null;
+          const ok = this.cableSpec?.drop(from, to);
+          if (ok) c.fade = 1;
+          else c.back = 1;
+        },
+      };
+      handle.userData.ui = {
+        id: from, tip: seg.name, cursor: 'grab', grab,
+        hover: (on) => this.onHover?.(on ? from : null),
+      };
+      this.cableUis.push(handle);
+    }
+  }
+
+  // Presa invisibile attorno all'asse di un segmento, più grossa del nervo: si
+  // afferra bene anche con un dito (vedi «Oggetti da trascinare» in docs/AUTHORING.md).
+  #handle(id) {
+    this.handles ??= new Map();
+    if (!this.handles.has(id)) {
+      const mat = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: this.clipPlanes });
+      const m = new THREE.Mesh(taperTube(this.#axis(this.segs.get(id)), 0.0075, { radial: 8, seg: 24 }), mat);
+      m.visible = false;
+      this.inner.add(m);
+      this.handles.set(id, m);
+    }
+    return this.handles.get(id);
+  }
+
+  #drawCable() {
+    const c = this.cable;
+    const r = 0.0021;
+    const len = c.a.distanceTo(c.b);
+    c.rope.position.copy(c.a).add(c.b).multiplyScalar(0.5);
+    c.rope.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), c.b.clone().sub(c.a).normalize());
+    c.rope.scale.set(r, Math.max(1e-4, len), r);
+    c.rope.visible = len > 1e-4;
+    c.plug.position.copy(c.b);
+    c.plug.scale.setScalar(r * 2.6);
+    c.knot.position.copy(c.a);
+    c.knot.scale.setScalar(r * 2);
+  }
+
   // --- stato ----------------------------------------------------------------
   // Taglia il segmento `id` alla distanza `t` dalla sua estremità prossimale.
   setCut(id, t) {
@@ -572,6 +746,23 @@ export class PlessoBrachiale extends AnatomyModel {
       tm.opacity = mat.opacity;
       tm.depthWrite = mat.depthWrite;
       for (const e of seg.pieces) e.tail.visible = cutHere && e.main.visible;
+    }
+    // le prese dei cavi ci sono solo dove il segmento si vede
+    for (const h of this.cableUis ?? []) h.visible = this.parts.get(h.userData.ui.id).shown > 0.5;
+    // il cavo lasciato: giusto, si spegne; sbagliato, torna alla presa
+    const c = this.cable;
+    if (c?.group.visible && !c.held) {
+      const step = Math.min(realDt, 0.1) * 4;
+      if (c.back > 0) {
+        c.back = Math.max(0, c.back - step);
+        c.b.lerp(c.a, 1 - c.back);
+        this.#drawCable();
+        if (!c.back) c.group.visible = false;
+      } else if (c.fade > 0) {
+        c.fade = Math.max(0, c.fade - step);
+        c.mat.opacity = c.fade;
+        if (!c.fade) c.group.visible = false;
+      } else c.group.visible = false;
     }
     // gli indicatori degli spazi di compressione pulsano
     const pulse = 1 + 0.07 * Math.sin(this.time * 4);

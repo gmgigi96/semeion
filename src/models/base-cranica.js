@@ -17,7 +17,8 @@
 // forame rotondo, forame spinoso, fessura orbitaria superiore, canale dell'ipoglosso,
 // iati petrosi, fori etmoidali, canale condilare e forame mastoideo non sono risolti
 // dalle mesh e sono posti secondo i rapporti anatomici):
-// - anelli che segnano i fori; filuzzi olfattivi; vena emissaria del foro cieco;
+// - anelli che segnano i fori, con una presa invisibile un po' più larga (vedi `#holes`);
+//   filuzzi olfattivi; vena emissaria del foro cieco;
 // - tronco del nervo oculomotore, nervo abducente, radice e ganglio del trigemino,
 //   nervi mascellare e mandibolare, nervi grande e piccolo petroso;
 // - arteria meningea media; nervi faciale, vestibolo-cocleare, glossofaringeo, vago,
@@ -132,6 +133,43 @@ export class BaseCranica extends AnatomyModel {
     this.#anterior();
     this.#middle();
     this.#posterior();
+    this.#holes();
+  }
+
+  // Gli anelli dei fori sono sottili: ogni foro riceve una presa invisibile (una sfera, un
+  // disco per il forame magno) che appartiene alla sua parte, così un cartellino lasciato
+  // sul foro (domanda `tags`) o un tocco (domanda `point`) lo prendono anche al tocco.
+  // Centri e raggi in mm: quelli degli anelli più un margine, con il centro spostato
+  // un poco fuori dall'osso, verso chi guarda, dove il foro si apre.
+  #holes() {
+    const HOLES = {
+      fSof: [[25, -121.5, 1533.5], 6], fRotundum: [[22.3, -113.2, 1516.3], 3.3], fOvale: [[24.4, -102.3, 1509.6], 3.6],
+      fSpinosum: [[31, -96.2, 1507.4], 3.4], fLacerum: [[13.2, -96.3, 1511.6], 4.6], fHiatus: [[36.6, -83.1, 1518], 3.6],
+      fJugular: [[31, -73.5, 1500.5], 5.5], fIam: [[24.3, -77.9, 1511.2], 4.6], fHypoglossal: [[8.8, -74.5, 1491.5], 3.4],
+      fCondylar: [[25, -62.5, 1493.6], 3], fMastoid: [[56.8, -46, 1512], 3], fOptic: [[10.4, -117.2, 1531], 4.4],
+    };
+    const mat = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: this.clipPlanes });
+    const grip = (id, geos) => {
+      const part = this.parts.get(id);
+      for (const g of geos) {
+        g.computeBoundingBox();
+        const c = g.boundingBox.getCenter(new THREE.Vector3());
+        g.translate(-c.x, -c.y, -c.z);
+        const m = new THREE.Mesh(g, mat);
+        m.position.copy(c);
+        m.userData.size = g.boundingBox.getSize(new THREE.Vector3());
+        m.userData.ui = part.meshes[0].userData.ui;
+        m.visible = false;
+        this.inner.add(m);
+        part.meshes.push(m);
+      }
+    };
+    for (const [id, [c, r]] of Object.entries(HOLES)) {
+      const p = mm(c);
+      grip(id, both(new THREE.SphereGeometry(r * S, 16, 12).translate(p.x, p.y, p.z)));
+    }
+    const pm = mm([-0.6, -59, 1485]);
+    grip('fMagnum', [new THREE.CylinderGeometry(17 * S, 17 * S, 1.5 * S, 32).translate(pm.x, pm.y, pm.z)]);
   }
 
   // Porta sul piano di taglio il bordo frastagliato della volta e chiude la

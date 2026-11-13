@@ -20,6 +20,7 @@ export const ACCENT = 0x9c3d1f;
 export const MARKER = 0xf0c24a;
 export const GOOD = 0x2f7d4f;
 export const BAD = 0xb23a2a;
+const PEN = 0x2c3e66; // l'inchiostro blu degli inviti a mano («tocca…», «rifai»)
 
 // Quote sopra la carta, per evitare z-fighting.
 const Z_FILL = 0.0008;
@@ -263,14 +264,29 @@ export function underline(x0, x1, y, color = ACCENT) {
 // nome di una parte e onReveal(ids) la indica dopo tre tentativi sbagliati.
 //   tags: [{ label, ids }]                         etichette da trascinare sulle parti `ids`
 //                                                  del modello; why: { idParte: '…' }
-// onSolved() viene chiamata una volta, quando la domanda è risolta: risposta giusta,
-// aletta sollevata dopo la previsione, struttura indicata (o accesa dopo tre tentativi),
-// tutte le etichette a posto. È ciò che il riepilogo del capitolo spunta.
+//   cut: { board: 'campo' | 'corpo' | 'modello' }  «Taglia qui»: si taglia la via sul modello, si
+//                                                  segna il deficit previsto, poi si confronta
+//                                                  (vedi cutQuiz); onCompare() mostra l'esito sul modello
+// onSolved(esito) viene chiamata quando la domanda è risolta: risposta giusta, aletta
+// sollevata dopo la previsione, struttura indicata (o accesa dopo tre tentativi), tutte le
+// etichette a posto, previsione di un taglio esatta (o tre confronti). È ciò che il
+// riepilogo del capitolo spunta; `esito` (un oggetto da salvare in JSON) basta a ridisegnare
+// la domanda risolta.
+// Domanda già risolta in una visita precedente: `saved` è quell'esito ({} se non c'è). La
+// domanda si apre risolta (risposta giusta segnata, aletta aperta, cartellini al loro posto,
+// taglio e confronto rifatti) e in alto a destra compare «rifai», che la riporta da capo e
+// chiama onRedo() (la pagina rimette a posto il modello). Le parti che toccano il modello si
+// ridisegnano in `resume()`, che la pagina chiama dopo aver avviato il suo comportamento.
+// Altri ganci: meshes(id) le mesh di una parte (per i cordini delle etichette),
+// onPlace(id) un cartellino appena posato al suo posto, sulla parte `id`,
+// onReplay(at) rifà sul modello un taglio salvato (ritorna false se non sa farlo).
 export async function quiz(def, width, hooks = {}) {
   if (def.point) return pointQuiz(def, width, hooks);
   if (def.tags) return tagQuiz(def, width, hooks);
+  if (def.cut) return cutQuiz(def, width, hooks);
   const { question, options, correct, explain, why = [], predict = false } = def;
-  const { onPredict, onSolved } = hooks;
+  const { onPredict, onSolved, onRedo } = hooks;
+  let saved = hooks.saved ?? null;
   const group = new THREE.Group();
   let y = 0;
   const kicker = makeText(predict ? 'PREDICI' : 'DOMANDA', {
@@ -280,6 +296,9 @@ export async function quiz(def, width, hooks = {}) {
     letterSpacing: 0.14,
   });
   group.add(kicker);
+  let again = null; // «rifai»: diverso per la domanda classica e per la previsione
+  const redo = await redoMark(width, () => again());
+  group.add(redo.group);
   y -= 0.03;
   const q = makeText(question, { fontSize: 0.027, font: FONT.semi, maxWidth: width, lineHeight: 1.35 });
   q.position.y = y;
@@ -297,6 +316,16 @@ export async function quiz(def, width, hooks = {}) {
   let solved = false;
   let chosen = null;
   let flap = null;
+  // risposta giusta della domanda classica
+  const right = (r) => {
+    solved = true;
+    redo.show(true);
+    r.inner.material.color.set(GOOD);
+    r.text.color = GOOD;
+    r.hit.material.opacity = 0;
+    feedback.color = GOOD;
+    feedback.text = `Esatto. ${explain}`;
+  };
   for (const [i, label] of options.entries()) {
     const row = new THREE.Group();
     row.position.y = y;
@@ -308,6 +337,7 @@ export async function quiz(def, width, hooks = {}) {
     const h = Math.max(bounds(t).h, BOX) + 0.016;
     const hit = layer(new THREE.Mesh(new THREE.PlaneGeometry(width, h), flat(MARKER, 0)), 1);
     hit.position.set(width / 2, -h / 2 + 0.008, Z_FILL / 4);
+    const r = { row, tick, text: t, inner, hit };
     hit.userData.ui = {
       hover: (on) => (hit.material.opacity = on && !solved ? 0.18 : 0),
       cursor: 'pointer',
@@ -316,31 +346,48 @@ export async function quiz(def, width, hooks = {}) {
         if (predict) {
           // la previsione si può cambiare finché l'aletta è chiusa
           chosen = i;
-          rows.forEach((r, j) => (r.tick.visible = j === i));
+          rows.forEach((o, j) => (o.tick.visible = j === i));
           flap.arm();
           onPredict?.(i);
           return;
         }
-        const ok = i === correct;
-        inner.material.color.set(ok ? GOOD : BAD);
-        t.color = ok ? GOOD : BAD;
-        feedback.color = ok ? GOOD : BAD;
-        feedback.text = ok ? `Esatto. ${explain}` : why[i] ? `Non proprio. ${why[i]} Riprova.` : 'Non proprio: riguarda il modello e riprova.';
-        if (ok) {
-          solved = true;
-          hit.material.opacity = 0;
-          onSolved?.();
+        if (i === correct) {
+          right(r);
+          onSolved?.({});
+          return;
         }
+        inner.material.color.set(BAD);
+        t.color = BAD;
+        feedback.color = BAD;
+        feedback.text = why[i] ? `Non proprio. ${why[i]} Riprova.` : 'Non proprio: riguarda il modello e riprova.';
       },
     };
     row.add(hit);
     group.add(row);
-    rows.push({ row, tick, text: t, inner, hit });
+    rows.push(r);
     y -= h;
   }
+  // da capo: caselle vuote, testi neri, niente esito
+  const clearRows = () => {
+    for (const r of rows) {
+      r.inner.material.color.set(0xfffdf6);
+      r.text.color = INK;
+      r.tick.visible = false;
+      r.tick.material.color.set(ACCENT);
+    }
+  };
   if (!predict) {
     feedback.position.y = y - 0.012;
     group.add(feedback);
+    if (saved) right(rows[correct]);
+    again = () => {
+      solved = false;
+      saved = null;
+      redo.show(false);
+      clearRows();
+      feedback.text = '';
+      onRedo?.();
+    };
     return { group, height: -y + 0.09 };
   }
 
@@ -370,7 +417,7 @@ export async function quiz(def, width, hooks = {}) {
   const fk = makeText('PERCHÉ?', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
   const ft = makeText("Solleva l'aletta per la risposta", { fontSize: 0.027, font: FONT.semi, maxWidth: inW * 0.78, lineHeight: 1.25 });
   const fs = makeText('…dopo la tua previsione.', { fontSize: 0.021, font: FONT.italic, color: INK_SOFT, maxWidth: inW * 0.78 });
-  const fh = makeText('solleva qui', { fontSize: 0.02, font: FONT.italic, color: 0x2c3e66, anchorX: 'right' });
+  const fh = makeText('solleva qui', { fontSize: 0.02, font: FONT.italic, color: PEN, anchorX: 'right' });
   await Promise.all([ready(fk), ready(ft), ready(fs), ready(fh)]);
   const faceH = 0.03 + bounds(ft).h + 0.012 + bounds(fs).h;
   const cardH = Math.max(innerH, faceH) + 2 * pad;
@@ -407,7 +454,7 @@ export async function quiz(def, width, hooks = {}) {
   // freccia tracciata a mano verso l'angolo da sollevare
   const ax = width - pad - 0.04;
   const ay = -pad - 0.034;
-  const arrowMat = flat(0x2c3e66, 0.9);
+  const arrowMat = flat(PEN, 0.9);
   const tipX = width - pad + 0.002;
   const tipY = -cardH + pad + 0.006;
   const arrow = new THREE.Group();
@@ -431,7 +478,7 @@ export async function quiz(def, width, hooks = {}) {
   const OPEN = 1.15;
   const reveal = () => {
     solved = true;
-    onSolved?.();
+    redo.show(true);
     [verdict.text, answer.text] = verdictFor(chosen);
     verdict.color = chosen === correct ? GOOD : BAD;
     ready(verdict).then(() => answer.position.set(pad, top - pad - bounds(verdict).h - 0.008, Z_TEXT));
@@ -447,25 +494,52 @@ export async function quiz(def, width, hooks = {}) {
     click: () => {
       if (!armed) return;
       open = true;
-      if (!solved) reveal();
+      if (!solved) {
+        reveal();
+        onSolved?.({ chosen });
+      }
     },
     get cursor() {
       return armed ? 'pointer' : 'default';
     },
   };
   pocket.userData.ui = { click: () => (open = false), cursor: 'pointer' };
+  const ARMED = 'Ora guarda il modello, poi controlla.';
   flap = {
     arm() {
       if (armed) return;
       armed = true;
-      fs.text = 'Ora guarda il modello, poi controlla.';
+      fs.text = ARMED;
     },
   };
   y -= cardH;
+  // risolta in una visita precedente: la previsione di allora, con l'aletta già sollevata
+  if (saved) {
+    chosen = Number.isInteger(saved.chosen) && saved.chosen >= 0 && saved.chosen < options.length ? saved.chosen : correct;
+    rows[chosen].tick.visible = true;
+    armed = open = true;
+    angle = OPEN;
+    fs.text = ARMED;
+    reveal();
+  }
+  again = () => {
+    solved = armed = open = false;
+    saved = null;
+    chosen = null;
+    redo.show(false);
+    clearRows();
+    verdict.text = answer.text = '';
+    fs.text = '…dopo la tua previsione.';
+    onRedo?.();
+  };
 
   return {
     group,
     height: -y + 0.01,
+    // il modello mostra di nuovo l'esito della previsione di allora
+    resume() {
+      if (saved) onPredict?.(chosen);
+    },
     update() {
       const now = performance.now();
       const dt = Math.min(0.1, (now - last) / 1000);
@@ -486,15 +560,38 @@ export async function quiz(def, width, hooks = {}) {
   };
 }
 
+// «rifai», scritto a mano in blu in alto a destra di una domanda risolta: la riporta da
+// capo. Ritorna { group, show(on) }; nascosto finché la domanda non è risolta.
+async function redoMark(width, onClick) {
+  const group = new THREE.Group();
+  const t = makeText('rifai', { fontSize: 0.021, font: FONT.italic, color: PEN, anchorX: 'right' });
+  t.position.set(width - 0.004, 0.006, Z_TEXT);
+  await ready(t);
+  const b = bounds(t);
+  const line = underline(width - 0.004 - b.w, width - 0.004, 0.006 - b.h - 0.001, PEN);
+  const hit = layer(new THREE.Mesh(new THREE.PlaneGeometry(b.w + 0.03, 0.036), flat(MARKER, 0)), 1);
+  hit.position.set(width - 0.004 - b.w / 2, 0.006 - b.h / 2, Z_FILL / 4);
+  hit.userData.ui = {
+    hover: (on) => (hit.material.opacity = on ? 0.25 : 0),
+    click: () => group.visible && onClick(),
+    cursor: 'pointer',
+  };
+  group.add(hit, t, line);
+  group.visible = false;
+  return { group, show: (on) => (group.visible = on) };
+}
+
 // --- Indica sul modello -------------------------------------------------------
 // La risposta è una struttura: chi legge la tocca sul modello. Ogni tocco
 // sbagliato dice che cosa si è indicato e, se c'è, perché non è quella giusta;
 // dopo tre tentativi la struttura giusta si accende da sola.
-async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf = (id) => id, onReveal, onSolved } = {}) {
+async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf = (id) => id, onReveal, onSolved, onRedo, saved = null } = {}) {
   const group = new THREE.Group();
   let y = 0;
   const kicker = makeText('INDICA SUL MODELLO', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
   group.add(kicker);
+  const redo = await redoMark(width, () => again());
+  group.add(redo.group);
   y -= 0.03;
   const q = makeText(question, { fontSize: 0.027, font: FONT.semi, maxWidth: width, lineHeight: 1.35 });
   q.position.y = y;
@@ -503,13 +600,14 @@ async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf
   y -= bounds(q).h + 0.018;
 
   // invito, con una freccia a mano che punta alla pagina del modello
-  const hint = makeText('tocca la struttura sul modello', { fontSize: 0.023, font: FONT.italic, color: 0x2c3e66 });
+  const HINT = 'tocca la struttura sul modello';
+  const hint = makeText(HINT, { fontSize: 0.023, font: FONT.italic, color: PEN });
   hint.position.set(0.004, y, Z_TEXT);
   await ready(hint);
   const hb = bounds(hint);
   const ax = hb.w + 0.02;
   const ay = y - hb.h / 2;
-  const arrowMat = flat(0x2c3e66, 0.9);
+  const arrowMat = flat(PEN, 0.9);
   const arrow = new THREE.Group();
   arrow.add(
     new THREE.Mesh(stroke(bezier([ax, ay - 0.004], [ax + 0.05, ay + 0.016], [ax + 0.1, ay + 0.002]), 0.0026), arrowMat),
@@ -526,20 +624,52 @@ async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf
   const answer = nameOf(point[0]);
   let solved = false;
   let tries = 0;
+  // trovata (id), oppure accesa dopo tre tentativi (shown)
+  const found = (id) => {
+    solved = true;
+    redo.show(true);
+    feedback.color = GOOD;
+    feedback.text = `Esatto: ${nameOf(id)}. ${explain}`;
+    hint.text = 'trovata';
+    hint.color = GOOD;
+    arrowMat.opacity = 0;
+  };
+  const shown = (said) => {
+    solved = true;
+    redo.show(true);
+    feedback.color = BAD;
+    feedback.text = `${said}La risposta giusta ora è accesa sul modello: ${answer}. ${explain}`;
+    hint.text = '';
+    arrowMat.opacity = 0;
+  };
+  if (saved) {
+    if (saved.shown) shown('');
+    else found(point.includes(saved.id) ? saved.id : point[0]);
+  }
+  const again = () => {
+    solved = false;
+    saved = null;
+    tries = 0;
+    redo.show(false);
+    feedback.text = '';
+    hint.text = HINT;
+    hint.color = PEN;
+    arrowMat.opacity = 0.9;
+    onRedo?.();
+  };
   return {
     group,
     height: -y + 0.11,
+    // risolta dopo tre tentativi in una visita precedente: la risposta torna accesa
+    resume() {
+      if (saved?.shown) onReveal?.(point);
+    },
     // chiamata dallo spread a ogni clic su una parte del modello
     point(id) {
       if (solved) return;
       if (point.includes(id)) {
-        solved = true;
-        onSolved?.();
-        feedback.color = GOOD;
-        feedback.text = `Esatto: ${nameOf(id)}. ${explain}`;
-        hint.text = 'trovata';
-        hint.color = GOOD;
-        arrowMat.opacity = 0;
+        found(id);
+        onSolved?.({ id });
         return;
       }
       tries += 1;
@@ -549,11 +679,8 @@ async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf
         feedback.text = `${said} Riprova.`;
         return;
       }
-      solved = true;
-      onSolved?.();
-      feedback.text = `${said} La risposta giusta ora è accesa sul modello: ${answer}. ${explain}`;
-      hint.text = '';
-      arrowMat.opacity = 0;
+      shown(`${said} `);
+      onSolved?.({ shown: true });
       onReveal?.(point);
     },
   };
@@ -564,11 +691,13 @@ async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf
 // Al posto giusto il cartellino torna nella sua casella e un cordino rosso lo lega
 // alla struttura, come le etichette a mano di una tavola anatomica.
 const CORD = 0x9c2f22;
-async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = (id) => id, onSolved } = {}) {
+async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = (id) => id, onSolved, onRedo, onPlace, saved = null, meshes = () => [] } = {}) {
   const group = new THREE.Group();
   let y = 0;
   const kicker = makeText('TRASCINA LE ETICHETTE', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
   group.add(kicker);
+  const redo = await redoMark(width, () => again());
+  group.add(redo.group);
   y -= 0.03;
   const q = makeText(question, { fontSize: 0.027, font: FONT.semi, maxWidth: width, lineHeight: 1.35 });
   q.position.y = y;
@@ -641,14 +770,19 @@ async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = 
           const id = under?.ui?.id;
           if (!id) return; // lasciato nel vuoto: torna a posto
           if (tag.ids.includes(id)) {
-            it.placed = id;
             // il cordino si appunta dove è stato lasciato il cartellino, e segue il modello
-            it.pin = { object: under.object, local: under.object.worldToLocal(under.hit.point.clone()) };
-            tick.visible = true;
+            place(it, id, under.object, under.object.worldToLocal(under.hit.point.clone()));
+            onPlace?.(id);
             done += 1;
             feedback.color = GOOD;
             feedback.text = done === tags.length ? `Tutte al loro posto. ${explain ?? ''}` : `«${tag.label}»: esatto.`;
-            if (done === tags.length) onSolved?.();
+            if (done === tags.length) {
+              redo.show(true);
+              // dove sono appuntati i cordini: parte, mesh della parte, punto nella mesh
+              onSolved?.({
+                pins: items.map((o) => [o.placed, Math.max(0, meshes(o.placed).indexOf(o.pin.object)), ...o.pin.local.toArray().map((v) => +v.toFixed(5))]),
+              });
+            }
             return;
           }
           feedback.color = BAD;
@@ -662,6 +796,31 @@ async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = 
   y -= Math.ceil(tags.length / 2) * (tagH + 0.016) + 0.006;
   feedback.position.y = y;
   group.add(feedback);
+  function place(it, id, object, local) {
+    it.placed = id;
+    it.pin = object && { object, local };
+    it.tick.visible = true;
+  }
+  // risolta in una visita precedente: le spunte subito, i cordini quando il modello è pronto
+  const solvedBefore = () => {
+    for (const it of items) it.tick.visible = true;
+    done = tags.length;
+    redo.show(true);
+    feedback.color = GOOD;
+    feedback.text = `Tutte al loro posto. ${explain ?? ''}`;
+  };
+  if (saved) solvedBefore();
+  const again = () => {
+    saved = null;
+    for (const it of items) {
+      it.placed = it.pin = null;
+      it.tick.visible = false;
+    }
+    done = 0;
+    redo.show(false);
+    feedback.text = '';
+    onRedo?.();
+  };
 
   const up = new THREE.Vector3(0, 1, 0);
   const a = new THREE.Vector3();
@@ -670,6 +829,17 @@ async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = 
   return {
     group,
     height: -y + 0.08,
+    // i cordini di allora, appuntati dove erano stati lasciati (o al centro della parte)
+    resume() {
+      if (!saved) return;
+      for (const [i, it] of items.entries()) {
+        const [id, k, x, y, z] = Array.isArray(saved.pins?.[i]) ? saved.pins[i] : [];
+        const ok = it.tag.ids.includes(id) && meshes(id)[k];
+        const at = ok ? id : it.tag.ids[0];
+        const local = ok && [x, y, z].every(Number.isFinite) ? new THREE.Vector3(x, y, z) : new THREE.Vector3();
+        place(it, at, meshes(at)[ok ? k : 0], local);
+      }
+    },
     update() {
       const now = performance.now();
       const dt = Math.min(0.1, (now - last) / 1000);
@@ -860,4 +1030,437 @@ export async function cord({ label = '', ends = ['', ''], width, min = 0, max = 
       }
     },
   };
+}
+
+// --- «Taglia qui»: taglio, previsione, confronto ----------------------------------
+// Chi legge taglia la via sul modello (il comportamento `cutter` di src/modes.js
+// chiama `cut({ label, truth })`), poi dichiara il deficit che prevede con un gesto
+// su una tavola disegnata sulla pagina, infine tocca «Confronta»: il modello mostra
+// l'esito vero e la tavola segna che cosa coincide, che cosa mancava, che cosa era
+// di troppo. Un nuovo taglio ricomincia da capo. Le tavole:
+//   campo    i due dischi del campo visivo, come lo vede il paziente; chiavi
+//            "occhio:metà:quadrante" (R/L, R/L, S/I), le stesse di setFields nel modello
+//   corpo    una sagoma vista di fronte per ogni tipo di perdita (`kinds`: [{ key, label,
+//            color }]); si colora metà sagoma, chiavi "lato:tipo" (R/L: lato del paziente)
+//   modello  si toccano le parti sul modello (il comportamento chiama `toggle(id)`);
+//            le chiavi sono gli id delle parti
+// Facoltativi: `hint` (l'invito prima del taglio), `done` («Taglio»), `again` (l'invito
+// dopo il confronto) e, per la tavola «modello», `legend` (come leggere l'esito sul modello).
+// La domanda è risolta con una previsione esatta, o dopo tre confronti.
+const HATCH_SIZE = 0.011; // passo del tratteggio sulla pagina
+let hatchMap = null;
+function hatchTexture() {
+  if (hatchMap) return hatchMap;
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const g = c.getContext('2d');
+  g.strokeStyle = `#${new THREE.Color(ACCENT).getHexString()}`;
+  g.lineWidth = 5;
+  g.lineCap = 'square';
+  // diagonale che si ripete senza giunte: anche i due angoli
+  for (const d of [-32, 0, 32]) {
+    g.beginPath();
+    g.moveTo(d, 32);
+    g.lineTo(d + 32, 0);
+    g.stroke();
+  }
+  hatchMap = new THREE.CanvasTexture(c);
+  hatchMap.colorSpace = THREE.SRGBColorSpace;
+  hatchMap.wrapS = hatchMap.wrapT = THREE.RepeatWrapping;
+  return hatchMap;
+}
+// coordinate di tessitura uguali alle coordinate di pagina: il tratteggio ha lo stesso passo ovunque
+function pageUV(g, ox = 0, oy = 0) {
+  const pos = g.attributes.position;
+  const uv = new Float32Array(pos.count * 2);
+  for (let i = 0; i < pos.count; i++) {
+    uv[2 * i] = (pos.getX(i) + ox) / HATCH_SIZE;
+    uv[2 * i + 1] = (pos.getY(i) + oy) / HATCH_SIZE;
+  }
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  return g;
+}
+
+// Una zona della tavola: fondo di carta (scuro se persa davvero), tratteggio rosso
+// (la previsione), un punto in cui mettere il segno del confronto.
+function region(key, geo, at, anchor, inside = anchor) {
+  const g = pageUV(geo, at[0], at[1]);
+  const fill = layer(new THREE.Mesh(g, flat(0xfffdf6)), 2);
+  const hatch = layer(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: hatchTexture(), transparent: true, depthWrite: false })), 3);
+  fill.position.set(at[0], at[1], Z_FILL / 2);
+  hatch.position.set(at[0], at[1], Z_FILL);
+  hatch.visible = false;
+  return { key, fill, hatch, anchor, inside };
+}
+
+// Segni del confronto: spunta verde (coincide), cerchio blu (mancava), croce rossa (di troppo).
+function verdictMark(kind) {
+  if (kind === 'hit') {
+    const t = handTick(GOOD);
+    t.position.set(-0.02, 0.016, Z_TEXT); // la spunta, centrata sul punto
+    const g = new THREE.Group();
+    g.add(t);
+    return g;
+  }
+  const g = new THREE.Group();
+  if (kind === 'miss') {
+    const pts = Array.from({ length: 27 }, (_, k) => {
+      const a = (k / 24) * Math.PI * 2 + 0.4;
+      return [Math.cos(a) * 0.0135 * (1 + 0.06 * Math.sin(3 * a)), Math.sin(a) * 0.0125];
+    });
+    g.add(layer(new THREE.Mesh(stroke(pts, 0.0032), flat(PEN)), 6));
+  } else {
+    const m = flat(BAD);
+    g.add(
+      layer(new THREE.Mesh(stroke(bezier([-0.011, 0.011], [0.001, 0.002], [0.011, -0.012], 6), 0.0034), m), 6),
+      layer(new THREE.Mesh(stroke(bezier([0.011, 0.012], [-0.001, 0.001], [-0.012, -0.01], 6), 0.0034), m), 6)
+    );
+  }
+  for (const c of g.children) c.position.z = Z_TEXT;
+  return g;
+}
+
+// Tavola «campo»: due dischi divisi in quadranti, l'occhio sinistro a sinistra.
+async function fieldBoard(width) {
+  const group = new THREE.Group();
+  const R = 0.072;
+  const regions = [];
+  const waits = [];
+  const ink = flat(INK, 0.8);
+  for (const [eye, cx] of [['L', width / 2 - 0.15], ['R', width / 2 + 0.15]]) {
+    const cy = -0.032 - R;
+    const name = makeText(eye === 'R' ? 'occhio destro' : 'occhio sinistro', { fontSize: 0.021, font: FONT.italic, color: INK_SOFT, anchorX: 'center' });
+    name.position.set(cx, 0, Z_TEXT);
+    group.add(name);
+    waits.push(ready(name));
+    for (const sx of [1, -1])
+      for (const sy of [1, -1]) {
+        const start = sx > 0 ? (sy > 0 ? 0 : -Math.PI / 2) : sy > 0 ? Math.PI / 2 : Math.PI;
+        const r = region(`${eye}:${sx > 0 ? 'R' : 'L'}:${sy > 0 ? 'S' : 'I'}`, new THREE.CircleGeometry(R, 18, start, Math.PI / 2), [cx, cy], [cx + sx * R * 0.5, cy + sy * R * 0.48]);
+        regions.push(r);
+        group.add(r.fill, r.hatch);
+      }
+    // contorno e croce a penna, appena irregolari
+    const rim = Array.from({ length: 49 }, (_, k) => {
+      const a = (k / 48) * Math.PI * 2;
+      const w = 1 + 0.012 * Math.sin(5 * a + cx * 20);
+      return [cx + Math.cos(a) * R * w, cy + Math.sin(a) * R * w];
+    });
+    for (const pts of [rim, bezier([cx - R, cy + 0.001], [cx, cy - 0.002], [cx + R, cy], 8), bezier([cx, cy + R], [cx + 0.002, cy], [cx - 0.001, cy - R], 8)]) {
+      const line = layer(new THREE.Mesh(stroke(pts, pts === rim ? 0.0034 : 0.0026), ink), 4);
+      line.position.z = Z_FILL * 1.5;
+      group.add(line);
+    }
+  }
+  const foot = makeText('il campo visivo come lo vede il paziente', { fontSize: 0.0185, font: FONT.italic, color: INK_SOFT, anchorX: 'center' });
+  foot.position.set(width / 2, -0.032 - 2 * R - 0.012, Z_TEXT);
+  group.add(foot);
+  await Promise.all([...waits, ready(foot)]);
+  const describe = (keys) => {
+    const out = [];
+    for (const eye of ['R', 'L'])
+      for (const half of ['L', 'R']) {
+        const s = keys.has(`${eye}:${half}:S`);
+        const i = keys.has(`${eye}:${half}:I`);
+        if (!s && !i) continue;
+        const e = eye === 'R' ? 'occhio destro' : 'occhio sinistro';
+        const h = half === 'L' ? 'sinistra' : 'destra';
+        out.push(s && i ? `${e}, metà ${h}` : `${e}, in ${s ? 'alto' : 'basso'} a ${h}`);
+      }
+    return out;
+  };
+  return { group, regions, height: 0.032 + 2 * R + 0.012 + bounds(foot).h, describe };
+}
+
+// Mezza sagoma umana vista di fronte (x >= 0, altezza 1, dall'alto in basso): testa,
+// spalla, braccio staccato dal tronco, gamba. Si chiude sulla linea mediana.
+const HALF_BODY = [
+  ...Array.from({ length: 9 }, (_, k) => {
+    const a = Math.PI / 2 - (k / 8) * (Math.PI / 2 + 1.22);
+    return [0.075 * Math.cos(a), -0.085 + 0.075 * Math.sin(a)];
+  }),
+  [0.03, -0.175], [0.11, -0.198], [0.15, -0.222], [0.175, -0.3], [0.2, -0.42], [0.215, -0.53],
+  [0.222, -0.578], [0.198, -0.602], [0.179, -0.562], [0.165, -0.44], [0.141, -0.335], [0.124, -0.272],
+  [0.115, -0.36], [0.11, -0.45], [0.12, -0.54], [0.122, -0.62], [0.106, -0.8], [0.09, -0.945],
+  [0.1, -0.982], [0.05, -0.99], [0.036, -0.958], [0.036, -0.8], [0.02, -0.62], [0, -0.6],
+];
+
+// Tavola «corpo»: una sagoma per tipo di perdita; la metà destra del paziente sta a
+// sinistra di chi guarda, come nel modello.
+async function bodyBoard(width, kinds) {
+  const group = new THREE.Group();
+  const H = 0.17;
+  const regions = [];
+  const waits = [];
+  const ink = flat(INK, 0.8);
+  const step = width / kinds.length;
+  for (const [k, kind] of kinds.entries()) {
+    const cx = step * (k + 0.5);
+    const top = -0.034;
+    const name = makeText(kind.label, { fontSize: 0.021, font: FONT.semi, color: kind.color ?? INK, anchorX: 'center' });
+    name.position.set(cx, 0, Z_TEXT);
+    group.add(name);
+    waits.push(ready(name));
+    for (const [side, sx] of [['R', -1], ['L', 1]]) {
+      const pts = HALF_BODY.map(([x, y]) => [cx + sx * x * H, top + y * H]);
+      const shape = new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x - cx, y - top)));
+      // il segno del confronto sta fuori dalla sagoma, accanto al braccio di quel lato
+      const r = region(`${side}:${kind.key}`, new THREE.ShapeGeometry(shape), [cx, top], [cx + sx * 0.33 * H, top - 0.3 * H], [cx + sx * 0.06 * H, top - 0.4 * H]);
+      regions.push(r);
+      group.add(r.fill, r.hatch);
+      const outline = layer(new THREE.Mesh(stroke(pts.slice(0, -1), 0.003), ink), 4);
+      outline.position.z = Z_FILL * 1.5;
+      group.add(outline);
+      const t = makeText(side === 'R' ? 'destra' : 'sinistra', { fontSize: 0.0175, font: FONT.italic, color: INK_SOFT, anchorX: sx < 0 ? 'right' : 'left' });
+      t.position.set(cx + sx * 0.035, top - H - 0.006, Z_TEXT);
+      group.add(t);
+      waits.push(ready(t));
+    }
+    // linea mediana tratteggiata: le due metà si colorano una per una
+    for (let y = top - 0.17 * H; y > top - 0.6 * H; y -= 0.012) {
+      const d = layer(new THREE.Mesh(new THREE.PlaneGeometry(0.0014, 0.006), flat(INK, 0.35)), 4);
+      d.position.set(cx, y, Z_FILL * 1.5);
+      group.add(d);
+    }
+  }
+  await Promise.all(waits);
+  const label = Object.fromEntries(kinds.map((k) => [k.key, k.label]));
+  const describe = (keys) => {
+    const out = [];
+    for (const kind of kinds) {
+      const r = keys.has(`R:${kind.key}`);
+      const l = keys.has(`L:${kind.key}`);
+      if (r || l) out.push(`${label[kind.key]} ${r && l ? 'a destra e a sinistra' : r ? 'a destra' : 'a sinistra'}`);
+    }
+    return out;
+  };
+  return { group, regions, height: 0.034 + H + 0.03, describe };
+}
+
+async function cutQuiz({ question, cut: spec, explain = '' }, width, hooks = {}) {
+  const { nameOf = (id) => id, onCompare, onSolved, onRedo, onReplay } = hooks;
+  let saved = hooks.saved ?? null;
+  const group = new THREE.Group();
+  let y = 0;
+  const kicker = makeText('TAGLIA E PREVEDI', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
+  group.add(kicker);
+  const redo = await redoMark(width, () => again());
+  group.add(redo.group);
+  y -= 0.03;
+  const q = makeText(question, { fontSize: 0.027, font: FONT.semi, maxWidth: width, lineHeight: 1.35 });
+  q.position.y = y;
+  group.add(q);
+  await ready(q);
+  y -= bounds(q).h + 0.012;
+
+  // riga di stato: che cosa fare adesso, con la freccia a mano verso il modello finché non si è tagliato
+  const status = makeText('', { fontSize: 0.022, font: FONT.italic, color: PEN, maxWidth: width, lineHeight: 1.3 });
+  status.position.set(0.004, y, Z_TEXT);
+  const arrowMat = flat(PEN, 0.9);
+  const arrow = new THREE.Group();
+  const ax = width - 0.1;
+  const ay = y - 0.013;
+  arrow.add(
+    new THREE.Mesh(stroke(bezier([ax, ay - 0.004], [ax + 0.05, ay + 0.016], [ax + 0.1, ay + 0.002]), 0.0026), arrowMat),
+    new THREE.Mesh(stroke([[ax + 0.084, ay + 0.014], [ax + 0.1, ay + 0.002], [ax + 0.083, ay - 0.008]], 0.0026), arrowMat)
+  );
+  arrow.position.z = Z_TEXT;
+  for (const o of [arrow, ...arrow.children]) o.renderOrder = 5;
+  group.add(status, arrow);
+  const statusTop = y;
+
+  // --- la tavola ---------------------------------------------------------------
+  // le sagome lasciano a destra una colonna per «Confronta» e la legenda
+  const onModel = spec.board === 'modello';
+  const aside = spec.board === 'corpo' ? width * 0.62 : 0;
+  let board;
+  if (spec.board === 'campo') board = await fieldBoard(width);
+  else if (spec.board === 'corpo') board = await bodyBoard(aside, spec.kinds);
+  else {
+    // sul modello: qui resta solo l'elenco di ciò che si è toccato
+    const list = makeText('', { fontSize: 0.022, maxWidth: width, lineHeight: 1.3 });
+    const g = new THREE.Group();
+    g.add(list);
+    board = { group: g, regions: [], height: 0.064, list, describe: (keys) => [...keys].map(nameOf) };
+  }
+  group.add(board.group);
+
+  // «Confronta» e la legenda dei segni: accanto alla tavola o sotto
+  const go = await chip('Confronta', { onClick: () => compare() });
+  const legend = makeText('', { fontSize: 0.0185, font: FONT.italic, color: INK_SOFT, lineHeight: 1.25 });
+  legend.maxWidth = aside ? width - aside - 0.03 : width - go.w - 0.03;
+  if (!aside) legend.anchorY = 'middle';
+  const verdict = makeText('', { fontSize: 0.0215, font: FONT.italic, maxWidth: width, lineHeight: 1.32 });
+  group.add(go.group, legend, verdict);
+
+  // Impaginazione: la riga di stato e l'elenco della tavola «modello» vanno a capo secondo
+  // il testo (il nome di un taglio può essere lungo), quindi ciò che sta sotto si sposta
+  // ogni volta che uno dei due cambia. Due righe sono sempre riservate, così la pagina non
+  // salta a ogni taglio; solo una terza riga spinge giù il resto.
+  const linesH = (t, min) => Math.max(min, t.textRenderInfo ? bounds(t).h + 0.012 : 0);
+  const layout = () => {
+    let yy = statusTop - linesH(status, 0.064);
+    board.group.position.y = yy;
+    const boardH = onModel ? linesH(board.list, board.height) : board.height;
+    if (aside) {
+      const x = aside + 0.03;
+      go.group.position.set(x + go.w / 2, yy - 0.04 - go.h / 2, 0);
+      legend.position.set(x, yy - 0.04 - go.h - 0.014, Z_TEXT);
+      yy -= boardH + 0.006;
+    } else {
+      yy -= boardH + 0.006;
+      go.group.position.set(go.w / 2, yy - go.h / 2, 0);
+      legend.position.set(go.w + 0.02, yy - go.h / 2, Z_TEXT);
+      yy -= go.h + 0.012;
+    }
+    verdict.position.y = yy;
+    return yy;
+  };
+  status.addEventListener('synccomplete', layout);
+  if (onModel) board.list.addEventListener('synccomplete', layout);
+  y = layout();
+
+  // --- stato --------------------------------------------------------------------
+  let current = null; // il taglio: { label, truth, at }
+  let shown = false;
+  let tries = 0;
+  let solved = false;
+  const marks = new Set();
+  const symbols = new THREE.Group();
+  board.group.add(symbols);
+  const paint = () => {
+    for (const r of board.regions) {
+      r.hatch.visible = marks.has(r.key);
+      const lost = shown && current.truth.has(r.key);
+      r.fill.material.color.set(lost ? 0x5e5248 : r.hover && current && !shown ? 0xf6e7b8 : 0xfffdf6);
+      r.fill.material.opacity = lost ? 0.5 : 1;
+    }
+    if (onModel) board.list.text = current ? `Segnati: ${marks.size ? board.describe(marks).join(', ') : 'nulla'}.` : '';
+  };
+  const say = () => {
+    arrowMat.opacity = current ? 0 : 0.9;
+    const { hint = 'tocca la via sul modello per tagliarla', done = 'Taglio', again = 'Tocca la via per un altro taglio.' } = spec;
+    if (!current) status.text = hint;
+    else if (shown) status.text = `${done}: ${current.label}. ${again}`;
+    else status.text = `${done}: ${current.label}. ${onModel ? 'Tocca sul modello' : 'Segna qui sotto'} ciò che prevedi perso.`;
+  };
+  for (const r of board.regions) {
+    r.fill.userData.ui = {
+      key: r.key,
+      at: r.inside, // un punto della zona, nelle coordinate della tavola (per le prove)
+      cursor: 'pointer',
+      hover: (on) => ((r.hover = on), paint()),
+      click: () => {
+        if (!current) {
+          status.text = 'Prima taglia la via sul modello.';
+          return;
+        }
+        if (shown) return;
+        if (marks.has(r.key)) marks.delete(r.key);
+        else marks.add(r.key);
+        paint();
+      },
+    };
+  }
+  const list = (keys) => board.describe(keys).join('; ');
+  function compare() {
+    if (!current) {
+      status.text = 'Prima taglia la via sul modello.';
+      return;
+    }
+    if (shown) return;
+    shown = true;
+    tries += 1;
+    onCompare?.();
+    const hit = new Set([...marks].filter((k) => current.truth.has(k)));
+    const miss = new Set([...current.truth].filter((k) => !marks.has(k)));
+    const extra = new Set([...marks].filter((k) => !current.truth.has(k)));
+    const exact = !miss.size && !extra.size;
+    for (const r of board.regions) {
+      const kind = hit.has(r.key) ? 'hit' : miss.has(r.key) ? 'miss' : extra.has(r.key) ? 'extra' : null;
+      if (!kind) continue;
+      const m = verdictMark(kind);
+      m.position.set(r.anchor[0], r.anchor[1], 0);
+      symbols.add(m);
+    }
+    const lines = [];
+    if (exact) lines.push(current.truth.size ? `Previsione esatta. ${explain}` : `Previsione esatta: non si perde nulla. ${explain}`);
+    else {
+      lines.push(`Coincide: ${hit.size ? list(hit) : 'nulla'}.`);
+      if (miss.size) lines.push(`Mancava: ${list(miss)}.`);
+      if (extra.size) lines.push(`Di troppo: ${list(extra)}.`);
+    }
+    verdict.text = lines.join('\n').trim();
+    verdict.color = exact ? GOOD : INK;
+    legend.text = onModel
+      ? spec.legend ?? 'sul modello: in scuro ciò che si perde'
+      : aside
+        ? 'scuro: perso davvero\nrosso: la tua previsione\nspunta: coincide\ncerchio: mancava\ncroce: di troppo'
+        : 'scuro: perso davvero · rosso: la tua previsione\nspunta: coincide · cerchio: mancava · croce: di troppo';
+    go.setActive(true, exact ? GOOD : ACCENT);
+    paint();
+    say();
+    if (!solved && (exact || tries >= 3)) {
+      solved = true;
+      redo.show(true);
+      // basta per rifare taglio e confronto alla prossima visita
+      onSolved?.({ label: current.label, truth: [...current.truth], marks: [...marks], at: current.at ?? null });
+    }
+  }
+  const clear = () => {
+    marks.clear();
+    shown = false;
+    symbols.clear();
+    verdict.text = '';
+    legend.text = '';
+    go.setActive(false);
+  };
+  const again = () => {
+    solved = false;
+    saved = null;
+    tries = 0;
+    redo.show(false);
+    onRedo?.(); // la pagina ricuce la via: arriva cut(null), che ripulisce la tavola
+  };
+  say();
+  paint();
+  const api = {
+    group,
+    height: -y + 0.09,
+    // risolta in una visita precedente: si rifanno il taglio (sul modello, se il
+    // comportamento della pagina sa rifarlo) e il confronto con la previsione di allora
+    resume() {
+      if (!saved || !Array.isArray(saved.truth)) return;
+      solved = true;
+      redo.show(true);
+      if (!(saved.at && onReplay?.(saved.at))) api.cut({ label: saved.label ?? '', truth: saved.truth });
+      if (!current) return;
+      for (const k of Array.isArray(saved.marks) ? saved.marks : []) marks.add(k);
+      compare();
+    },
+    // per il comportamento della pagina destra
+    get state() {
+      return !current ? 'idle' : shown ? 'shown' : 'mark';
+    },
+    get marks() {
+      return marks;
+    },
+    // un nuovo taglio (o nessuno, con null): la tavola ricomincia da capo. `at` (facoltativo,
+    // da salvare in JSON) è ciò che serve al comportamento per rifare lo stesso taglio
+    cut(c) {
+      clear();
+      current = c && { label: c.label, truth: new Set(c.truth), at: c.at };
+      say();
+      paint();
+    },
+    // tavola «modello»: una parte toccata entra o esce dalla previsione; null se ora non si segna
+    toggle(key) {
+      if (!current || shown) return null;
+      if (marks.has(key)) marks.delete(key);
+      else marks.add(key);
+      paint();
+      return marks;
+    },
+  };
+  return api;
 }

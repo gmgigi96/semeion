@@ -2,8 +2,11 @@
 // (8. Nervo trigemino). Non sono negli appunti: l'effetto della lesione del
 // nervo mandibolare (pagina 5), dedotto dal fatto che è l'unica branca mista, e
 // i confini disegnati tra i territori cutanei (pagina 4): vedi le fonti in testa
-// a src/models/nervo-trigemino.js.
-import { selector } from '../modes.js';
+// a src/models/nervo-trigemino.js. A pagina 4 la risposta a un punto toccato è il
+// territorio del modello in cui cade: le parole che la spiegano (i nervi e le
+// regioni di ciascuna branca) sono degli appunti, il confine esatto è stimato.
+import * as THREE from 'three';
+import { selector, chipsInto, infoText, explore } from '../modes.js';
 import { TrigeminalModel } from '../models/nervo-trigemino.js';
 
 const STEM = ['midbrain', 'pons', 'medulla', 'cord'];
@@ -24,6 +27,110 @@ const SKIN = ['skin1', 'skin2', 'skin3', 'skinRest'];
 // i muscoli superficiali coprono i nervi: in trasparenza finché non sono accesi
 const GLASS = { opacity: 0.22, litOpacity: 0.9 };
 const MUSCLE_GLASS = { temporalis: GLASS, masseter: GLASS, ptlat: { opacity: 0.4, litOpacity: 0.9 }, ptmed: { opacity: 0.5, litOpacity: 0.9 } };
+
+// «Di chi è questo punto?»: si tocca un punto della cute (metà sinistra del volto), poi
+// si sceglie con un pulsante la branca che lo porta; il territorio vero si accende e
+// un piccolo conto tiene le risposte giuste. Senza un punto in sospeso i pulsanti fanno
+// ciò che fanno in `selector`: mostrano la branca e il suo territorio. La cute resta di
+// un solo colore finché non si risponde (o non si sceglie una branca): i territori
+// non si vedono prima.
+//   options  come in `selector` (lit, info), una per branca, nell'ordine di SKIN
+//   skin     id delle parti di cute dei territori, nell'ordine delle opzioni
+//   rest     id della cute che non appartiene a nessuna branca
+const NEUTRAL = 0xe6cdb8;
+const OF = ["dell'oftalmica", 'della mascellare', 'della mandibolare'];
+const THE = ["l'oftalmica", 'la mascellare', 'la mandibolare'];
+const DONE = 0x2a2520; // spillo di un punto già risolto
+function faceMode({ base, options, skin, rest, pick = {}, idle = '' }) {
+  return async ({ model, controls }) => {
+    const ex = explore(controls);
+    const finds = OF.map((o) => `Un punto ${o}`);
+    for (const f of finds) ex.offer(f);
+    let sel = null; // branca mostrata con il pulsante
+    let pending = null; // { at, normal, truth, pin }: punto toccato, in attesa della risposta
+    let shown = null; // branca il cui territorio si è appena scoperto
+    let tries = [];
+    const { chips, height } = await chipsInto(controls, options.map((o, i) => ({ label: o.label, onClick: () => press(i) })));
+    const info = await infoText(controls, -height - 0.03);
+    const score = () => (tries.length ? ` Giuste ${tries.filter((t) => t.ok).length} su ${tries.length}.` : '');
+    const show = (i) => {
+      sel = i;
+      shown = null;
+      chips.forEach((c, j) => c.setActive(j === i));
+      model.show([...base, ...(options[i]?.lit ?? [])]);
+      info.text = (options[i]?.info ?? idle) + (i == null ? score() : '');
+    };
+    const press = (i) => {
+      if (!pending) return show(sel === i ? null : i);
+      // la risposta: il territorio vero si accende
+      const { truth, pin } = pending;
+      const ok = i === truth;
+      tries.push({ at: pending.at, ok });
+      pending = null;
+      sel = null;
+      shown = truth;
+      chips.forEach((c, j) => c.setActive(j === truth));
+      pin.material.color.set(DONE);
+      pin.material.emissive.set(DONE);
+      pin.scale.setScalar(0.7);
+      if (ok) ex.found(finds[truth]);
+      info.text = `${ok ? `Sì, ${THE[truth]}.` : `No: non ${THE[i]}, ${THE[truth]}.`} ${options[truth].info}${score()}`;
+    };
+    return {
+      enter() {
+        tries = [];
+        pending = null;
+        show(null);
+        model.maskSkin(true);
+        model.onClick = (id, hit) => {
+          const k = skin.indexOf(id);
+          if (k < 0 && id !== rest) {
+            // i nervi sul cranio: come i pulsanti
+            if (id in pick && !pending) {
+              ex.found(options[pick[id]].label);
+              show(pick[id]);
+            }
+            return;
+          }
+          if (!hit?.point) return;
+          const at = model.inner.worldToLocal(hit.point.clone());
+          if (k < 0) {
+            info.text = `Qui la cute non è del trigemino: nessuna delle tre branche. Tocca un altro punto del viso.${score()}`;
+            return;
+          }
+          if (tries.some((t) => t.at.distanceTo(at) < 0.03)) {
+            info.text = `Qui hai già toccato: prova un punto diverso del viso.${score()}`;
+            return;
+          }
+          // la normale della faccia colpita, per posare lo spillo sulla cute
+          const normal = hit.face?.normal?.clone() ?? new THREE.Vector3(0, 0, 1);
+          if (pending) {
+            model.pins.remove(pending.pin);
+            pending.pin.geometry.dispose();
+            pending.pin.material.dispose();
+          }
+          pending = { at, truth: k, pin: model.pin(at, normal) };
+          sel = null;
+          shown = null;
+          chips.forEach((c) => c.setActive(false));
+          model.show(base);
+          info.text = `Quale branca porta la sensibilità di questo punto? Scegli un pulsante.${score()}`;
+        };
+        model.lookFn = (part) => {
+          const k = skin.indexOf(part.id);
+          const lit = shown != null ? options[shown].lit : sel != null && !pending ? options[sel].lit : null;
+          // la cute: di un solo colore, salvo il territorio scoperto o mostrato
+          if (k >= 0 || part.id === rest) {
+            if (lit?.includes(part.id)) return { glow: 0.25 };
+            return { color: NEUTRAL };
+          }
+          if (!lit) return {};
+          return lit.includes(part.id) ? { glow: 0.3 } : { dim: true };
+        };
+      },
+    };
+  };
+}
 
 const spreads = [
   {
@@ -179,13 +286,15 @@ const spreads = [
       correct: 2,
       explain: "È un ramo terminale dell'alveolare inferiore: esce dal foro mentale per labbro inferiore e mento.",
     },
-    caption: 'A destra del paziente i nervi sul cranio; a sinistra la cute reale, divisa nei tre territori (confini stimati).',
-    instruction: 'SCEGLI UNA BRANCA: IL NERVO DA UN LATO, LA SUA CUTE DALL’ALTRO',
+    caption: 'A destra del paziente i nervi sul cranio; a sinistra la cute reale, con tre territori nascosti (confini stimati) che si scoprono toccando.',
+    instruction: 'TOCCA UN PUNTO DEL VISO, POI SCEGLI LA BRANCA CHE LO PORTA',
     view: { yaw: 0, zoom: 0.86 },
-    mode: selector({
+    mode: faceMode({
       base: [...BONES, ...EYES, 'lacrimal', 'vroot', 'gasser', ...V1, 'v2', 'zyg', ...V3S, 'v3ant', ...SKIN],
-      idle: "In grigio rosato la cute che non è del trigemino: l'angolo della mandibola e la regione dietro il padiglione.",
-      pick: { skin1: 0, skin2: 1, skin3: 2, v1: 0, v2: 1, v3trunk: 2 },
+      skin: ['skin1', 'skin2', 'skin3'],
+      rest: 'skinRest',
+      idle: 'Tocca un punto del viso: quale delle tre branche ne porta la sensibilità?',
+      pick: { v1: 0, v2: 1, v3trunk: 2 },
       options: [
         {
           label: 'Oftalmica (I)', lit: [...V1, 'skin1', 'lacrimal'],

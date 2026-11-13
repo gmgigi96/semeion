@@ -157,7 +157,41 @@ a un'interazione che fa ragionare (una via da seguire, una lesione, un blocco).
   portare sulle strutture del modello. Al posto giusto il cartellino prende la spunta e un
   cordino rosso lo lega al punto in cui è stato lasciato; altrove la pagina dice che cosa
   c'è lì e di quale cartellino è il posto. 3-5 etichette, strutture grandi e ben separate.
-  `explain` compare quando sono tutte a posto.
+  `explain` compare quando sono tutte a posto. Un cartellino posato al suo posto arriva anche
+  al comportamento della pagina destra (`onPlace(id)`): in `selector` vale come toccare la
+  parte, quindi se la parte è in `pick` si sceglie la sua opzione (in `base-cranica.js`,
+  pagina 3, il cartellino del nervo posato sul foro accende il foro con ciò che lo attraversa).
+  Una struttura piccola (un foro segnato da un anello sottile) si prende meglio con una presa
+  invisibile più larga aggiunta alle mesh della parte (`#holes` in `src/models/base-cranica.js`).
+
+- **Taglia e prevedi** (`cut: { board }`, senza `options`, con il comportamento `cutter` nella
+  pagina destra): chi legge taglia la via toccandola **in un punto qualsiasi** del suo decorso,
+  poi **dichiara con un gesto** il deficit che prevede, poi tocca «Confronta». Solo allora il
+  modello mostra l'esito vero (vie spente, parti scure, etichette) e la tavola segna che cosa
+  coincide (spunta verde), che cosa mancava (cerchio blu) e che cosa era di troppo (croce rossa),
+  ripetuto in parole sotto «Confronta». Un nuovo taglio ricomincia da capo; «Ricuci la via»
+  toglie il taglio. La domanda è risolta con una previsione esatta o dopo tre confronti.
+  Le tavole (`board`):
+  - `'campo'`: i due dischi del campo visivo, come lo vede il paziente; si toccano i quadranti
+    persi (vedi `src/chapters/sistema-visivo.js`, pagina 4);
+  - `'corpo'`: una sagoma vista di fronte per ogni tipo di perdita, `kinds: [{ key, label, color }]`;
+    si colora la metà destra o sinistra (vedi `src/chapters/sistemi-ascendenti.js`, pagina 5);
+  - `'modello'`: si toccano sul modello le parti che si prevedono colpite; qui resta l'elenco
+    (vedi `src/chapters/sistema-vascolare.js`, pagina 4, e `plesso-brachiale.js`, pagina 5).
+
+  Facoltativi: `hint` (l'invito prima del taglio), `done` («Taglio», «Chiusa»), `again`,
+  `legend` (tavola `'modello'`). La tavola occupa più di una previsione con l'aletta: tenere il
+  testo sotto le 90 parole e il titolo su una riga, e guardare la console. La riga di stato
+  («Chiusa: …») e l'elenco della tavola `'modello'` («Segnati: …») vanno a capo secondo il
+  testo: ciò che sta sotto si sposta da sé (due righe sono sempre riservate).
+
+- **Domanda già risolta.** Tornando su una pagina la cui domanda è risolta (nelle scoperte, vedi
+  sotto), la domanda si apre risolta: la risposta giusta in verde, l'aletta sollevata con la
+  previsione di allora (e il modello che la mostra), la struttura indicata, i cartellini al loro
+  posto con il cordino, il taglio rifatto e confrontato con la previsione di allora. In alto a
+  destra compare «rifai», scritto a mano: riporta la domanda da capo e rimette a posto il modello
+  (la spunta nel riepilogo resta). Non serve nulla nel capitolo: `onSolved(esito)` di `quiz`
+  salva ciò che basta per ridisegnarla.
 
 ### Il riepilogo «Da scoprire»
 
@@ -168,7 +202,8 @@ capitolo ha già.
 
 - **Sinistra**: una voce per doppia pagina, con il titolo e la domanda. La casella prende la
   spunta rossa quando la domanda è risolta: risposta giusta, previsione verificata sotto
-  l'aletta, struttura indicata (anche dopo i tre tentativi), tutte le etichette al loro posto.
+  l'aletta, struttura indicata (anche dopo i tre tentativi), tutte le etichette al loro posto,
+  previsione di un taglio esatta (o tre confronti).
 - **Destra**: per ogni figura i comandi della pagina del modello (pulsanti e corde), quelli
   provati in rosso e sottolineati a penna, con il conto «2 di 5». I comandi di una pagina si
   conoscono dopo averla aperta almeno una volta.
@@ -176,15 +211,25 @@ capitolo ha già.
   cominciato, c'è «2/5» (domande risolte) in rosso, o la spunta a capitolo finito; toccarlo
   apre il riepilogo.
 - Lo stato sta in `localStorage` (`semeion:scoperte`), con ogni accesso in try/catch: senza
-  storage il libro ricorda le scoperte solo finché la pagina resta aperta.
+  storage il libro ricorda le scoperte solo finché la pagina resta aperta. Per ogni pagina:
+  `q` (risolta), `a` (l'esito con cui è stata risolta), `all` (i comandi), `seen` (quelli provati).
+- **Azzerare**: nell'indice, sotto il conto delle domande, «Azzera l'avanzamento di tutto il
+  libro»; nel riepilogo di un capitolo, sotto il conto, «Azzera questo capitolo». Il primo
+  tocco chiede conferma («Tocca di nuovo…: non si torna indietro»), il secondo, entro cinque
+  secondi, cancella domande risolte e comandi provati e ridisegna la pagina (`ctx.refresh()`).
+  L'elenco dei comandi di ogni pagina resta.
 
 Nei comportamenti della pagina destra non serve nulla di speciale: `chipsInto` e `cordInto`
 annotano da sé i loro comandi e ogni volta che chi legge li usa; `selector` conta anche le
 opzioni scelte toccando il modello (`pick`) e quella avviata da una previsione. Un pulsante che
 rimette solo a posto (per esempio «Ricuci il plesso») si esclude con `explore: false` nella sua
-descrizione. Per una scoperta che non passa da un pulsante o da una corda, un comportamento su
-misura può usare `explore(controls)` di `src/modes.js`: `offer('etichetta')` mentre costruisce i
-controlli (la mette nell'elenco), `found('etichetta')` quando chi legge la scopre.
+descrizione. Un comportamento su misura che sceglie un'opzione toccando il modello (il suo
+`model.onClick`, un `pick` proprio) o con la `choose(i)` di una previsione la conta con
+`picked(controls, etichetta)` di `src/modes.js`, con l'etichetta del pulsante corrispondente
+(vedi `gazeSelector` in `nervi-oculomotori.js`, `earMode` in `orecchio-medio.js`). Per una
+scoperta che non passa da un pulsante o da una corda si usa `explore(controls)`:
+`offer('etichetta')` mentre costruisce i controlli (la mette nell'elenco), `found('etichetta')`
+quando chi legge la scopre.
 
 ## Il file del capitolo
 
@@ -203,6 +248,7 @@ const spreads = [
     // quiz: { predict: true, question: '…?', options: […], correct: 1, why: ['…', null, '…', '…'], explain: '…', reveal: 2 },
     // oppure da indicare sul modello: quiz: { question: 'Indica …', point: ['idParte'], why: { altraParte: '…' }, explain: '…' },
     // oppure etichette da trascinare: quiz: { question: 'Porta …', tags: [{ label: 'elice', ids: ['helix'] }, …], explain: '…' },
+    // oppure taglia e prevedi, con mode: cutter({ … }): quiz: { question: 'Taglia la via …', cut: { board: 'campo' }, explain: '…' },
     caption: 'Didascalia della figura.',
     instruction: 'ISTRUZIONE DI UNA RIGA, IN MAIUSCOLO',
     view: { yaw: 0.3, zoom: 1.15 },      // facoltativo: vista propria di questa pagina
@@ -243,6 +289,11 @@ sceglierne uno accende parti, vie e indicatori.
   - **A passi**: `steps: [{ ids, links, activity, text }]` e `stepTime` in secondi; i passi
     si accendono uno dopo l'altro e il commento mostra `k/n · text`.
 - `cord`: una corda da tirare sotto i pulsanti, per una quantità continua (vedi sotto).
+- `act(model)`, in un'opzione o in un passo: un gesto del modello quando l'opzione è scelta
+  o il passo comincia (in `src/chapters/riflessi.js`, pagina 2: il colpo del martelletto
+  e l'estensione della gamba).
+- Oltre a `choose(i)`, `selector` ritorna `say(testo)`, che scrive nella riga di commento:
+  serve a un comportamento che lo avvolge (vedi `strikeMode` in `riflessi.js`).
 
 ### Corde e cursori: comandi continui
 
@@ -278,6 +329,11 @@ mode: selector({
   `release: true` strappa la corda di mano e la riporta a riposo (un muscolo che cede).
 - In `selector` scegliere un pulsante (anche con la `choose(i)` di una previsione) riporta la corda a riposo.
 - Esempi: `src/chapters/riflessi.js` (organo del Golgi, corda a molla con soglia),
+  `src/chapters/basal.js`, pagina 4 (la dopamina nigro-striatale: abbassandola compaiono i coni
+  delle vie indiretta e iperdiretta; la previsione con `reveal` continua a scegliere il pulsante),
+  `src/chapters/controllo-vegetativo.js`, pagina 2 (il riempimento della vescica nel comportamento
+  `stage` del capitolo: `scale` gonfia la vescica, oltre la soglia la risposta dipende dalla
+  condizione scelta con i pulsanti, `release` la svuota per via riflessa),
   `src/chapters/orecchio-medio.js` (pressione da -1 a 1 nel comportamento su misura
   `earMode`), `src/chapters/sistema-uditivo.js` (altezza del suono e punto di massima
   risonanza, con `setTone` nel modello).
@@ -287,6 +343,56 @@ mode: selector({
   il manico da codice senza chiamare `onChange`. La corda vera e propria è `cord()` in `src/ui.js`.
 - Spazio: la corda è alta circa 0,1 pagine. Con la corda tenere i pulsanti su una riga e
   il commento sotto le due righe, altrimenti tocca la didascalia.
+
+### «Taglia qui»: `cutter`
+
+Il comportamento della pagina destra per le lesioni da ragionare, insieme alla domanda `cut`
+(vedi sopra). Il taglio è un punto qualsiasi della via: conta il punto più vicino al raggio
+del puntatore (entro `tolerance`, unità del modello), anche se davanti c'è altro; dove due vie
+si incrociano a schermo vince quella davanti. L'esito resta nascosto fino al confronto; senza
+la domanda `cut` si vede subito.
+
+```js
+mode: cutter({
+  base: […], looks: {…}, idle: 'Nessun taglio: …',
+  paths: ['fRT', 'fRN', …],              // vie (addLink) da tagliare lungo il decorso
+  // oppure parts: ['mca', 'pica'],      // parti da tagliare (il loro vertice più vicino al raggio)
+  tolerance: 0.012,                      // distanza massima tra raggio e via
+  radius: 0.011,                         // raggio della lesione: le vie che vi passano si interrompono
+  // lesion: (punto, vie) => Set,        // al posto di `radius` (es. emisezione del midollo)
+  outcome: (taglio, model) => ({         // taglio: { point, path | part, hits }
+    label: 'tratto ottico destro',       // dove, nella frase «Taglio: …»
+    site: 'Tratto ottico',               // la scoperta (una di `sites`)
+    truth: ['R:L:S', …],                 // le chiavi del deficit vero, quelle della tavola
+    dead: […], links: […], labels: {…},  // facoltativi: ciò che il modello mostra nel confronto
+    info: 'Emianopsia omonima sinistra…',
+    ring: { at, normal, r },             // facoltativo: dove disegnare l'anello del taglio
+  }),                                    // oppure null / { reason: '…' } se lì non si taglia
+  sites: ['Nervo ottico', 'Chiasma', …], // il riepilogo le elenca; si spuntano al confronto
+  marks: [['capsule', 'putamen'], […]],  // tavola 'modello': parti da toccare, a gruppi di precedenza
+  onReveal: (model, esito) => …,         // facoltativo, per esempio model.setFields(esito.truth)
+  reset: 'Ricuci la via', miss: 'Qui non passa la via…',
+}),
+```
+
+- Le chiavi di `truth` sono quelle della tavola: `'occhio:metà:quadrante'` per `'campo'`,
+  `'lato:tipo'` (lato del paziente) per `'corpo'`, id di parti per `'modello'`.
+- Mentre si segna sulla tavola `'modello'`, i tocchi sul modello segnano e non tagliano:
+  per tagliare altrove si ricuce. Il primo gruppo di `marks` che il raggio attraversa vince:
+  mettere prima le parti profonde (capsula, putamen), poi gli involucri.
+- Anche un tocco che non prende nessuna parte arriva al modello (`model.onMiss(raggio)`): la via
+  può passare dentro un involucro trasparente.
+- Il segno del taglio è `model.markCut(punto, normale, raggio)`, che `reset()` toglie;
+  `model.nearestPart(punto, ids)` dice in quale parte cade un punto.
+- Un comportamento su misura può usare la stessa domanda: riceve `quiz` fra gli argomenti,
+  chiama `quiz.cut({ label, truth, at })` (o `quiz.cut(null)`), legge `quiz.state` (`'idle'`,
+  `'mark'`, `'shown'`) e `quiz.marks`, chiama `quiz.toggle(id)` per la tavola `'modello'`, e
+  ritorna `reveal()`, che la domanda chiama al confronto (vedi `lesionMode` in
+  `src/chapters/plesso-brachiale.js`).
+- Per rifare il taglio alla prossima visita (domanda già risolta): `at` è un oggetto da salvare
+  in JSON che descrive il taglio, e il comportamento ritorna anche `replay(at)`, che lo rifà e
+  ritorna `true` (o `false` se non è più valido; allora la domanda ridisegna solo la tavola).
+  `cutter` lo fa da sé (`at` = punto, normale, via o parte); `lesionMode` salva `{ id, t }`.
 
 ### Primi piani
 
@@ -316,7 +422,7 @@ Massimo 7 pulsanti (due righe) e commenti di una o due righe: lo spazio sotto il
 Se `selector` non basta, `mode` può essere una funzione propria:
 
 ```js
-async function mioModo({ model, controls, def }) {
+async function mioModo({ model, controls, def, quiz }) {
   // costruire i controlli con chipsInto / infoText di src/modes.js
   return {
     enter() { /* stato iniziale: model.show([...]), model.lookFn = (part) => ({ … }) */ },
@@ -328,6 +434,36 @@ async function mioModo({ model, controls, def }) {
 ```
 
 Per una quantità continua usare `cordInto` (vedi «Corde e cursori»).
+
+### Oggetti da trascinare sul modello
+
+Un oggetto del modello (una mesh in `this.inner`) si fa trascinare dandogli
+`userData.ui = { id, tip, cursor: 'grab', grab: { start(raggio), move(raggio), end(sotto) } }`:
+`src/main.js` lo afferra al posto di ruotare il modello e gli passa il raggio del puntatore
+(nel mondo: portarlo nel modello con l'inversa di `this.inner.matrixWorld` e intersecarlo con
+un piano); `end(sotto)` riceve una funzione che dice che cosa c'è sotto il puntatore (nascondere
+prima l'oggetto stesso). Funziona con il mouse e al tocco; rotazione e clic restano quelli di sempre.
+Per prenderlo bene anche con un dito, la presa può essere una mesh invisibile più grande
+(`MeshBasicMaterial({ colorWrite: false, depthWrite: false })`), nascosta (`visible = false`)
+nelle pagine che non la usano e in `reset()`. Esempi:
+- la mosca di `src/models/nervi-oculomotori.js` (`#fly`, `onFly`, `gazeAt`): gli occhi la
+  seguono, il comportamento `gazeSelector` del capitolo accende i muscoli che lavorano;
+- il martelletto di `src/models/riflessi.js` (`setHammer({ onStrike, onMiss })`): al contatto con
+  il legamento rotuleo il riflesso parte, lasciato altrove la pagina dice che cosa si è colpito.
+- i cavi del plesso brachiale (`setCables({ from, to, drop })` in `src/models/plesso-brachiale.js`,
+  pagina «Tronchi primari e secondari»): si afferra una parte `from` (la presa è un tubo invisibile
+  attorno al suo asse) e si tende un cavo rosso che si aggancia alla parte `to` più vicina al raggio;
+  `drop(da, a)` dice se il collegamento è giusto, altrimenti il cavo torna indietro. Il capitolo
+  ne fa un rompicapo a tappe (`fibresMode`) che a plesso completo fa correre gli impulsi delle fibre.
+
+Il trascinamento che fa ruotare il modello può anche diventare un gesto della pagina: il modello
+legge `this.yaw` nella propria `update`, ne prende la variazione e lo rimette alla vista della
+pagina. Così in `src/models/orecchio-interno.js` (`setTurn`, pagina «Canali accoppiati») trascinare
+gira la testa attorno alla propria verticale e la velocità di rotazione muove endolinfa e cupole.
+
+Un tocco su una parte arriva a `model.onClick(id, hit)` con `hit.point` (nel mondo) e `hit.face`:
+`src/chapters/nervo-trigemino.js`, pagina 4, lo usa per piantare uno spillo nel punto toccato
+(`model.pin`) e chiedere di quale branca è.
 
 `src/chapters/brachial.js` contiene esempi (taglio in un punto, percorso a ritroso).
 
@@ -356,6 +492,9 @@ export class MioModello extends AnatomyModel {
   laterali vanno trovate per tentativi con uno scatto.
 - **Coordinate**: x laterale (destra del paziente +), y verso l'alto, z anteriore. Unità libere,
   ma il modello deve stare in circa **x ±0.45, y 0…0.8, z ±0.35**, appoggiato sulla base a y = 0.
+- **Etichette** (`setLabels`, `labels` delle opzioni): se a schermo due etichette si
+  coprirebbero, la più alta sale sopra l'altra e una linea di richiamo sottile la lega alla sua
+  parte (`#unstackLabels` in `src/model.js`). Non serve sfalsarle a mano.
 - **`addPart(id, nome, colore, geometrie, opzioni)`**: una parte ha un nome e una o più
   geometrie (di solito i due lati, con `both(g)`). Opzioni: `ghost: true` per un involucro
   trasparente di contesto che non intercetta il puntatore; `opacity`; `double: true` per

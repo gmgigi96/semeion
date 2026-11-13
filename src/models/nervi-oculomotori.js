@@ -20,6 +20,7 @@
 //   quel tratto è stato scartato e ridisegnato sulla superficie del tronco.);
 // - nervo abducente per intero, dal solco bulbo-pontino al retto laterale;
 // - seno cavernoso (involucro), pupilla e repere delle ore 12 sul bulbo.
+// - mosca da seguire con lo sguardo: oggetto di scena (vedi #fly e gazeAt).
 //
 // FONTI usate per posizione, decorso e rapporti delle parti ricostruite:
 // - H. Gray, Anatomy of the Human Body, 20ª ed. (1918), "The Oculomotor Nerve",
@@ -60,6 +61,7 @@
 import * as THREE from 'three';
 import { AnatomyModel } from '../model.js';
 import { taperTube, ellipsoid, mirror } from '../geo.js';
+import { ACCENT } from '../ui.js';
 
 const S = 0.0075; // unità per mm (come in meshes/nervi-oculomotori.json)
 const mm = ([l, y, z]) => new THREE.Vector3(l * S, (z - 1470) * S, -(y + 114) * S);
@@ -114,6 +116,13 @@ const REAL = {
   ...sided('scn', 'nervi ciliari brevi', PARA),
 };
 
+// Bersaglio da seguire con lo sguardo: una mosca che si trascina in un piano
+// davanti agli occhi. FLY.ahead: distanza del piano davanti al centro dei bulbi;
+// FLY.reach: quanto la mosca si allontana dal centro, di lato e in alto/basso;
+// FLY.depth: distanza «virtuale» da cui si calcolano gli angoli di sguardo (gli
+// occhi guardano paralleli, come per un oggetto lontano: niente convergenza).
+const FLY = { ahead: 0.2, reach: [0.3, 0.21], depth: 0.3, limit: [38, 32] };
+
 // Parti che ruotano rigidamente col bulbo e parti che si deformano con lui
 // (muscoli e nervo ottico: l'inserzione segue il bulbo, l'origine resta ferma).
 const RIGID = ['sclera', 'cornea', 'iris', 'pupil', 'mark'];
@@ -140,6 +149,89 @@ export class OculomotorModel extends AnatomyModel {
     await this.loadMeshes('nervi-oculomotori.glb', REAL);
     this.#reconstructed();
     for (const side of ['R', 'L']) this.#rig(side);
+    this.#fly();
+  }
+
+  // La mosca: corpo rosso, due ali chiare; una sfera invisibile più grande la rende
+  // facile da prendere, anche al tocco. Si trascina nel piano davanti agli occhi
+  // (vedi `onFly`, chiamata a ogni spostamento con il punto nelle coordinate del modello).
+  #fly() {
+    const R = this.#eyes.R.C, L = this.#eyes.L.C;
+    this.flyCenter = R.clone().add(L).multiplyScalar(0.5);
+    this.flyCenter.z += FLY.ahead;
+    const clip = (m) => ((m.clippingPlanes = this.clipPlanes), m);
+    const g = new THREE.Group();
+    // le ali, aperte a V, si vedono di fronte (da dove guarda chi legge)
+    const wingMat = clip(new THREE.MeshStandardMaterial({ color: 0xf6f1e4, transparent: true, opacity: 0.8, roughness: 0.3, side: THREE.DoubleSide }));
+    const veinMat = clip(new THREE.MeshBasicMaterial({ color: 0x7a7166, transparent: true, opacity: 0.6, side: THREE.DoubleSide }));
+    for (const sx of [-1, 1]) {
+      const w = new THREE.Mesh(new THREE.CircleGeometry(0.026, 24), wingMat);
+      w.scale.set(0.42, 1, 1);
+      const rim = new THREE.Mesh(new THREE.RingGeometry(0.0245, 0.027, 24), veinMat);
+      rim.scale.set(0.42, 1, 1);
+      const wing = new THREE.Group();
+      wing.add(w, rim);
+      wing.rotation.set(-0.35, 0, -sx * 0.95);
+      wing.position.set(sx * 0.02, 0.014, -0.008);
+      g.add(wing);
+    }
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.019, 20, 14), clip(new THREE.MeshStandardMaterial({ color: ACCENT, roughness: 0.35 })));
+    body.scale.set(0.9, 0.85, 1.2);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.011, 16, 12), clip(new THREE.MeshStandardMaterial({ color: 0x3a2a24, roughness: 0.4 })));
+    head.position.set(0, 0.004, 0.02);
+    g.add(body, head);
+    const hit = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 8), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }));
+    const plane = new THREE.Plane();
+    const offset = new THREE.Vector3();
+    const at = (ray) => {
+      this.inner.updateWorldMatrix(true, false);
+      const local = ray.clone().applyMatrix4(this.inner.matrixWorld.clone().invert());
+      plane.set(new THREE.Vector3(0, 0, 1), -this.flyCenter.z);
+      return local.intersectPlane(plane, new THREE.Vector3());
+    };
+    const place = (p, end = false) => {
+      const c = this.flyCenter;
+      p.x = THREE.MathUtils.clamp(p.x, c.x - FLY.reach[0], c.x + FLY.reach[0]);
+      p.y = THREE.MathUtils.clamp(p.y, c.y - FLY.reach[1], c.y + FLY.reach[1]);
+      p.z = c.z;
+      g.position.copy(p);
+      this.onFly?.(p.clone(), end);
+    };
+    hit.userData.ui = {
+      id: 'fly', tip: 'una mosca: trascinala davanti agli occhi', cursor: 'grab',
+      grab: {
+        start: (ray) => {
+          const p = at(ray);
+          offset.copy(p ? g.position.clone().sub(p) : new THREE.Vector3());
+        },
+        move: (ray) => {
+          const p = at(ray);
+          if (p) place(p.add(offset));
+        },
+        end: () => place(g.position.clone(), true),
+      },
+    };
+    g.add(hit);
+    g.position.copy(this.flyCenter);
+    g.visible = false;
+    this.flyGroup = g;
+    this.inner.add(g);
+  }
+
+  // la mosca compare (al centro, davanti agli occhi) o sparisce
+  setFly(on) {
+    if (!this.flyGroup) return;
+    this.flyGroup.visible = on;
+    this.flyGroup.position.copy(this.flyCenter);
+  }
+
+  // Sguardo coniugato verso un punto del piano della mosca, in gradi per ciascun
+  // occhio: abduzione (+, verso la tempia) ed elevazione (+). Il lato sinistro è x > 0.
+  gazeAt(p) {
+    const c = this.flyCenter;
+    const h = THREE.MathUtils.clamp(Math.atan2(p.x - c.x, FLY.depth) / RAD, -FLY.limit[0], FLY.limit[0]);
+    const elev = THREE.MathUtils.clamp(Math.atan2(p.y - c.y, FLY.depth) / RAD, -FLY.limit[1], FLY.limit[1]);
+    return { R: { abd: -h, elev }, L: { abd: h, elev } };
   }
 
   // una parte per lato: `geo` è disegnata a x > 0, cioè sul lato SINISTRO (vedi nota sui lati)
@@ -241,6 +333,8 @@ export class OculomotorModel extends AnatomyModel {
     super.reset();
     this.setGaze('R');
     this.setGaze('L');
+    this.setFly(false);
+    this.onFly = null;
   }
 
   #apply(eye) {

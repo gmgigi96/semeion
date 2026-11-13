@@ -269,6 +269,7 @@ function build(i) {
     toc: () => goTo(0),
     openChapter: (c) => goTo(CHAPTERS[c].first),
     go: (k) => goTo(k),
+    refresh: () => redraw(),
   };
   if (page.toc) return buildToc(CHAPTERS, PARTS, ctx);
   if (page.summary) return buildSummary(page.chapter, { ...ctx, number: CHAPTERS.indexOf(page.chapter) + 1 });
@@ -335,6 +336,22 @@ async function goTo(i, animate = true) {
   refreshBar();
 }
 
+// Ridisegna sul posto la pagina aperta, senza sfogliare (per esempio dopo aver
+// azzerato le scoperte, che l'indice e i riepiloghi mostrano).
+async function redraw() {
+  if (busy || !current) return;
+  busy = true;
+  clearHover();
+  const next = await build(index);
+  book.left.remove(current.left);
+  book.right.remove(current.right);
+  book.left.add(next.left);
+  book.right.add(next.right);
+  current = next;
+  next.enter();
+  busy = false;
+}
+
 // --- aprire e chiudere il libro ------------------------------------------------
 function openBook() {
   if (isOpen || busy) return;
@@ -391,7 +408,8 @@ function pick(e) {
     if (hidden) continue;
     // ciò che il ritaglio ha tolto dalla vista non si può nemmeno toccare
     if (o.material?.clippingPlanes?.some((pl) => pl.distanceToPoint(hit.point) < 0)) continue;
-    if (o.userData.ui) return { ui: o.userData.ui, object: o, hit };
+    // il raggio va con il punto colpito: chi taglia una via cerca la più vicina al raggio
+    if (o.userData.ui) return { ui: o.userData.ui, object: o, hit: { ...hit, ray: ray.ray.clone() } };
     if (o.userData.blocker) break;
   }
   return null;
@@ -505,6 +523,12 @@ el.addEventListener('pointerup', (e) => {
     return;
   }
   if (d.moved <= 5 && d.target) d.target.ui.click?.(d.target.hit);
+  // un tocco sul modello che non prende nessuna parte (per esempio dentro un involucro
+  // trasparente) arriva al modello come raggio: serve a chi taglia una via sottile
+  else if (d.moved <= 5 && d.rotate && active?.onMiss) {
+    aim(e);
+    active.onMiss(ray.ray.clone());
+  }
   // al tocco non c'è passaggio: il termine resta acceso finché non si tocca altrove
   if (e.pointerType === 'mouse' || !d.target?.ui.sticky) setHover(e.pointerType === 'mouse' ? pick(e) : null);
 });

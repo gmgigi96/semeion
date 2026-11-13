@@ -2,7 +2,7 @@
 // del campo visivo e il riflesso pupillare. Testi ricavati dagli appunti di
 // neuroanatomia (Sistema visivo). I difetti del campo visivo per sede di
 // lesione (pagina 4) non sono negli appunti: vedi le fonti in testa al modello.
-import { selector, chipsInto, infoText } from '../modes.js';
+import { selector, cutter } from '../modes.js';
 import { VisualSystem } from '../models/sistema-visivo.js';
 
 const RET_R = ['retRTS', 'retRTI', 'retRNS', 'retRNI'];
@@ -27,6 +27,93 @@ const EFFERENT = ['cn3', 'cn3inf', 'ciliaryGanglion', 'shortCiliary'];
 // sostanza bianca in trasparenza, per vedere le fibre che la percorrono
 const glass = (ids, opacity) => Object.fromEntries(ids.map((id) => [id, { opacity, litOpacity: opacity }]));
 const GLASS = { ...glass([...NERVES, 'chiasm', ...TRACTS], 0.6), ...glass(RAD, 0.62) };
+
+// 4 — taglio della via in un punto qualsiasi, di qualunque lato, e difetto del campo visivo.
+// DEDUZIONE per la corteccia: che la lesione di un labbro della calcarina dia una
+// quadrantopsia. Gli appunti non nominano i difetti, ma dicono che le fibre del quadrante
+// retinico superiore vanno dirette al lobo occipitale, quelle del quadrante inferiore con
+// l'ansa di Meyer, e che «l'ansa di Meyer e le fibre retrolenticolari formano rispettivamente
+// il labbro inferiore e superiore» della scissura calcarina. Con l'incrocio delle fibre
+// nasali nel chiasma (anche negli appunti), un labbro porta un solo quadrante retinico di
+// entrambi gli occhi, e quindi un quadrante del campo opposto: il nome del difetto viene
+// dalle fonti in testa al modello.
+// Il difetto viene dalle fibre interrotte: ogni via animata del modello porta una parte nota
+// del campo. Chiavi "occhio:emicampo:metà" (R/L, R/L, S/I), come in VisualSystem.setFields.
+const both = (eye, half) => [`${eye}:${half}:S`, `${eye}:${half}:I`];
+const FIELD_OF = {
+  fRT: both('R', 'L'), fRN: both('R', 'R'), fLT: both('L', 'R'), fLN: both('L', 'L'),
+  gInfR: ['R:L:S', 'L:L:S'], gSupR: ['R:L:I', 'L:L:I'], gInfL: ['R:R:S', 'L:R:S'], gSupL: ['R:R:I', 'L:R:I'],
+};
+// ciò che si spegne nel confronto: la retina da cui partono le fibre, il labbro della calcarina a cui arrivano
+const DEAD_OF = {
+  fRT: ['retRTS', 'retRTI'], fRN: ['retRNS', 'retRNI'], fLT: ['retLTS', 'retLTI'], fLN: ['retLNS', 'retLNI'],
+  gInfR: ['v1infR'], gSupR: ['v1supR'], gInfL: ['v1infL'], gSupL: ['v1supL'],
+};
+// sedi del taglio
+const SITES = [
+  { ids: ['opticNerveR', 'opticNerveL'], name: 'nervo ottico', site: 'Nervo ottico' },
+  { ids: ['chiasm'], name: 'chiasma', site: 'Chiasma' },
+  { ids: ['tractR', 'tractL'], name: 'tratto ottico', site: 'Tratto ottico' },
+  { ids: ['lgbR', 'lgbL'], name: 'corpo genicolato laterale', site: 'Corpo genicolato' },
+  { ids: ['radInfR', 'radInfL'], name: 'ansa di Meyer', site: 'Ansa di Meyer', fem: true },
+  { ids: ['radCenR', 'radCenL'], name: 'radiazione ottica', site: 'Radiazione ottica', fem: true },
+  { ids: ['radSupR', 'radSupL'], name: 'radiazione ottica, fibre superiori', site: 'Fibre superiori', fem: true },
+  { ids: ['v1supR', 'v1supL', 'v1infR', 'v1infL'], name: 'corteccia calcarina', site: 'Corteccia calcarina', fem: true },
+];
+
+// nome del difetto, quando ne ha uno
+function defect(t) {
+  const has = (...k) => k.every((x) => t.has(x));
+  const n = t.size;
+  if (!n) return 'Nessun difetto: le fibre tagliate non portano il campo visivo.';
+  for (const [eye, name] of [['R', 'destro'], ['L', 'sinistro']])
+    if (n === 4 && has(...both(eye, 'L'), ...both(eye, 'R'))) return `Cecità dell'occhio ${name}: prima del chiasma le fibre sono di un occhio solo.`;
+  if (n === 4 && has(...both('R', 'R'), ...both('L', 'L'))) return 'Emianopsia bitemporale: sono interrotte le fibre crociate delle emiretine nasali, che guardano i due campi temporali.';
+  for (const [half, name] of [['L', 'sinistra'], ['R', 'destra']]) {
+    if (n === 4 && has(...both('R', half), ...both('L', half))) return `Emianopsia omonima ${name}: da qui in poi ogni lato porta la metà opposta del campo di entrambi gli occhi.`;
+    for (const [q, alto] of [['S', 'superiore'], ['I', 'inferiore']])
+      if (n === 2 && has(`R:${half}:${q}`, `L:${half}:${q}`)) return `Quadrantopsia omonima ${alto} ${name}: ${q === 'S' ? "l'ansa di Meyer porta i quadranti retinici inferiori, che guardano in alto" : 'le fibre dirette portano i quadranti retinici superiori, che guardano in basso'}.`;
+  }
+  return 'Un difetto parziale: sono interrotte solo alcune delle fibre che passano di qui.';
+}
+
+const MID_X = 0.00295; // piano mediano del modello
+// Lungo le fibre retino-genicolate la sede si legge dalla profondità (z del modello, verso
+// dietro): fine dei nervi ottici (108 mm dell'atlante), inizio dei tratti (100,5 mm),
+// ultimo tratto prima del corpo genicolato (84 mm); vedi le fibre in src/models/sistema-visivo.js.
+const Z_NERVE = 0.135, Z_CHIASM = 0.101, Z_TRACT = 0.012;
+const RETINO = ['fRT', 'fRN', 'fLT', 'fLN'];
+const RAD_SITES = SITES.slice(3); // corpo genicolato, radiazione, corteccia
+function visualCut({ point, path, hits }, model) {
+  let id;
+  if (RETINO.includes(path)) {
+    const right = point.x > MID_X;
+    if (point.z > Z_NERVE) id = right ? 'opticNerveR' : 'opticNerveL';
+    else if (point.z > Z_CHIASM || (hits.has('fRN') && hits.has('fLN'))) id = 'chiasm';
+    else if (point.z > Z_TRACT) id = right ? 'tractR' : 'tractL';
+    else id = right ? 'lgbR' : 'lgbL';
+    // dove chiasma e tratto si toccano: se le fibre sono già quelle di un tratto, è il tratto
+    if (id === 'chiasm' && !(hits.has('fRN') && hits.has('fLN'))) {
+      if (hits.has('fRT') && hits.has('fLN')) id = 'tractR';
+      if (hits.has('fLT') && hits.has('fRN')) id = 'tractL';
+    }
+  } else id = model.nearestPart(point, RAD_SITES.flatMap((s) => s.ids)).id;
+  // nel bulbo le fibre sono ancora retina: il taglio comincia dal nervo ottico
+  if (id.startsWith('opticNerve') && model.nearestPart(point, [id]).d > 0.016)
+    return { reason: 'Qui le fibre sono ancora nella retina: tocca la via dal nervo ottico in poi.' };
+  const where = SITES.find((s) => s.ids.includes(id));
+  const left = id.endsWith('L');
+  let label;
+  if (id === 'chiasm') label = Math.abs(point.x - MID_X) < 0.007 ? 'chiasma, sulla linea mediana' : `chiasma, sul lato ${point.x > MID_X ? 'destro' : 'sinistro'}`;
+  else if (id.startsWith('v1')) label = `${where.name}, labbro ${id.includes('sup') ? 'superiore' : 'inferiore'}, a ${left ? 'sinistra' : 'destra'}`;
+  else label = `${where.name} ${left ? 'sinistr' : 'destr'}${where.fem ? 'a' : 'o'}`;
+  const truth = [...new Set([...hits].flatMap((h) => FIELD_OF[h]))];
+  return {
+    label, site: where.site, truth,
+    dead: [...hits].flatMap((h) => DEAD_OF[h]),
+    info: defect(new Set(truth)),
+  };
+}
 
 const spreads = [
   {
@@ -120,28 +207,29 @@ const spreads = [
   {
     title: 'Lesioni: che cosa non si vede più',
     body:
-      "Ogni punto della via porta una parte precisa del campo visivo, perciò la sede della lesione si legge nel difetto. Prima del chiasma le fibre sono di un solo {occhio|eye}. Nel {chiasma|ch} incrociano quelle delle {emiretine nasali|nas}, che guardano i campi temporali. Dal {tratto ottico|tr} in poi ogni lato porta la metà opposta del campo di entrambi gli occhi; nella radiazione le fibre dei quadranti retinici inferiori, che guardano in alto, passano per l'{ansa di Meyer|mey}, le superiori vanno {dirette|sup} alla {corteccia calcarina|v1}. Taglia la via e osserva i due campi.",
+      "Ogni punto della via porta una parte precisa del campo visivo, perciò la sede della lesione si legge nel difetto. Prima del chiasma le fibre sono di un solo {occhio|eye}. Nel {chiasma|ch} incrociano quelle delle {emiretine nasali|nas}, che guardano i campi temporali. Dal {tratto ottico|tr} in poi ogni lato porta la metà opposta del campo di entrambi gli occhi; nella radiazione le fibre dei quadranti retinici inferiori, che guardano in alto, passano per l'{ansa di Meyer|mey}, le superiori vanno {dirette|sup} alla {corteccia calcarina|v1}.",
     terms: {
       eye: ['opticNerveR'], ch: ['chiasm'], nas: NASAL, tr: ['tractR'], mey: ['radInfR'], sup: ['radSupR'], v1: ['v1supR', 'v1infR'],
     },
     quiz: {
-      predict: true,
-      question: "Un adenoma dell'ipofisi comprime il chiasma sulla linea mediana. Quale difetto del campo visivo prevedi?",
-      options: ['Cecità di un occhio', 'Emianopsia bitemporale', 'Emianopsia omonima', 'Quadrantopsia omonima superiore'],
-      correct: 1,
-      why: [
-        'Un occhio intero si perde solo prima del chiasma, sul nervo ottico.',
-        null,
-        "L'emianopsia omonima viene dal tratto ottico in poi, dove ogni lato porta la metà opposta del campo.",
-        "La quadrantopsia omonima superiore viene dall'ansa di Meyer, nella radiazione ottica.",
-      ],
-      explain: 'Si interrompono le fibre crociate delle emiretine nasali, che guardano le due metà temporali del campo.',
-      reveal: 1,
+      question: 'Taglia la via in un punto qualsiasi. Che cosa non vedrà più ciascun occhio?',
+      cut: { board: 'campo' },
+      explain: 'La sede del taglio si legge nel difetto.',
     },
-    caption: 'Gli anelli rossi segnano i punti di lesione, tutti a destra. Nei dischi, in scuro, ciò che ciascun occhio non vede più.',
-    instruction: 'SCEGLI DOVE TAGLIARE LA VIA · I DISCHI MOSTRANO I DUE CAMPI VISIVI',
+    caption: "L'anello rosso segna il taglio. Nei dischi, in scuro, ciò che ciascun occhio non vede più.",
+    instruction: 'TOCCA LA VIA PER TAGLIARLA · SEGNA I QUADRANTI PERSI · CONFRONTA',
     view: { yaw: 0, zoom: 1.1 },
-    mode: lesionMode,
+    mode: cutter({
+      base: [...EYES, ...PATH, ...RAD, ...V1, 'hemi', 'occipital'],
+      looks: GLASS,
+      paths: [...FIBRES, ...GENICULO],
+      tolerance: 0.016,
+      radius: 0.011, // 2,5 mm: le fibre di un nervo si tagliano insieme, nel chiasma solo quelle crociate
+      sites: SITES.map((s) => s.site).filter((s, i, a) => a.indexOf(s) === i),
+      idle: 'Nessun taglio: i due occhi vedono tutto il campo. Tocca la via dal nervo ottico alla corteccia.',
+      outcome: visualCut,
+      onReveal: (model, o) => model.setFields(o ? o.truth : null),
+    }),
   },
   {
     title: 'Riflesso fotico e accomodazione',
@@ -192,79 +280,6 @@ const spreads = [
     }),
   },
 ];
-
-// 4 — taglio della via in un punto (sempre a destra) e difetto del campo visivo.
-// blind: "occhio:emicampo:metà" (R/L, R/L, S/I).
-const half = (side) => ['R', 'L'].flatMap((eye) => [`${eye}:${side}:S`, `${eye}:${side}:I`]);
-const LESIONS = [
-  {
-    label: 'Nervo ottico', cut: 'cutNerve', pick: ['opticNerveR'],
-    blind: ['R:L:S', 'R:L:I', 'R:R:S', 'R:R:I'], dead: [...RET_R, 'opticNerveR'], off: ['fRT', 'fRN'],
-    info: "Cecità dell'occhio destro. Prima del chiasma le fibre appartengono a un solo occhio: l'altro vede tutto il campo.",
-  },
-  {
-    label: 'Chiasma', cut: 'cutChiasm', pick: ['chiasm'],
-    blind: ['R:R:S', 'R:R:I', 'L:L:S', 'L:L:I'], dead: NASAL, off: ['fRN', 'fLN'],
-    info: 'Emianopsia bitemporale (eteronima). Si interrompono le fibre crociate delle emiretine nasali, che guardano i due campi temporali.',
-  },
-  {
-    label: 'Tratto ottico', cut: 'cutTract', pick: ['tractR', 'lgbR'],
-    blind: half('L'), dead: [...TO_RIGHT, 'tractR', 'lgbR', ...RAD_R, 'v1supR', 'v1infR'], off: ['fRT', 'fLN', 'gSupR', 'gInfR'],
-    info: 'Emianopsia omonima sinistra. Il tratto destro porta la metà sinistra del campo di entrambi gli occhi.',
-  },
-  {
-    label: 'Ansa di Meyer', cut: 'cutMeyer', pick: ['radInfR'],
-    blind: ['R:L:S', 'L:L:S'], dead: ['retRTI', 'retLNI', 'radInfR', 'v1infR'], off: ['gInfR'],
-    info: 'Quadrantopsia omonima superiore sinistra. Nel lobo temporale passano le fibre dei quadranti retinici inferiori, che guardano in alto.',
-  },
-  {
-    label: 'Fibre superiori', cut: 'cutSup', pick: ['radSupR'],
-    blind: ['R:L:I', 'L:L:I'], dead: ['retRTS', 'retLNS', 'radSupR', 'v1supR'], off: ['gSupR'],
-    info: 'Quadrantopsia omonima inferiore sinistra. Le fibre dirette portano i quadranti retinici superiori, che guardano in basso.',
-  },
-  {
-    label: 'Corteccia calcarina', cut: 'cutCortex', pick: ['v1supR', 'v1infR'],
-    blind: half('L'), spare: true, dead: [...TO_RIGHT, 'v1supR', 'v1infR'], off: [],
-    info: 'Emianopsia omonima sinistra, spesso con risparmio della visione maculare, al centro del campo.',
-  },
-];
-const CUTS = LESIONS.map((l) => l.cut);
-const LESION_BASE = [...EYES, ...PATH, ...RAD, ...V1, ...CUTS, 'hemi', 'occipital'];
-
-async function lesionMode({ model, controls }) {
-  let sel = null;
-  const { chips, height } = await chipsInto(
-    controls,
-    LESIONS.map((l, i) => ({ label: l.label, onClick: () => select(sel === i ? null : i) }))
-  );
-  const info = await infoText(controls, -height - 0.03);
-  const select = (i) => {
-    sel = i;
-    const l = LESIONS[i];
-    chips.forEach((c, j) => c.setActive(j === i, 0xb3261e));
-    model.setFields(l?.blind ?? [], { spare: l?.spare });
-    model.showLinks([...FIBRES, ...GENICULO].filter((id) => !l?.off.includes(id)));
-    info.text = l?.info ?? 'Nessuna lesione: i due occhi vedono tutto il campo. Arancio: metà sinistra; blu: metà destra.';
-  };
-  return {
-    choose: (i) => select(i),
-    enter() {
-      model.show(LESION_BASE);
-      select(null);
-      model.onClick = (id) => {
-        const i = LESIONS.findIndex((l) => l.cut === id || l.pick.includes(id));
-        if (i >= 0) select(i);
-      };
-      model.lookFn = (part) => {
-        const l = LESIONS[sel];
-        if (CUTS.includes(part.id)) return !l ? { opacity: 0.85 } : l.cut === part.id ? { glow: 0.7, scale: 1.12 } : { opacity: 0.22 };
-        const look = { ...GLASS[part.id] };
-        if (l?.dead.includes(part.id)) look.dead = true;
-        return look;
-      };
-    },
-  };
-}
 
 export default {
   id: 'sistema-visivo',
