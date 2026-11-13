@@ -202,13 +202,6 @@ export class AscendingSystems extends AnatomyModel {
     this.ready = this.#build();
   }
 
-  // Ingrandisce il modello attorno a una quota: ciò che sta a `floor` (coordinata y)
-  // scende fino alla base. Serve alle pagine che guardano solo il tronco encefalico.
-  focus(scale = 1, floor = 0, z = 0) {
-    this.inner.scale.setScalar(scale);
-    this.inner.position.set(0, scale === 1 ? 0 : 0.034 - scale * floor, -scale * z);
-  }
-
   async #build() {
     await this.loadMeshes('sistemi-ascendenti.glb', REAL);
     this.#section();
