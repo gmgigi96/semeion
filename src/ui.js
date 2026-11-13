@@ -664,3 +664,169 @@ async function tagQuiz({ question, tags, explain, why = {} }, width, { nameOf = 
     },
   };
 }
+
+// --- Corda con manico: un comando continuo ---------------------------------------
+// Una corda rossa tesa tra due pioli, con un manico chiaro a forma d'osso che si
+// afferra e si fa scorrere: il valore va da `min` (piolo sinistro) a `max` (destro).
+// Il tratto dal punto di riposo al manico è teso e pieno, il resto appena accennato.
+// Si può anche toccare la corda in un punto: il manico salta lì e resta in mano.
+//   label      titoletto in maiuscoletto rosso
+//   ends       ['sinistra', 'destra']: le due estremità, in corsivo accanto ai pioli
+//   value      valore iniziale; rest: punto di riposo (predefinito: value)
+//   spring     lasciata, la corda torna da sola al riposo, come una corda tirata
+//   format(v)  testo accanto al titoletto, aggiornato a ogni variazione (facoltativo)
+//   marks      [{ at, label }]: tacche sulla corda, per esempio una soglia
+//   onChange(v) a ogni variazione dovuta a chi legge, anche mentre la corda torna a riposo
+// Ritorna { group, height, value, held, set(v, { now }), release(), update() }: `set` muove
+// il manico da codice (senza onChange), `release` lo strappa di mano e lo riporta al riposo.
+export async function cord({ label = '', ends = ['', ''], width, min = 0, max = 1, value = min, rest = value, spring = false, format, marks = [], onChange }) {
+  const group = new THREE.Group();
+  const kicker = makeText(label, { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
+  const readout = makeText('', { fontSize: 0.02, font: FONT.italic, color: INK_SOFT, maxWidth: width });
+  const left = makeText(ends[0], { fontSize: 0.022, font: FONT.italic, color: INK_SOFT, anchorY: 'middle' });
+  const right = makeText(ends[1], { fontSize: 0.022, font: FONT.italic, color: INK_SOFT, anchorY: 'middle', anchorX: 'right' });
+  await Promise.all([ready(kicker), ready(left), ready(right)]);
+  const yc = -0.06;
+  const x0 = (ends[0] ? bounds(left).w + 0.022 : 0) + 0.012;
+  const x1 = width - (ends[1] ? bounds(right).w + 0.022 : 0) - 0.012;
+  // la lettura segue il titoletto: a destra la coprirebbe il manico in fondo corsa
+  readout.position.set(bounds(kicker).w + 0.018, 0.003, Z_TEXT);
+  readout.maxWidth = width - readout.position.x;
+  left.position.set(0, yc, Z_TEXT);
+  right.position.set(width, yc, Z_TEXT);
+  group.add(kicker, readout, left, right);
+
+  // corda lenta da piolo a piolo, e il tratto teso sopra
+  const slack = layer(new THREE.Mesh(stroke([[x0, yc], [x1, yc]], 0.003), flat(CORD, 0.32)), 3);
+  const taut = layer(new THREE.Mesh(new THREE.PlaneGeometry(1, 0.0058), flat(CORD)), 4);
+  taut.position.z = slack.position.z = Z_FILL;
+  group.add(slack, taut);
+  for (const x of [x0, x1]) {
+    const peg = layer(new THREE.Mesh(new THREE.CircleGeometry(0.009, 20), flat(INK, 0.75)), 5);
+    const hole = layer(new THREE.Mesh(new THREE.CircleGeometry(0.0035, 12), flat(0xf6efdf)), 6);
+    peg.position.set(x, yc, Z_FILL);
+    hole.position.set(x, yc, Z_FILL * 1.2);
+    group.add(peg, hole);
+  }
+
+  const span = max - min;
+  const xOf = (v) => x0 + ((v - min) / span) * (x1 - x0);
+  for (const m of marks) {
+    const tick = layer(new THREE.Mesh(new THREE.PlaneGeometry(0.0026, 0.024), flat(INK, 0.6)), 5);
+    tick.position.set(xOf(m.at), yc, Z_FILL);
+    const t = makeText(m.label ?? '', { fontSize: 0.017, font: FONT.italic, color: INK_SOFT, anchorX: 'center' });
+    t.position.set(xOf(m.at), yc - 0.016, Z_TEXT);
+    group.add(tick, t);
+  }
+
+  // manico a forma d'osso, di traverso sulla corda: un fusto e due nocche per estremo
+  const handle = new THREE.Group();
+  const bone = (grow, mat, order) => {
+    const shaft = layer(new THREE.Mesh(roundedRect(0.018 + grow, 0.044 + grow, 0.008), mat), order);
+    handle.add(shaft);
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+      const knob = layer(new THREE.Mesh(new THREE.CircleGeometry(0.0102 + grow / 2, 20), mat), order);
+      knob.position.set(sx * 0.0082, sy * 0.022, 0);
+      handle.add(knob);
+    }
+  };
+  const rimMat = flat(INK, 0.5);
+  bone(0.004, rimMat, 6);
+  bone(0, flat(0xf6efdf), 7);
+  // il nodo con cui la corda è legata al manico
+  const knot = layer(new THREE.Mesh(new THREE.CircleGeometry(0.0055, 16), flat(CORD)), 8);
+  knot.position.z = 0.0002;
+  handle.add(knot);
+  handle.position.set(x0, yc, Z_TEXT);
+  group.add(handle);
+
+  const st = { target: value, shown: value, held: false, slipped: false, silent: true, last: -Infinity };
+  const plane = new THREE.Plane();
+  const valueAt = (ray) => {
+    const n = new THREE.Vector3(0, 0, 1).transformDirection(group.matrixWorld);
+    plane.setFromNormalAndCoplanarPoint(n, group.getWorldPosition(new THREE.Vector3()));
+    const p = ray.intersectPlane(plane, new THREE.Vector3());
+    if (!p) return null;
+    const x = group.worldToLocal(p).x;
+    return min + THREE.MathUtils.clamp((x - x0) / (x1 - x0), 0, 1) * span;
+  };
+  // zona sensibile: tutta la corda, alta quanto il manico
+  const hit = layer(new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0 + 0.04, 0.09), flat(MARKER, 0)), 1);
+  hit.position.set((x0 + x1) / 2, yc, Z_FILL / 4);
+  hit.userData.ui = {
+    cursor: 'grab',
+    hover: (on) => (rimMat.opacity = on ? 0.85 : 0.5),
+    grab: {
+      start(ray) {
+        st.held = true;
+        st.slipped = false;
+        st.silent = false;
+        const v = valueAt(ray);
+        if (v != null) st.target = v;
+      },
+      move(ray) {
+        if (!st.held || st.slipped) return;
+        const v = valueAt(ray);
+        if (v != null) st.target = v;
+      },
+      end() {
+        st.held = false;
+        st.slipped = false;
+        if (spring) st.target = rest;
+      },
+    },
+  };
+  group.add(hit);
+
+  const paint = () => {
+    const x = xOf(st.shown);
+    const xr = xOf(THREE.MathUtils.clamp(rest, min, max));
+    handle.position.x = x;
+    // il manico tirato si inclina appena verso il piolo da cui si allontana
+    handle.rotation.z = THREE.MathUtils.clamp((st.target - st.shown) / span, -0.3, 0.3);
+    taut.scale.x = Math.max(1e-4, Math.abs(x - xr));
+    taut.position.set((x + xr) / 2, yc, Z_FILL * 1.1);
+    if (format) readout.text = format(st.shown);
+  };
+  paint();
+  let last = performance.now();
+  return {
+    group,
+    height: -yc + 0.033,
+    get value() {
+      return st.shown;
+    },
+    get held() {
+      return st.held;
+    },
+    set(v, { now = false } = {}) {
+      st.target = THREE.MathUtils.clamp(v, min, max);
+      st.silent = true;
+      if (now) {
+        st.shown = st.target;
+        paint();
+      }
+    },
+    release() {
+      if (!st.held) return;
+      st.slipped = true;
+      st.target = rest;
+    },
+    update() {
+      const t = performance.now();
+      const dt = Math.min(0.1, (t - last) / 1000);
+      last = t;
+      // in mano il manico segue subito; lasciato, scivola verso la meta
+      const k = st.held && !st.slipped ? 1 : 1 - Math.exp(-dt * (spring ? 7 : 5));
+      const prev = st.shown;
+      st.shown += (st.target - st.shown) * k;
+      if (Math.abs(st.target - st.shown) < span * 1e-3) st.shown = st.target;
+      if (st.shown === prev && Math.abs(st.target - st.shown) < 1e-9 && handle.rotation.z === 0) return;
+      paint();
+      if (!st.silent && st.shown !== st.last) {
+        st.last = st.shown;
+        onChange?.(st.shown);
+      }
+    },
+  };
+}

@@ -215,6 +215,51 @@ sceglierne uno accende parti, vie e indicatori.
     `labels` (`{ id: 'testo' }`, etichette sul modello).
   - **A passi**: `steps: [{ ids, links, activity, text }]` e `stepTime` in secondi; i passi
     si accendono uno dopo l'altro e il commento mostra `k/n · text`.
+- `cord`: una corda da tirare sotto i pulsanti, per una quantità continua (vedi sotto).
+
+### Corde e cursori: comandi continui
+
+Quando la pagina parla di una quantità che cresce o cala (una pressione, una forza, l'altezza
+di un suono), al posto di due o tre pulsanti «poco / tanto» si può dare a chi legge una
+**corda**: una corda rossa tesa tra due pioli, con un manico chiaro a forma d'osso da
+afferrare e far scorrere; toccando la corda in un punto il manico salta lì. Il modello
+risponde a ogni movimento. È geometria della pagina come i pulsanti, quindi funziona con
+il mouse, al tocco e in VR; trascinarla non fa ruotare il modello.
+
+```js
+mode: selector({
+  base: […], options: […],
+  cord: {
+    label: 'CONTRAZIONE DEL QUADRICIPITE',   // titoletto in maiuscoletto rosso
+    ends: ['riposo', 'massima'],             // le due estremità, accanto ai pioli
+    min: 0, max: 1, value: 0,                // intervallo e valore iniziale (rest: riposo, predefinito value)
+    spring: true,                            // lasciata, torna da sola a riposo
+    marks: [{ at: 0.82, label: 'soglia' }],  // tacche facoltative
+    format: (v) => '…',                      // lettura accanto al titoletto, facoltativa
+    react(v, prima) {                        // valore -> opzione statica, come quelle di `options`
+      if (v < 0.82) return { lit: ['rectus'], activity: { rectus: 1 }, info: '…' };
+      return { release: true, focus: FOCUS.plate, links: ['cIb', 'cIbMn'], info: '…' };
+    },
+  },
+}),
+```
+
+- `react` riceve il valore e il risultato precedente (`prima`, per ricordare uno stato, per
+  esempio un riflesso già scattato) e ritorna un'opzione statica (`lit`, `show`, `links`,
+  `info`, `activity`, `dead`, `scale`, `labels`, `focus`) che prende il posto di quella
+  scelta: i pulsanti si spengono. Il modello cambia solo quando cambia il risultato.
+  `release: true` strappa la corda di mano e la riporta a riposo (un muscolo che cede).
+- In `selector` scegliere un pulsante (anche con la `choose(i)` di una previsione) riporta la corda a riposo.
+- Esempi: `src/chapters/riflessi.js` (organo del Golgi, corda a molla con soglia),
+  `src/chapters/orecchio-medio.js` (pressione da -1 a 1 nel comportamento su misura
+  `earMode`), `src/chapters/sistema-uditivo.js` (altezza del suono e punto di massima
+  risonanza, con `setTone` nel modello).
+- Nei comportamenti su misura: `cordInto(controls, y, spec, onChange)` di `src/modes.js`
+  mette la corda a quota `y` e ritorna `{ height, value, held, set(v), release(), update() }`;
+  `update()` va chiamata a ogni fotogramma dalla `update` del comportamento, `set(v)` muove
+  il manico da codice senza chiamare `onChange`. La corda vera e propria è `cord()` in `src/ui.js`.
+- Spazio: la corda è alta circa 0,1 pagine. Con la corda tenere i pulsanti su una riga e
+  il commento sotto le due righe, altrimenti tocca la didascalia.
 
 ### Primi piani
 
@@ -254,6 +299,8 @@ async function mioModo({ model, controls, def }) {
   };
 }
 ```
+
+Per una quantità continua usare `cordInto` (vedi «Corde e cursori»).
 
 `src/chapters/brachial.js` contiene esempi (taglio in un punto, percorso a ritroso).
 

@@ -19,6 +19,45 @@ const EFF = ['eff1', 'eff2', 'eff3'];
 const GLASS = { rectus: { opacity: 0.2, litOpacity: 0.3 }, vasti: { opacity: 0.12, litOpacity: 0.2 }, quadTendon: { opacity: 0.3, litOpacity: 0.4 } };
 const SOFT = { rectus: { opacity: 0.5, litOpacity: 0.7 }, vasti: { opacity: 0.4, litOpacity: 0.6 } };
 
+// Corda della pagina sull'organo del Golgi: quanto si contrae il quadricipite. Oltre la
+// soglia la contrazione minaccia l'integrità del muscolo e scatta il riflesso miotatico
+// inverso (il primo piano passa al circuito nel midollo): il muscolo cede e la corda
+// sfugge di mano. L'esito resta finché non si torna a tirare (`low` ricorda il punto
+// più basso raggiunto dalla corda dopo il riflesso).
+const SOGLIA = 0.82;
+const IB_ROUTE = ['ib1', 'aff2', 'aff3', 'cIb'];
+const tendonCord = {
+  label: 'CONTRAZIONE DEL QUADRICIPITE',
+  ends: ['riposo', 'massima'],
+  spring: true,
+  marks: [{ at: SOGLIA, label: 'soglia' }],
+  format: (v) => (v < 0.04 ? '' : v < SOGLIA ? 'il tendine si stira' : 'contrazione eccessiva'),
+  react(v, prev) {
+    if (prev?.reflex) {
+      const low = Math.min(prev.low ?? v, v);
+      if (v < low + 0.04) return { ...prev, release: false, low };
+    }
+    if (v < 0.04) return { info: 'Muscolo a riposo: il tendine e l’organo del Golgi non sono stirati.' };
+    if (v < SOGLIA) {
+      return {
+        lit: [...QUAD, 'quadTendon', ...GTO],
+        activity: { rectus: 1 },
+        info: 'La contrazione stira il tendine e l’organo del Golgi, in serie; il muscolo non è a rischio.',
+      };
+    }
+    return {
+      reflex: true,
+      release: true,
+      focus: FOCUS.plate,
+      lit: [...QUAD, ...GTO, 'rfBranch', 'femoral', 'plexus', 'ganglion', 'rootPost', 'inIb', 'mnExt'],
+      links: [...IB_ROUTE, 'cIbMn'],
+      activity: { inIb: 1, mnExt: -1, rectus: -1 },
+      labels: { inIb: 'interneurone Ib', mnExt: 'α' },
+      info: 'Contrazione eccessiva: la fibra Ib eccita l’interneurone inibitorio, che inibisce il motoneurone alfa. Il muscolo cede.',
+    };
+  },
+};
+
 const spreads = [
   {
     title: 'Il fuso neuromuscolare',
@@ -165,9 +204,10 @@ const spreads = [
       explain: 'Il gamma contrae i poli del fuso; la fibra Ia, stirata, potenzia poi il motoneurone alfa già eccitato dalla via discendente.',
     },
     caption: "L'organo tendineo, ricostruito e ingrandito, è alla giunzione tra il ventre del retto femorale e il tendine del quadricipite (mesh reali).",
-    instruction: 'GUARDA IL RECETTORE, POI SEGUI I DUE CIRCUITI',
+    instruction: 'TIRA LA CORDA: CONTRAI IL QUADRICIPITE FINO ALLA SOGLIA',
     view: { yaw: -0.3 },
     mode: selector({
+      cord: tendonCord,
       base: [...AXIAL, ...LEG, ...QUAD, ...KNEE, ...ROOTS, ...FEM, ...SPINDLE, ...GTO, ...PLATE, 'cst', 'mnExt', 'mnGamma', 'inIb'],
       looks: GLASS,
       idle: 'Il fuso è in parallelo con le fibre muscolari, l’organo tendineo in serie: il primo misura la lunghezza, il secondo la tensione.',
@@ -195,16 +235,6 @@ const spreads = [
             { ids: ['rootPostP', 'ganglionP'], links: ['cIb'], text: 'La contrazione diventa eccessiva: la fibra Ib entra con la radice dorsale.' },
             { ids: ['inIb'], links: ['cIb'], text: "Eccita l'interneurone inibitorio di tipo Ib: il riflesso è necessariamente disinaptico." },
             { ids: ['mnExt'], links: ['cIbMn'], text: "L'interneurone inibisce il motoneurone alfa dello stesso muscolo: la contrazione cede." },
-          ],
-        },
-        {
-          label: 'Dal tendine al midollo', stepTime: 2.4,
-          steps: [
-            { ids: [...QUAD, 'quadTendon', ...GTO], text: 'Il muscolo si contrae troppo: il tendine si stira.' },
-            { ids: ['rfBranch', 'femoral', 'plexus'], links: ['ib1', 'aff2'], text: 'Le fibre Ib risalgono con il nervo femorale.' },
-            { ids: ['ganglion', 'rootPost'], links: ['aff3'], text: 'Ganglio spinale e radice dorsale.' },
-            { ids: ['inIb', 'mnExt', 'postHorn'], links: ['cIb', 'cIbMn'], text: 'Interneurone inibitorio Ib, poi motoneurone alfa.' },
-            { ids: QUAD, activity: { rectus: -1 }, text: 'La contrazione del muscolo è inibita: stiramenti e strappi sono evitati.' },
           ],
         },
       ],
