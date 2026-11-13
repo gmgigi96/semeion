@@ -16,10 +16,13 @@ const PH = [...PH_ROOTS, 'phNeck', 'phPoint', 'phThorax', 'phDia', 'phPeric'];
 const THORAX = ['thoracic', 'sternum', 'rib1', 'ribs', 'clavicle'];
 const DIA = ['diaR', 'diaL'];
 
-// Primo piano: dopo l'ingresso nella pagina il modello viene ingrandito e abbassato.
-const closeUp = (drop, back, lean, scale, side, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return { ...api, enter() { api.enter(); ctx.model.focus(drop, back, lean, scale, side); } };
+// Primi piani (vedi «Primi piani» in docs/AUTHORING.md): il punto `at` del modello
+// va sopra il centro della pagina; ciò che esce dal volume della pagina è tagliato.
+const FOCUS = {
+  plexus: { at: [0.018, 0.528, -0.012], scale: 5, height: 0.27, stand: false },
+  neck: { at: [0.05, 0.5, -0.007], scale: 1.6, height: 0.31, stand: false },
+  ansa: { at: [0.0105, 0.481, 0.018], scale: 3.2, height: 0.3, stand: false },
+  phrenic: { at: [0.022, 0.275, 0.015], scale: 1.25, height: 0.32, stand: false },
 };
 
 const spreads = [
@@ -39,8 +42,8 @@ const spreads = [
     },
     caption: 'Plesso cervicale destro, veduta antero-laterale. Ossa, muscoli, vasi e ramo di C4 sono mesh reali; gli altri rami e le anse sono ricostruiti.',
     instruction: 'SCEGLI UN RAMO ANTERIORE E GUARDA CHE COSA NE NASCE',
-    view: { yaw: -0.75 },
-    mode: closeUp(2.24, -0.059, 0, 5, 0.089, selector({
+    view: { yaw: -0.75, focus: FOCUS.plexus },
+    mode: selector({
       base: [...CERV, ...HEAD_G, 'ganglia', ...RAMI, ...ANSE, 'scalM', 'levator', 'brachial'],
       pick: { r1: 0, r2: 1, r3: 2, r4: 3, a1: 4, a2: 4, a3: 4 },
       idle: 'Giallo: rami anteriori. Blu: anse. Scegli un ramo per vedere i nervi che ne nascono.',
@@ -52,7 +55,7 @@ const spreads = [
         { label: 'Anse', lit: [...RAMI, ...ANSE], info: 'Tre anse a catena: superiore, media e inferiore. Le fibre vi corrono nei due sensi.' },
         { label: 'Rapporti', show: ['scm', 'scalA', 'ijv', 'carotid', 'scg'], info: 'Lo sternocleidomastoideo copre il plesso; medialmente stanno il fascio vascolo-nervoso del collo e il ganglio cervicale superiore.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Rami cutanei e punto nervoso',
@@ -70,8 +73,8 @@ const spreads = [
     },
     caption: 'Collo destro visto di lato. I nervi cutanei sono appoggiati alla superficie reale dello sternocleidomastoideo.',
     instruction: 'SCEGLI UN NERVO (ANCHE CLICCANDOLO) E RUOTA IL MODELLO',
-    view: { yaw: -1.25 },
-    mode: closeUp(0.55, -0.012, 0, 1.75, 0.0875, selector({
+    view: { yaw: -1.25, focus: FOCUS.neck },
+    mode: selector({
       base: [...CERV, ...HEAD, 'hyoid', 'larynx', 'clavicle', 'rib1', 'sternum', 'thoracic', 'scmG', 'scalA', 'scalM', 'levator', 'trapezius',
         'parotid', 'auricle', 'ejv', 'np', ...CUT],
       initial: 0,
@@ -85,7 +88,7 @@ const spreads = [
         { label: 'Sopraclavicolari', lit: [...SCN, 'clavicle'], show: ['scm'], info: "Dall'ansa inferiore il tronco sopraclavicolare, di solito diviso in tre rami: mediale, intermedio e laterale, fino alla spina della scapola." },
         { label: 'Senza muscolo', lit: [...CUT, 'np', 'r2', 'r3', 'r4', 'a2', 'a3'], info: "Tolto lo sternocleidomastoideo si vede l'origine: tre nervi dall'ansa media, il tronco sopraclavicolare dall'ansa inferiore." },
       ],
-    })),
+    }),
   },
   {
     title: "Rami muscolari e ansa cervicale",
@@ -103,8 +106,8 @@ const spreads = [
     },
     caption: 'Ipoglosso, carotide, giugulare e muscoli sottoioidei sono mesh reali; le radici e l’ansa sono ricostruite su di essi.',
     instruction: "SEGUI LE FIBRE DI C1 FINO AI MUSCOLI SOTTOIOIDEI",
-    view: { yaw: -0.6 },
-    mode: closeUp(1.65, 0.075, 0, 4.2, 0.044, selector({
+    view: { yaw: -0.6, focus: FOCUS.ansa },
+    mode: selector({
       base: [...CERV, ...HEAD_G, 'hyoid', 'larynx', ...RAMI, ...ANSE, 'hypoglossal', ...AC, ...INFRA, 'geniohyoid', 'carotid', 'ijv'],
       looks: { ijv: { opacity: 0.55 }, carotid: { opacity: 0.8 } },
       pick: { supRoot: 1, c1xii: 1, infRoot: 2, ansa: 3, ansaRami: 3, nGenio: 4, geniohyoid: 4, accessory: 5 },
@@ -127,7 +130,7 @@ const spreads = [
         { label: 'Genioioideo', lit: ['hypoglossal', 'c1xii', 'nGenio', 'geniohyoid'], show: ['mandible'], info: "Anche il genioioideo riceve fibre del plesso: nel modello proseguono con l'ipoglosso fino al muscolo." },
         { label: 'Accessorio', lit: ['accessory', 'xiRami', 'scmG', 'trapezius'], show: ['accessory', 'xiRami', 'scmG', 'trapezius'], info: "All'accessorio le fibre extrafusali di sternocleidomastoideo e trapezio; al plesso cervicale l'innervazione propriocettiva delle fibre intrafusali." },
       ],
-    })),
+    }),
   },
   {
     title: 'Il nervo frenico',
@@ -145,8 +148,8 @@ const spreads = [
     },
     caption: 'Il frenico destro, ricostruito su scaleno anteriore, vasi succlavi, cava superiore, atrio destro e diaframma reali.',
     instruction: 'SEGUI IL NERVO DAL COLLO AL DIAFRAMMA, POI TAGLIALO',
-    view: { yaw: -0.5 },
-    mode: closeUp(0.03, 0.024, 0, 1.6, 0.035, selector({
+    view: { yaw: -0.5, focus: FOCUS.phrenic },
+    mode: selector({
       base: [...CERV, ...THORAX, ...DIA, 'r3', 'r4', 'a3', 'brachial', 'scalA', 'subA', 'subV', 'svc', 'atrium', 'heart', 'ivc', ...PH],
       looks: { heart: { opacity: 0.55 }, diaL: { opacity: 0.6 }, sternum: { opacity: 0.35 } },
       pick: { phC3: 1, phC4: 1, phC5: 1, phNeck: 2, scalA: 2, phPoint: 3, phThorax: 4, phDia: 5, diaR: 5 },
@@ -169,7 +172,7 @@ const spreads = [
         { label: 'Diaframma', lit: ['phDia', 'diaR', 'ivc'], info: "Attraversa il diaframma all'orifizio della cava inferiore: rami muscolari per le due facce, rami sensitivi per pleura e peritoneo." },
         { label: 'Taglia il frenico', dead: [...PH, 'diaR'], info: "Interrotto il nervo, l'emidiaframma dello stesso lato perde la sua innervazione motoria." },
       ],
-    })),
+    }),
   },
 ];
 
