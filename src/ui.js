@@ -220,8 +220,14 @@ const bezier = ([x0, y0], [x1, y1], [x2, y2], n = 14) =>
 //   why: ['…', null, …]                            facoltativo: perché ogni opzione sbagliata non lo è
 //   predict: true                                  previsione: prima si sceglie, poi si verifica sul
 //                                                  modello e si solleva l'aletta «Perché?»
-// onPredict(i) viene chiamata a ogni scelta in modalità previsione.
-export async function quiz({ question, options, correct, explain, why = [], predict = false }, width, { onPredict } = {}) {
+//   point: ['idParte', …]                          si risponde toccando una di queste parti sul
+//                                                  modello (niente opzioni); why: { idParte: '…' }
+// onPredict(i) viene chiamata a ogni scelta in modalità previsione; nameOf(id) dà il
+// nome di una parte e onReveal(ids) la indica dopo tre tentativi sbagliati.
+export async function quiz(def, width, hooks = {}) {
+  if (def.point) return pointQuiz(def, width, hooks);
+  const { question, options, correct, explain, why = [], predict = false } = def;
+  const { onPredict } = hooks;
   const group = new THREE.Group();
   let y = 0;
   const kicker = makeText(predict ? 'PREDICI' : 'DOMANDA', {
@@ -445,6 +451,77 @@ export async function quiz({ question, options, correct, explain, why = [], pred
       arrowMat.opacity = 0.9 * fade;
       for (const d of dash.children) d.material.opacity = 0.28 * fade;
       hinge.visible = fade > 0.01;
+    },
+  };
+}
+
+// --- Indica sul modello -------------------------------------------------------
+// La risposta è una struttura: chi legge la tocca sul modello. Ogni tocco
+// sbagliato dice che cosa si è indicato e, se c'è, perché non è quella giusta;
+// dopo tre tentativi la struttura giusta si accende da sola.
+async function pointQuiz({ question, point, explain, why = {} }, width, { nameOf = (id) => id, onReveal } = {}) {
+  const group = new THREE.Group();
+  let y = 0;
+  const kicker = makeText('INDICA SUL MODELLO', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
+  group.add(kicker);
+  y -= 0.03;
+  const q = makeText(question, { fontSize: 0.027, font: FONT.semi, maxWidth: width, lineHeight: 1.35 });
+  q.position.y = y;
+  group.add(q);
+  await ready(q);
+  y -= bounds(q).h + 0.018;
+
+  // invito, con una freccia a mano che punta alla pagina del modello
+  const hint = makeText('tocca la struttura sul modello', { fontSize: 0.023, font: FONT.italic, color: 0x2c3e66 });
+  hint.position.set(0.004, y, Z_TEXT);
+  await ready(hint);
+  const hb = bounds(hint);
+  const ax = hb.w + 0.02;
+  const ay = y - hb.h / 2;
+  const arrowMat = flat(0x2c3e66, 0.9);
+  const arrow = new THREE.Group();
+  arrow.add(
+    new THREE.Mesh(stroke(bezier([ax, ay - 0.004], [ax + 0.05, ay + 0.016], [ax + 0.1, ay + 0.002]), 0.0026), arrowMat),
+    new THREE.Mesh(stroke([[ax + 0.084, ay + 0.014], [ax + 0.1, ay + 0.002], [ax + 0.083, ay - 0.008]], 0.0026), arrowMat)
+  );
+  arrow.position.z = Z_TEXT;
+  for (const o of [arrow, ...arrow.children]) o.renderOrder = 5;
+  group.add(hint, arrow);
+  y -= hb.h + 0.016;
+
+  const feedback = makeText('', { fontSize: 0.022, font: FONT.italic, maxWidth: width, lineHeight: 1.35 });
+  feedback.position.y = y;
+  group.add(feedback);
+  const answer = nameOf(point[0]);
+  let solved = false;
+  let tries = 0;
+  return {
+    group,
+    height: -y + 0.11,
+    // chiamata dallo spread a ogni clic su una parte del modello
+    point(id) {
+      if (solved) return;
+      if (point.includes(id)) {
+        solved = true;
+        feedback.color = GOOD;
+        feedback.text = `Esatto: ${nameOf(id)}. ${explain}`;
+        hint.text = 'trovata';
+        hint.color = GOOD;
+        arrowMat.opacity = 0;
+        return;
+      }
+      tries += 1;
+      feedback.color = BAD;
+      const said = `Hai indicato: ${nameOf(id)}.${why[id] ? ` ${why[id]}` : ''}`;
+      if (tries < 3) {
+        feedback.text = `${said} Riprova.`;
+        return;
+      }
+      solved = true;
+      feedback.text = `${said} La risposta giusta ora è accesa sul modello: ${answer}. ${explain}`;
+      hint.text = '';
+      arrowMat.opacity = 0;
+      onReveal?.(point);
     },
   };
 }

@@ -70,6 +70,11 @@ export async function buildSpread(def, ctx) {
   // in una previsione la scelta avvia sul modello l'opzione che la mette alla prova
   const q = await quiz(def.quiz, W, {
     onPredict: () => def.quiz.reveal != null && modeApi?.choose?.(def.quiz.reveal),
+    nameOf: (id) => model.parts.get(id)?.name ?? id,
+    onReveal: (ids) => {
+      model.hover = new Set(ids);
+      modeApi?.onHoverSet?.(ids);
+    },
   });
   q.group.position.set(M, y, 0);
   left.add(q.group);
@@ -117,6 +122,14 @@ export async function buildSpread(def, ctx) {
         for (const t of body.terms) t.setHot(!!id && def.terms[t.key].includes(id));
       };
       modeApi.enter?.();
+      // «indica sul modello»: ogni clic su una parte arriva anche alla domanda
+      if (q.point) {
+        const own = model.onClick;
+        model.onClick = (id, hit) => {
+          q.point(id);
+          own?.(id, hit);
+        };
+      }
     },
   };
 }

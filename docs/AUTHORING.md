@@ -147,6 +147,12 @@ a un'interazione che fa ragionare (una via da seguire, una lesione, un blocco).
   mostra. L'aletta occupa spazio: tenere il testo sotto le 90 parole, la domanda corta
   e i `why` di una riga. Se la pagina non basta, la console lo segnala con
   `[pagina] <capitolo>/<n>: la domanda esce dal fondo`.
+- **Indica sul modello** (`point: ['idParte', …]`, senza `options`): la risposta è una
+  struttura da toccare sul modello. Ogni tocco sbagliato dice che cosa si è indicato (il
+  nome della parte) e, se c'è, `why[idParte]`; dopo tre tentativi la risposta si accende.
+  Il clic arriva anche al comportamento della pagina destra, quindi un `pick` mostra
+  l'informazione della parte toccata. Le parti indicate devono essere solide (non `ghost`),
+  visibili nella pagina e abbastanza grandi da colpire: niente solchi o fili sottili.
 
 ## Il file del capitolo
 
@@ -163,6 +169,7 @@ const spreads = [
     quiz: { question: '…?', options: ['…', '…', '…', '…'], correct: 1, explain: '…' },
     // oppure una previsione, verificata dall'opzione 2 della pagina destra:
     // quiz: { predict: true, question: '…?', options: […], correct: 1, why: ['…', null, '…', '…'], explain: '…', reveal: 2 },
+    // oppure da indicare sul modello: quiz: { question: 'Indica …', point: ['idParte'], why: { altraParte: '…' }, explain: '…' },
     caption: 'Didascalia della figura.',
     instruction: 'ISTRUZIONE DI UNA RIGA, IN MAIUSCOLO',
     view: { yaw: 0.3, zoom: 1.15 },      // facoltativo: vista propria di questa pagina

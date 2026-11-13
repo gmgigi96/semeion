@@ -78,9 +78,13 @@ const spreads = [
       "L'{arteria cerebrale anteriore|aca} passa sopra il nervo ottico, entra nella fessura interemisferica e con le arterie calloso-marginale e pericallosa irrora la {superficie mediale|tACA} dei lobi frontale e parietale e il corpo calloso, oltrepassando il vertice per 2-3 cm sulla faccia laterale. L'{arteria cerebrale media|mca}, o silviana, diretta continuazione della carotide interna, decorre nella scissura laterale e distribuisce i rami corticali alla {faccia laterale|tMCA} e all'insula. L'{arteria cerebrale posteriore|pca} contorna il peduncolo cerebrale e raggiunge la {faccia inferiore del lobo temporale e la faccia mediale dell'occipitale|tPCA}, dove termina come arteria calcarina.",
     terms: { aca: T_ACA, tACA: ['terrACA'], mca: T_MCA, tMCA: ['terrMCA'], pca: T_PCA, tPCA: ['terrPCA'] },
     quiz: {
-      question: 'Quale arteria termina come arteria calcarina, per le aree visive?',
-      options: ['La cerebrale anteriore', 'La cerebrale media', 'La cerebrale posteriore', 'La corioidea anteriore'],
-      correct: 2,
+      question: "Indica l'arteria che termina come arteria calcarina, per le aree visive.",
+      point: ['pca', 'pcaB'],
+      why: {
+        aca: 'La cerebrale anteriore irrora la faccia mediale.', acaB: 'La cerebrale anteriore irrora la faccia mediale.',
+        mca: 'La cerebrale media irrora la faccia laterale.', mcaB: 'La cerebrale media irrora la faccia laterale.',
+        terrPCA: "È il territorio giusto: ora indica l'arteria che lo irrora.",
+      },
       explain: "L'arteria calcarina decorre nella scissura omonima e irrora le aree visive primaria e secondaria.",
     },
     caption: 'I giri reali colorati secondo il territorio; i confini variano da persona a persona.',

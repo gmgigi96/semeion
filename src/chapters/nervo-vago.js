@@ -129,9 +129,9 @@ const spreads = [
       recr: REC_R, subr: ['subclavianR'], arch: ['arch'], recl: REC_L, eso: ['esoC', 'esoM'], trachea: TRACHEA, thyroid: ['thyroid'], intr: INTRINSIC, ct: ['cricothyroid'],
     },
     quiz: {
-      question: 'Attorno a quale struttura gira il nervo laringeo ricorrente sinistro?',
-      options: ["L'arteria succlavia sinistra", "L'arco aortico", 'Il tronco brachiocefalico', 'Il bronco principale sinistro'],
-      correct: 1,
+      question: 'Indica la struttura attorno a cui gira il nervo laringeo ricorrente sinistro.',
+      point: ['arch'],
+      why: { subclavianR: "Attorno all'arteria succlavia destra gira il ricorrente destro." },
       explain: "Il destro gira invece attorno all'arteria succlavia destra, alla base del collo.",
     },
     caption: 'Base del collo e mediastino superiore, ingranditi. Vasi, trachea, esofago e laringe reali; nervi ricostruiti su di essi.',

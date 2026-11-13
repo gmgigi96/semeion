@@ -77,9 +77,12 @@ const spreads = [
       rs: lr('rs'), rm: lr('rm'), ri: lr('ri'), oi: lr('oi'), lev: lr('lev'), os: lr('os'), rl: lr('rl'),
     },
     quiz: {
-      question: 'Quale muscolo è innervato dal nervo trocleare?',
-      options: ['Il retto laterale', "L'obliquo superiore", "L'obliquo inferiore", "L'elevatore della palpebra"],
-      correct: 1,
+      question: 'Indica il muscolo innervato dal nervo trocleare.',
+      point: lr('os'),
+      why: {
+        ...Object.fromEntries(lr('rl').map((id) => [id, "Il retto laterale spetta all'abducente."])),
+        ...Object.fromEntries(lr('rs', 'rm', 'ri', 'oi', 'lev').map((id) => [id, "Questo spetta all'oculomotore."])),
+      },
       explain: "Il retto laterale spetta all'abducente, tutti gli altri all'oculomotore.",
     },
     caption: 'Orbite, muscoli e tronco encefalico reali (BodyParts3D); nuclei e tratto intracranico dei nervi ricostruiti.',

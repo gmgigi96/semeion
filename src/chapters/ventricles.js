@@ -16,9 +16,9 @@ const spreads = [
       "I ventricoli cerebrali sono quattro cavità comunicanti nella profondità dell'encefalo, residuo del lume del tubo neurale e rivestite da ependima. I due {ventricoli laterali|lv}, uno per emisfero, comunicano con il {terzo ventricolo|v3} attraverso i {forami interventricolari di Monro|monro}. Il terzo, impari e mediano nel diencefalo, comunica attraverso l'{acquedotto di Silvio|aq} con il {quarto ventricolo|v4}, compreso tra cervelletto, ponte e bulbo, che in basso si continua con il {canale centrale|canal} del midollo spinale.",
     terms: { lv: LATERAL, v3: ['v3'], monro: ['monro'], aq: ['aqueduct'], v4: ['v4'], canal: ['canal'] },
     quiz: {
-      question: 'Quale struttura mette in comunicazione il terzo e il quarto ventricolo?',
-      options: ['I forami di Monro', "L'acquedotto di Silvio", 'Il forame di Magendie', 'Il canale centrale'],
-      correct: 1,
+      question: 'Indica la struttura che mette in comunicazione il terzo e il quarto ventricolo.',
+      point: ['aqueduct'],
+      why: { monro: 'I forami di Monro uniscono i ventricoli laterali al terzo.' },
       explain: "L'acquedotto è il residuo della vescicola mesencefalica.",
     },
     caption: "Ventricoli reali (mesh BodyParts3D) dentro un encefalo trasparente.",
