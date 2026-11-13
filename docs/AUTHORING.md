@@ -441,6 +441,11 @@ nelle pagine che non la usano e in `reset()`. Esempi:
 - il martelletto di `src/models/riflessi.js` (`setHammer({ onStrike, onMiss })`): al contatto con
   il legamento rotuleo il riflesso parte, lasciato altrove la pagina dice che cosa si è colpito.
 
+Il trascinamento che fa ruotare il modello può anche diventare un gesto della pagina: il modello
+legge `this.yaw` nella propria `update`, ne prende la variazione e lo rimette alla vista della
+pagina. Così in `src/models/orecchio-interno.js` (`setTurn`, pagina «Canali accoppiati») trascinare
+gira la testa attorno alla propria verticale e la velocità di rotazione muove endolinfa e cupole.
+
 Un tocco su una parte arriva a `model.onClick(id, hit)` con `hit.point` (nel mondo) e `hit.face`:
 `src/chapters/nervo-trigemino.js`, pagina 4, lo usa per piantare uno spillo nel punto toccato
 (`model.pin`) e chiedere di quale branca è.

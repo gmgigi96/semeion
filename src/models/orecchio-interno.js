@@ -74,6 +74,12 @@
 //  - Petrous part of the temporal bone,
 //    https://en.wikipedia.org/wiki/Petrous_part_of_the_temporal_bone
 //
+// TESTA CHE GIRA (pagina «Canali accoppiati», setTurn): cupola nell'ampolla dei due canali
+// laterali ingranditi ed endolinfa in gocce lungo il canale, RICOSTRUITE e molto
+// ingrandite; la cupola si piega nel verso in cui l'endolinfa scorre rispetto al canale.
+// Il verso (verso l'ampolla o no) è calcolato dalla geometria dei canali reali e torna con
+// l'esempio degli appunti (testa verso destra: laterale destro stimolato, sinistro inibito).
+//
 // STIMATO, senza una fonte letta: calibro dei dotti (qui metà del canale, per
 // renderli visibili: nel vero sono più sottili) e loro posizione verso la parete
 // esterna del canale; forma e dimensioni esatte di utricolo, sacculo e sacco
@@ -145,6 +151,10 @@ export const SKULL_VIEW = {
 };
 
 const REST = { organ: 0, shift: 0, bend: 0, lin: 0, turn: 0 };
+// testa che gira (vedi setTurn): attorno alla verticale che passa per il centro della base
+// cranica, al più di HEAD_TURN radianti per lato
+const HEAD_PIVOT = P(0, 6, 1590);
+const HEAD_TURN = 0.55;
 
 function merge(geos) {
   const pos = [];
@@ -251,6 +261,7 @@ export class InnerEarModel extends AnatomyModel {
     this.motion = { dir: V(0, 0, 1), axis: V(0, 1, 0), pivot: V(0, 0, 0) };
     this.clock = 0;
     this.rig = [];
+    this.setTurn(false);
     this.ready = this.#build();
   }
 
@@ -449,6 +460,110 @@ export class InnerEarModel extends AnatomyModel {
     this.addPart('axisR', 'asse della rocca petrosa destra', 0xb3371f, [ridge]);
     this.addPart('axisL', 'asse della rocca petrosa sinistra', 0xb3371f, [ridgeL]);
     this.addPart('midline', 'linea antero-posteriore', 0x3a3632, [taperTube([P(0, -30, 1600), P(0, 8, 1600), P(0, 44, 1600)], 0.9 * S, { seg: 8 })]);
+    this.#lateralFlow(move);
+  }
+
+  // ---- canali laterali delle due copie: cupola nell'ampolla ed endolinfa che scorre
+  // (vedi setTurn). `move` porta un punto del labirinto destro nella copia ingrandita.
+  #lateralFlow(move) {
+    const flip = (v) => V(2 * XMID - v.x, v.y, v.z);
+    const R = 2.1 * ENLARGE * S; // raggio della cupola, ESAGERATO per vederla
+    this.flow = {};
+    for (const side of ['R', 'L']) {
+      const at = (v) => (side === 'R' ? v : flip(v));
+      // linea d'asse del canale osseo: comincia dal crus, finisce nell'ampolla (antero-laterale)
+      const line = CANALS.lat.line.map((p) => at(move(P(...p))));
+      const c = at(move(P(...CANALS.lat.c)));
+      const amp = at(move(this.ampullae.lat.clone()));
+      // normale orientata con il verso della linea: una rotazione positiva attorno a `n`
+      // porta un punto del canale verso l'ampolla
+      const n = V(0, 0, 0);
+      for (let i = 0; i < line.length - 1; i++) n.add(line[i].clone().sub(c).cross(line[i + 1].clone().sub(line[i])));
+      n.normalize();
+      const t = line.at(-1).clone().sub(line.at(-3)).normalize(); // verso l'ampolla, lungo il dotto
+      const u = c.clone().sub(amp);
+      u.addScaledVector(t, -u.dot(t)).normalize(); // di traverso, dalla cresta verso il centro del canale
+      // cupola: lamina gelatinosa di traverso nell'ampolla, la base sulla cresta
+      const cup = ellipsoid([0, 0, 0], [R, R, R * 0.24], null, 20);
+      cup.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 0, 1), t));
+      cup.translate(amp.x, amp.y, amp.z);
+      const lato = side === 'R' ? 'destro' : 'sinistro';
+      const cupPart = this.addPart(`cup${side}`, `cupola della cresta ampollare, canale laterale ${lato}`, 0xf0e2b0, [cup], { opacity: 0.92 });
+      const mesh = cupPart.meshes[0];
+      const rest = mesh.geometry.attributes.position.array.slice();
+      // endolinfa: gocce lungo il canale (si muovono in `update`)
+      const lengths = [0];
+      for (let i = 1; i < line.length; i++) lengths.push(lengths[i - 1] + line[i].distanceTo(line[i - 1]));
+      const drops = Array.from({ length: 9 }, () => new THREE.SphereGeometry(0.42 * ENLARGE * S, 10, 8));
+      const endo = this.addPart(`endo${side}`, `endolinfa nel canale laterale ${lato}`, 0x2fb4c8, drops);
+      this.flow[side] = { line, lengths, n, t, u, R, mesh, rest, drops: endo.meshes, phase: 0, bend: 0, excite: 0 };
+    }
+  }
+
+  // Testa che gira: con `on` il trascinamento di sempre non fa ruotare il modello attorno
+  // all'asta (la base cranica, che sta dietro l'asse, uscirebbe dalla pagina) ma gira la
+  // testa attorno alla propria verticale, fino a HEAD_TURN per lato. L'endolinfa dei
+  // canali laterali resta indietro per inerzia: scorre nel canale in senso opposto e
+  // piega la cupola. `turnState` = { w, R, L }: velocità angolare della testa (rad/s, +
+  // verso destra) e, per lato, l'effetto sui recettori (+ stimolati, - inibiti, da -1 a 1).
+  setTurn(on) {
+    this.turning = on;
+    this.turnBase = null;
+    this.headAngle = 0;
+    this.headLast = 0;
+    this.turnW = 0;
+    this.turnState = { w: 0, R: 0, L: 0 };
+  }
+
+  #turn(dt) {
+    if (!this.flow) return;
+    const st = this.turnState ?? { w: 0, R: 0, L: 0 };
+    if (this.turning) {
+      // la rotazione chiesta dal trascinamento passa alla testa. La base è la vista della
+      // pagina (main.js la pone prima di enter, che chiama setTurn); un salto enorme si
+      // prende per una nuova vista. Il modello è ribaltato a schermo (mirror): nelle sue
+      // coordinate la rotazione ha il segno opposto a `yaw`
+      const d = this.turnBase == null ? Infinity : this.yaw - this.turnBase;
+      if (Math.abs(d) < 1.5) this.headAngle = THREE.MathUtils.clamp(this.headAngle - d, -HEAD_TURN, HEAD_TURN);
+      else this.turnBase = this.yaw;
+      this.yaw = this.turnBase;
+    }
+    // + = il naso va verso la destra del paziente
+    const raw = dt > 0 ? (this.headAngle - this.headLast) / dt : 0;
+    this.headLast = this.headAngle;
+    this.turnW = (this.turnW ?? 0) + (raw - (this.turnW ?? 0)) * (1 - Math.exp(-dt * 10));
+    const w = Math.abs(this.turnW) < 1e-3 ? 0 : this.turnW;
+    st.w = w;
+    for (const [side, f] of Object.entries(this.flow)) {
+      // velocità angolare dell'endolinfa rispetto al canale, attorno alla sua normale:
+      // resta indietro, quindi -ω·n (+ = verso l'ampolla, cioè utriculipeta)
+      const rel = -w * f.n.y;
+      f.excite = THREE.MathUtils.clamp(rel / 2.2, -1, 1);
+      st[side] = f.excite; // canale orizzontale: utriculipeta stimola, utriculifuga inibisce
+      f.bend += (f.excite - f.bend) * (1 - Math.exp(-dt * 8));
+      // cupola: si piega lungo il dotto, la base ferma sulla cresta
+      const pos = f.mesh.geometry.attributes.position;
+      const v = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) {
+        v.fromArray(f.rest, i * 3);
+        const h = (v.dot(f.u) / f.R + 1) / 2;
+        v.addScaledVector(f.t, f.bend * 0.9 * f.R * h * h);
+        pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      pos.needsUpdate = true;
+      f.mesh.geometry.computeVertexNormals();
+      // gocce: avanzano lungo il canale e ricominciano dall'altro capo
+      const L = f.lengths.at(-1);
+      f.phase = (((f.phase + rel * dt * 0.35) % 1) + 1) % 1;
+      f.drops.forEach((m, k) => {
+        const s = ((f.phase + k / f.drops.length) % 1) * L;
+        let i = 1;
+        while (i < f.lengths.length - 1 && f.lengths[i] < s) i++;
+        const a = (s - f.lengths[i - 1]) / (f.lengths[i] - f.lengths[i - 1] || 1);
+        m.position.copy(f.line[i - 1]).lerp(f.line[i], a);
+      });
+    }
+    this.turnState = st;
   }
 
   // parti degli ingrandimenti: stanno in `side`
@@ -619,6 +734,7 @@ export class InnerEarModel extends AnatomyModel {
     super.reset();
     this.setScene();
     this.setFocus('lab');
+    this.setTurn(false);
   }
 
   #pose() {
@@ -664,12 +780,16 @@ export class InnerEarModel extends AnatomyModel {
     f.k += (t.k - f.k) * k;
     f.rod += (t.rod - f.rod) * k;
     f.pos.lerp(t.at.clone().applyQuaternion(t.q).multiplyScalar(-t.k).add(t.to), k);
-    // oscillazione del labirinto: lineare o attorno all'asse di un canale
+    // oscillazione del labirinto: lineare o attorno all'asse di un canale; prima ancora
+    // la testa che gira attorno alla propria verticale (vedi setTurn)
+    this.#turn(step);
     const wave = Math.sin(this.clock * Math.PI * 2 * 0.55);
     const qm = new THREE.Quaternion().setFromAxisAngle(this.motion.axis, 0.2 * this.state.turn * wave);
-    const local = this.motion.pivot.clone().sub(this.motion.pivot.clone().applyQuaternion(qm));
+    const qh = new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), this.headAngle ?? 0);
+    const pm = this.motion.pivot;
+    const local = HEAD_PIVOT.clone().sub(HEAD_PIVOT.clone().applyQuaternion(qh)).sub(pm).applyQuaternion(qm).add(pm);
     local.addScaledVector(this.motion.dir, 0.045 * this.state.lin * wave);
-    this.inner.quaternion.copy(f.q).multiply(qm);
+    this.inner.quaternion.copy(f.q).multiply(qm).multiply(qh);
     this.inner.position.copy(local.applyQuaternion(f.q).multiplyScalar(f.k).add(f.pos));
     this.inner.scale.setScalar(f.k);
     this.rod.scale.y = Math.max(0.01, f.rod - 0.02);

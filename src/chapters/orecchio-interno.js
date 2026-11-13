@@ -3,7 +3,15 @@
 // polarizzazione, accoppiamento dei canali). Gli appunti non descrivono la
 // coclea né l'organo del Corti: il capitolo segue ciò che contengono.
 // Parti reali e ricostruite, con le fonti: vedi src/models/orecchio-interno.js.
-import { chipsInto, infoText, picked } from '../modes.js';
+// Pagina 5, la testa che gira: endolinfa che resta indietro per inerzia, cupola,
+// verso utriculipeto che stimola e utriculifugo che inibisce nei canali orizzontali,
+// dagli appunti di Sistema uditivo (cresta ampollare) e Sistema visivo (nistagmo
+// vestibolare). DEDOTTO: che la cupola si pieghi nel verso della corrente (gli
+// appunti dicono che le stereociglia vi sono immerse e che la corrente stimola o
+// inibisce) e che risponda finché la testa si muove, quanto più in fretta gira
+// («massimamente attivi dall'inizio alla fine del movimento»); la sola rotazione
+// attorno alla verticale, quella dell'esempio degli appunti.
+import { chipsInto, infoText, picked, explore } from '../modes.js';
 import { InnerEarModel, SKULL_VIEW, SKULL_YAW } from '../models/orecchio-interno.js';
 
 const BONY = ['vestibule', 'canalLat', 'canalAnt', 'canalPost', 'cochlea'];
@@ -22,12 +30,22 @@ const glass = (ids, opacity, litOpacity = opacity) => Object.fromEntries(ids.map
 // Come `selector` (opzioni statiche o a passi), con in più la posa del modello
 // (`focus`, vedi FOCUS nel modello), lo stato del modello (`scene`, vedi setScene) e il colore di
 // alcune parti (`tint`) per ogni opzione. `keep`: parti che non si attenuano.
-function labMode({ focus, base, options, looks = {}, pick = {}, idle = '', initial = null, keep = [], labels = {} }) {
-  const never = new Set(keep);
+// `turn: true`: trascinare il modello gira la testa (vedi setTurn nel modello); nei canali
+// laterali l'endolinfa resta indietro, la cupola si piega, i recettori si accendono in
+// verde (stimolati) o in blu (inibiti) e la riga di commento lo spiega.
+const TURN = ['cupR', 'cupL', 'endoR', 'endoL'];
+const VERTICAL = ['rAnt', 'rPost', 'lAnt', 'lPost'];
+function labMode({ focus, base, options, looks = {}, pick = {}, idle = '', initial = null, keep = [], labels = {}, turn = false }) {
+  const never = new Set([...keep, ...(turn ? TURN : [])]);
   return async ({ model, controls }) => {
     let sel = null;
     let t0 = 0;
     let shownStep = -1;
+    let turnKey = ''; // ciò che la testa che gira sta mostrando, per non ridisegnare a ogni fotogramma
+    let turnSeen = -Infinity;
+    const ex = explore(controls);
+    const TURNS = ['Testa verso destra', 'Testa verso sinistra'];
+    if (turn) for (const t of TURNS) ex.offer(t);
     const { chips, height } = await chipsInto(
       controls,
       options.map((o, i) => ({ label: o.label, onClick: () => select(sel === i && !o.steps ? null : i) }))
@@ -48,15 +66,45 @@ function labMode({ focus, base, options, looks = {}, pick = {}, idle = '', initi
         info.text = o?.info ?? idle;
       }
     };
+    // la testa gira: etichette e commento seguono lo stato dei due canali laterali
+    const turning = () => {
+      const st = model.turnState;
+      if (!st) return;
+      const on = Math.abs(st.R) > 0.12 || Math.abs(st.L) > 0.12;
+      if (on) turnSeen = model.time;
+      else if (turnKey && model.time - turnSeen > 1.5) {
+        // ferma: la cupola torna a riposo, restano le parole
+        turnKey = '';
+        model.setLabels(options[sel]?.labels ?? labels);
+      }
+      if (!on) return;
+      const dir = st.w > 0 ? 'destra' : 'sinistra';
+      if (Math.abs(st.w) > 0.8) ex.found(`Testa verso ${dir}`);
+      const key = `${dir}`;
+      if (key === turnKey) return;
+      turnKey = key;
+      const [up, down] = st.w > 0 ? ['destro', 'sinistro'] : ['sinistro', 'destro'];
+      model.setLabels({ cupR: st.R > 0 ? 'stimolato' : 'inibito', cupL: st.L > 0 ? 'stimolato' : 'inibito' });
+      info.text = `Testa verso ${dir}: l'endolinfa resta indietro. Nel canale orizzontale ${up} va verso l'ampolla (utriculipeta): stimolato; nel ${down} se ne allontana (utriculifuga): inibito.`;
+    };
     return {
       enter() {
         model.setFocus(focus);
+        model.setTurn?.(turn);
+        turnKey = '';
         select(initial);
         // scegliere toccando il modello vale come provare il pulsante
         model.onClick = (id) => id in pick && (picked(controls, options[pick[id]]?.label), select(pick[id]));
         model.lookFn = (part) => {
           const o = options[sel];
           const look = { ...looks[part.id] };
+          // la cupola: verde se i recettori sono stimolati, blu se inibiti
+          if (turn && part.id.startsWith('cup')) {
+            const e = model.turnState?.[part.id.slice(3)] ?? 0;
+            return Math.abs(e) > 0.12 ? { ...look, color: e > 0 ? GREEN : BLUE, glow: 0.2 + 0.4 * Math.abs(e) } : look;
+          }
+          // mentre la testa gira i canali verticali passano in secondo piano
+          if (turnKey && VERTICAL.includes(part.id)) return { ...look, opacity: 0.25 };
           if (!o) return look;
           if (o.tint?.[part.id] != null) return { ...look, color: o.tint[part.id], glow: 0.35, opacity: look.litOpacity ?? look.opacity };
           if (o.steps) {
@@ -71,6 +119,7 @@ function labMode({ focus, base, options, looks = {}, pick = {}, idle = '', initi
         };
       },
       update() {
+        if (turn) turning();
         const o = options[sel];
         if (!o?.steps) return;
         const k = stepOf(o);
@@ -270,13 +319,14 @@ const spreads = [
       correct: 1,
       explain: "Le rocche petrose formano tra loro circa 90°: l'anteriore di un lato è isoplanare al posteriore dell'altro.",
     },
-    caption: 'Base cranica reale dall’alto, la fronte verso chi legge. Labirinti reali ingranditi 2,5 volte, sollevati sopra le rocche e riorientati.',
-    instruction: 'SCEGLI UNA COPPIA DI CANALI',
+    caption: 'Base cranica reale dall’alto, la fronte verso chi legge. Labirinti reali ingranditi 2,5 volte, sollevati e riorientati; nei laterali cupola ed endolinfa (azzurra) ricostruite.',
+    instruction: 'SCEGLI UNA COPPIA DI CANALI, O TRASCINA PER GIRARE LA TESTA',
     view: { yaw: SKULL_YAW, zoom: 1.15, focus: SKULL_VIEW },
     mode: labMode({
       focus: 'lab',
-      base: [...SKULL, ...TWO_EARS, 'midline'],
-      looks: glass(['rBody', 'lBody', 'rCoch', 'lCoch'], 0.75),
+      turn: true,
+      base: [...SKULL, ...TWO_EARS, 'midline', ...TURN],
+      looks: { ...glass(['rBody', 'lBody', 'rCoch', 'lCoch'], 0.75), ...glass(['rLat', 'lLat'], 0.32, 0.5) },
       idle: 'Stesso colore, stessa coppia: verde i laterali, arancio anteriore destro e posteriore sinistro, blu gli altri due.',
       pick: { rLat: 0, lLat: 0, rAnt: 1, lPost: 1, lAnt: 2, rPost: 2, axisR: 3, axisL: 3, midline: 3 },
       options: [
