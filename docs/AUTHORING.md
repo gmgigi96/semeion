@@ -136,7 +136,17 @@ a un'interazione che fa ragionare (una via da seguire, una lesione, un blocco).
 - 60-100 parole per pagina: è un libro da esplorare, non un riassunto degli appunti.
 - Non usare frecce o simboli fuori dal latino esteso (`→ ↑ ▲`): il font non li ha.
   Per le sequenze usare `›`.
-- Quiz: 4 opzioni, una corretta, `explain` di una frase.
+- Quiz: 4 opzioni, una corretta, `explain` di una frase. Con `why` si spiega anche perché
+  ciascuna opzione sbagliata non va (una frase breve, `null` per quella giusta): compare a
+  chi la sceglie, al posto del generico «riprova».
+- **Previsione** (`predict: true`): la domanda chiede che cosa succederà, prima di
+  guardarlo. Chi legge sceglie (una spunta, che può cambiare), il modello avvia l'opzione
+  `reveal` del comportamento della pagina destra, poi un'aletta «Perché?» si solleva e
+  scopre l'esito, il `why` della scelta e `explain`; la risposta giusta diventa verde.
+  Va bene per lesioni, riflessi, vie da seguire: domande con un esito che il modello
+  mostra. L'aletta occupa spazio: tenere il testo sotto le 90 parole, la domanda corta
+  e i `why` di una riga. Se la pagina non basta, la console lo segnala con
+  `[pagina] <capitolo>/<n>: la domanda esce dal fondo`.
 
 ## Il file del capitolo
 
@@ -151,6 +161,8 @@ const spreads = [
     body: "Il {nervo frenico|phrenic} nasce da {C3, C4 e C5|roots} …",
     terms: { phrenic: ['phrenic'], roots: ['c3', 'c4', 'c5'] }, // chiave -> id di parti del modello
     quiz: { question: '…?', options: ['…', '…', '…', '…'], correct: 1, explain: '…' },
+    // oppure una previsione, verificata dall'opzione 2 della pagina destra:
+    // quiz: { predict: true, question: '…?', options: […], correct: 1, why: ['…', null, '…', '…'], explain: '…', reveal: 2 },
     caption: 'Didascalia della figura.',
     instruction: 'ISTRUZIONE DI UNA RIGA, IN MAIUSCOLO',
     view: { yaw: 0.3, zoom: 1.15 },      // facoltativo: vista propria di questa pagina
@@ -225,6 +237,7 @@ async function mioModo({ model, controls, def }) {
     enter() { /* stato iniziale: model.show([...]), model.lookFn = (part) => ({ … }) */ },
     update() { /* a ogni fotogramma, facoltativo */ },
     onHoverSet(ids) { /* facoltativo: parti indicate dal testo */ },
+    choose(i) { /* facoltativo: attiva l'opzione i; serve al `reveal` di una previsione */ },
   };
 }
 ```

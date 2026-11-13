@@ -55,7 +55,9 @@ export async function buildSpread(def, ctx) {
   );
   body.group.position.set(M, y, 0);
   left.add(body.group);
-  y -= body.height + 0.04;
+  // una previsione occupa più spazio (c'è l'aletta): intervalli più stretti
+  const gap = def.quiz.predict ? 0.028 : 0.04;
+  y -= body.height + gap;
 
   const rule = new THREE.Mesh(
     new THREE.PlaneGeometry(W, 0.0015),
@@ -63,11 +65,16 @@ export async function buildSpread(def, ctx) {
   );
   rule.position.set(0.5, y, 0.001);
   left.add(rule);
-  y -= 0.04;
+  y -= gap;
 
-  const q = await quiz(def.quiz, W);
+  // in una previsione la scelta avvia sul modello l'opzione che la mette alla prova
+  const q = await quiz(def.quiz, W, {
+    onPredict: () => def.quiz.reveal != null && modeApi?.choose?.(def.quiz.reveal),
+  });
   q.group.position.set(M, y, 0);
   left.add(q.group);
+  // la domanda (e l'aletta) non deve scendere sul numero di pagina
+  if (y - q.height < NAV_Y + 0.02) console.error(`[pagina] ${ctx.chapter.id}/${ctx.index + 1}: la domanda esce dal fondo di ${(NAV_Y + 0.02 - y + q.height).toFixed(3)}`);
 
   // --- pagina destra --------------------------------------------------------
   const fig = makeText(`FIG. ${ctx.figure}`, { ...SMALL, anchorX: 'right' });
@@ -97,7 +104,10 @@ export async function buildSpread(def, ctx) {
   return {
     left,
     right,
-    update: () => modeApi.update?.(),
+    update: () => {
+      modeApi.update?.();
+      q.update?.();
+    },
     enter() {
       model.reset();
       model.zoomTo?.(def.view?.focus ?? null);

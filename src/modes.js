@@ -66,6 +66,7 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
     };
 
     return {
+      choose: (i) => select(i),
       enter() {
         select(initial);
         model.onClick = (id) => id in pick && select(pick[id]);

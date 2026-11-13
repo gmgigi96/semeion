@@ -84,15 +84,24 @@ const spreads = [
       inia: ['inIa'], hams: ['hams', 'mnFlex'],
     },
     quiz: {
-      question: 'Perché il riflesso patellare è definito monosinaptico?',
+      predict: true,
+      question: 'Il quadricipite si contrae. E i muscoli posteriori della coscia?',
       options: [
-        'Perché coinvolge un solo muscolo',
-        "Perché c'è un'unica sinapsi, tra neurone sensitivo gangliare e motoneurone alfa",
-        'Perché usa un solo segmento del midollo',
-        'Perché il fuso ha una sola fibra sensitiva',
+        'Si contraggono anche loro',
+        'Vengono rilasciati: i loro motoneuroni alfa sono inibiti',
+        'Non ricevono alcun segnale',
+        'Si contraggono subito dopo il quadricipite',
       ],
       correct: 1,
-      explain: "L'inibizione reciproca dell'antagonista richiede invece un interneurone inibitorio Ia.",
+      why: [
+        "Si opporrebbero all'estensione della gamba.",
+        null,
+        'Ricevono un segnale inibitorio, da un interneurone.',
+        "L'antagonista non si contrae: viene rilasciato.",
+      ],
+      explain:
+        "Un collaterale della fibra Ia eccita un interneurone inibitorio Ia, che inibisce i motoneuroni alfa dell'antagonista: è l'inibizione reciproca.",
+      reveal: 2,
     },
     caption: 'Arto inferiore destro, colonna e midollo reali; in alto la sezione lombare ingrandita con i neuroni del circuito. Radici e gangli L2-L4 sono ricostruiti.',
     instruction: 'AVVIA IL RIFLESSO, POI GUARDA IL CIRCUITO NEL MIDOLLO',
@@ -261,7 +270,7 @@ const spreads = [
       pain: ['sciatic', 'rootSac', 'inEx'], mnflex: ['mnFlex', 'hams'], mnext: ['mnExt', ...QUAD], part: ['partition'], extL: ['mnExtL', 'quadL'], flexL: ['mnFlexL', 'hamsL'],
     },
     quiz: {
-      question: 'Che cosa accade sul lato opposto a quello dello stimolo doloroso?',
+      question: "Il piede destro calpesta qualcosa che fa male. Che cosa fa l'arto sinistro?",
       options: [
         'Eccitazione dei flessori e inibizione degli estensori',
         'Eccitazione degli estensori e inibizione dei flessori',
@@ -269,6 +278,12 @@ const spreads = [
         'Nulla: il riflesso è monolaterale',
       ],
       correct: 1,
+      why: [
+        "Questo accade sul lato offeso.",
+        null,
+        'Gli estensori sono eccitati, non inibiti.',
+        'Il riflesso è bilaterale: passa al lato opposto.',
+      ],
       explain: "L'arto opposto si estende per reggere il peso, mentre quello offeso si flette e si allontana dallo stimolo.",
     },
     caption: 'I due arti e il midollo lombare. Per semplicità i motoneuroni di flessori ed estensori stanno sulla stessa sezione; nel vero occupano più segmenti lombo-sacrali.',

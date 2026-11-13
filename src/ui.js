@@ -183,10 +183,43 @@ export function chipRow(chips, maxW, gap = 0.014) {
 }
 
 // --- Domanda a risposta multipla ---------------------------------------------
-export async function quiz({ question, options, correct, explain }, width) {
+// Tratto disegnato a mano: un nastro piatto lungo una polilinea [[x, y], …].
+function stroke(points, w) {
+  const pos = [];
+  const idx = [];
+  for (const [i, [x, y]] of points.entries()) {
+    const [ax, ay] = points[Math.max(0, i - 1)];
+    const [bx, by] = points[Math.min(points.length - 1, i + 1)];
+    const l = Math.hypot(bx - ax, by - ay) || 1;
+    const nx = (-(by - ay) / l) * (w / 2);
+    const ny = ((bx - ax) / l) * (w / 2);
+    pos.push(x + nx, y + ny, 0, x - nx, y - ny, 0);
+    if (i) idx.push(2 * i - 2, 2 * i - 1, 2 * i, 2 * i - 1, 2 * i + 1, 2 * i);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  return g;
+}
+
+// Curva di Bézier quadratica campionata, per tratti morbidi.
+const bezier = ([x0, y0], [x1, y1], [x2, y2], n = 14) =>
+  Array.from({ length: n + 1 }, (_, k) => {
+    const t = k / n;
+    const u = 1 - t;
+    return [u * u * x0 + 2 * u * t * x1 + t * t * x2, u * u * y0 + 2 * u * t * y1 + t * t * y2];
+  });
+
+// --- Domanda a risposta multipla ---------------------------------------------
+//   { question, options, correct, explain }       domanda classica: si riprova fino alla risposta giusta
+//   why: ['…', null, …]                            facoltativo: perché ogni opzione sbagliata non lo è
+//   predict: true                                  previsione: prima si sceglie, poi si verifica sul
+//                                                  modello e si solleva l'aletta «Perché?»
+// onPredict(i) viene chiamata a ogni scelta in modalità previsione.
+export async function quiz({ question, options, correct, explain, why = [], predict = false }, width, { onPredict } = {}) {
   const group = new THREE.Group();
   let y = 0;
-  const kicker = makeText('DOMANDA', {
+  const kicker = makeText(predict ? 'PREDICI' : 'DOMANDA', {
     fontSize: 0.016,
     font: FONT.bold,
     color: ACCENT,
@@ -208,17 +241,29 @@ export async function quiz({ question, options, correct, explain }, width) {
   });
   const rows = [];
   let solved = false;
+  let chosen = null;
+  let flap = null;
+  const box = 0.026;
   for (const [i, label] of options.entries()) {
-    const box = 0.026;
     const row = new THREE.Group();
     row.position.y = y;
     const sq = layer(new THREE.Mesh(roundedRect(box, box, 0.005), flat(INK, 0.5)), 2);
     sq.position.set(box / 2, -box / 2 - 0.006, Z_FILL / 2);
     const inner = layer(new THREE.Mesh(roundedRect(box - 0.006, box - 0.006, 0.003), flat(0xfffdf6)), 3);
     inner.position.set(box / 2, -box / 2 - 0.006, Z_FILL);
+    // spunta a mano, che esce dalla casella come in un quaderno
+    const tick = layer(
+      new THREE.Mesh(
+        stroke([[0.004, -0.019], [0.009, -0.025], [0.013, -0.031], ...bezier([0.013, -0.031], [0.02, -0.012], [0.036, 0.001], 8)], 0.0038),
+        flat(ACCENT)
+      ),
+      5
+    );
+    tick.position.z = Z_TEXT;
+    tick.visible = false;
     const t = makeText(label, { fontSize: 0.026, maxWidth: width - 0.05, lineHeight: 1.3 });
     t.position.x = 0.045;
-    row.add(sq, inner, t);
+    row.add(sq, inner, tick, t);
     await ready(t);
     const h = Math.max(bounds(t).h, box) + 0.016;
     const hit = layer(new THREE.Mesh(new THREE.PlaneGeometry(width, h), flat(MARKER, 0)), 1);
@@ -228,11 +273,19 @@ export async function quiz({ question, options, correct, explain }, width) {
       cursor: 'pointer',
       click: () => {
         if (solved) return;
+        if (predict) {
+          // la previsione si può cambiare finché l'aletta è chiusa
+          chosen = i;
+          rows.forEach((r, j) => (r.tick.visible = j === i));
+          flap.arm();
+          onPredict?.(i);
+          return;
+        }
         const ok = i === correct;
         inner.material.color.set(ok ? GOOD : BAD);
         t.color = ok ? GOOD : BAD;
         feedback.color = ok ? GOOD : BAD;
-        feedback.text = ok ? `Esatto. ${explain}` : 'Non proprio: riguarda il modello e riprova.';
+        feedback.text = ok ? `Esatto. ${explain}` : why[i] ? `Non proprio. ${why[i]} Riprova.` : 'Non proprio: riguarda il modello e riprova.';
         if (ok) {
           solved = true;
           hit.material.opacity = 0;
@@ -241,10 +294,152 @@ export async function quiz({ question, options, correct, explain }, width) {
     };
     row.add(hit);
     group.add(row);
-    rows.push(row);
+    rows.push({ row, tick, text: t, inner, hit });
     y -= h;
   }
-  feedback.position.y = y - 0.012;
-  group.add(feedback);
-  return { group, height: -y + 0.09 };
+  if (!predict) {
+    feedback.position.y = y - 0.012;
+    group.add(feedback);
+    return { group, height: -y + 0.09 };
+  }
+
+  // --- aletta «Perché?» ---------------------------------------------------------
+  // Sotto: l'esito della previsione e la spiegazione. Sopra: un cartoncino
+  // incernierato al bordo alto, che si solleva verso chi legge.
+  y -= 0.01;
+  const pad = 0.016;
+  const inW = width - 2 * pad;
+  const verdict = makeText('', { fontSize: 0.021, font: FONT.semi, maxWidth: inW, lineHeight: 1.32 });
+  const answer = makeText('', { fontSize: 0.0205, font: FONT.italic, maxWidth: inW, lineHeight: 1.34, color: INK });
+  const verdictFor = (i) =>
+    i === correct
+      ? ['Previsione giusta.', explain]
+      : [why[i] ? `Non proprio. ${why[i]}` : 'Non proprio: la risposta giusta è in verde.', explain];
+  // l'altezza della tasca è quella dell'esito più lungo
+  let innerH = 0;
+  for (let i = 0; i < options.length; i++) {
+    // troika richiama sync() solo se il testo cambia: lo svuoto, così la misura riparte sempre
+    verdict.text = answer.text = '';
+    [verdict.text, answer.text] = verdictFor(i);
+    await Promise.all([ready(verdict), ready(answer)]);
+    innerH = Math.max(innerH, bounds(verdict).h + 0.008 + bounds(answer).h);
+  }
+
+  const flapFace = new THREE.Group();
+  const fk = makeText('PERCHÉ?', { fontSize: 0.016, font: FONT.bold, color: ACCENT, letterSpacing: 0.14 });
+  const ft = makeText("Solleva l'aletta per la risposta", { fontSize: 0.027, font: FONT.semi, maxWidth: inW * 0.78, lineHeight: 1.25 });
+  const fs = makeText('…dopo la tua previsione.', { fontSize: 0.021, font: FONT.italic, color: INK_SOFT, maxWidth: inW * 0.78 });
+  const fh = makeText('solleva qui', { fontSize: 0.02, font: FONT.italic, color: 0x2c3e66, anchorX: 'right' });
+  await Promise.all([ready(fk), ready(ft), ready(fs), ready(fh)]);
+  const faceH = 0.03 + bounds(ft).h + 0.012 + bounds(fs).h;
+  const cardH = Math.max(innerH, faceH) + 2 * pad;
+
+  const top = y;
+  // tasca: carta appena più scura sotto l'aletta
+  const pocket = layer(new THREE.Mesh(new THREE.PlaneGeometry(width, cardH), flat(0xd9ccb0, 0.35)), 1);
+  pocket.position.set(width / 2, top - cardH / 2, Z_FILL / 4);
+  verdict.position.set(pad, top - pad, Z_TEXT);
+  group.add(pocket, verdict, answer);
+  verdict.text = answer.text = '';
+
+  // l'aletta ruota attorno al bordo alto
+  const hinge = new THREE.Group();
+  hinge.position.set(0, top, 0.0024);
+  group.add(hinge);
+  const paper = new THREE.MeshBasicMaterial({ color: 0xf6efdf, side: THREE.DoubleSide, depthWrite: false, transparent: true });
+  const card = layer(new THREE.Mesh(roundedRect(width, cardH, 0.006), paper), 6);
+  card.position.set(width / 2, -cardH / 2, 0);
+  const rim = layer(new THREE.Mesh(roundedRect(width + 0.004, cardH + 0.004, 0.007), flat(INK, 0.22)), 5);
+  rim.position.set(width / 2, -cardH / 2, -0.0002);
+  rim.material.side = THREE.DoubleSide;
+  // margine tratteggiato, come un ritaglio
+  const dash = new THREE.Group();
+  for (let x = 0.012; x < width - 0.012; x += 0.016) {
+    const d = layer(new THREE.Mesh(new THREE.PlaneGeometry(0.008, 0.0012), flat(INK, 0.28)), 7);
+    d.position.set(x + 0.004, -0.008, 0.0003);
+    dash.add(d);
+  }
+  fk.position.set(pad, -pad, 0.0005);
+  ft.position.set(pad, -pad - 0.03, 0.0005);
+  fs.position.set(pad, -pad - 0.03 - bounds(ft).h - 0.012, 0.0005);
+  fh.position.set(width - pad - 0.01, -pad, 0.0005);
+  // freccia tracciata a mano verso l'angolo da sollevare
+  const ax = width - pad - 0.04;
+  const ay = -pad - 0.034;
+  const arrowMat = flat(0x2c3e66, 0.9);
+  const tipX = width - pad + 0.002;
+  const tipY = -cardH + pad + 0.006;
+  const arrow = new THREE.Group();
+  arrow.add(
+    new THREE.Mesh(stroke(bezier([ax, ay], [ax + 0.006, (ay + tipY) / 2], [tipX, tipY]), 0.0026), arrowMat),
+    new THREE.Mesh(stroke([[tipX - 0.019, tipY + 0.002], [tipX, tipY], [tipX - 0.004, tipY + 0.018]], 0.0026), arrowMat)
+  );
+  arrow.position.z = 0.0005;
+  const faceText = [fk, ft, fs, fh];
+  for (const o of [...faceText, arrow, ...arrow.children]) o.renderOrder = 8;
+  flapFace.add(card, rim, dash, ...faceText, arrow);
+  hinge.add(flapFace);
+
+  let armed = false;
+  let open = false;
+  let hover = false;
+  let angle = 0;
+  let last = performance.now();
+  // aperta, l'aletta si alza e svanisce: in piedi coprirebbe le opzioni a chi guarda
+  // il libro di sbieco. Si richiude toccando la tasca.
+  const OPEN = 1.15;
+  const reveal = () => {
+    solved = true;
+    [verdict.text, answer.text] = verdictFor(chosen);
+    verdict.color = chosen === correct ? GOOD : BAD;
+    ready(verdict).then(() => answer.position.set(pad, top - pad - bounds(verdict).h - 0.008, Z_TEXT));
+    rows.forEach((r, j) => {
+      r.hit.material.opacity = 0;
+      if (j === correct) r.text.color = GOOD;
+      else if (j === chosen) r.text.color = BAD;
+    });
+    if (chosen !== correct) rows[chosen].tick.material.color.set(BAD);
+  };
+  card.userData.ui = {
+    hover: (on) => (hover = on),
+    click: () => {
+      if (!armed) return;
+      open = true;
+      if (!solved) reveal();
+    },
+    get cursor() {
+      return armed ? 'pointer' : 'default';
+    },
+  };
+  pocket.userData.ui = { click: () => (open = false), cursor: 'pointer' };
+  flap = {
+    arm() {
+      if (armed) return;
+      armed = true;
+      fs.text = 'Ora guarda il modello, poi controlla.';
+    },
+  };
+  y -= cardH;
+
+  return {
+    group,
+    height: -y + 0.01,
+    update() {
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      // al passaggio l'aletta si stacca appena dalla pagina: invita a sollevarla
+      const goal = open ? OPEN : armed && hover ? 0.22 : 0;
+      angle += (goal - angle) * (1 - Math.exp(-dt * 9));
+      hinge.rotation.x = -angle;
+      // sollevandosi, il cartoncino svanisce del tutto
+      const fade = THREE.MathUtils.clamp(1 - (angle - 0.35) / 0.65, 0, 1);
+      for (const t of faceText) t.fillOpacity = fade;
+      paper.opacity = fade;
+      rim.material.opacity = 0.22 * fade;
+      arrowMat.opacity = 0.9 * fade;
+      for (const d of dash.children) d.material.opacity = 0.28 * fade;
+      hinge.visible = fade > 0.01;
+    },
+  };
 }
