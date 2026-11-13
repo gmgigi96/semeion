@@ -18,10 +18,13 @@ const PLEXUS = ['sub', ...RAMI, ...ANSE, ...FR, ...OR, ...LST];
 const COLLATERAL = ['ih', 'ii', ...GF, ...LFCN];
 const VESSELS = ['artery', 'vein'];
 
-// Primo piano: dopo l'ingresso nella pagina il modello viene ingrandito e abbassato.
-const closeUp = (drop, back, lean, scale, side, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return { ...api, enter() { api.enter(); ctx.model.focus(drop, back, lean, scale, side); } };
+// Primi piani (vedi «Primi piani» in docs/AUTHORING.md): il punto `at` del modello
+// va sopra il centro della pagina; ciò che esce dal volume della pagina è tagliato.
+// Nelle ultime due pagine il modello è meno reclinato (`tilt`), per vedere la coscia.
+const FOCUS = {
+  spine: { at: [0.03, 0.6, 0.02], scale: 1.7, height: 0.33, stand: false },
+  flank: { at: [0.04, 0.52, 0.01], scale: 1.35, height: 0.32, stand: false },
+  thigh: { at: [0.041, 0.292, -0.102], scale: 1.22, height: 0.3, tilt: -0.32, stand: false },
 };
 
 const spreads = [
@@ -38,8 +41,8 @@ const spreads = [
     },
     caption: 'Plesso lombare destro, veduta antero-laterale: lo psoas è in trasparenza. Ossa, muscoli e nervi periferici sono mesh reali.',
     instruction: 'SCEGLI UN RAMO ANTERIORE E GUARDA CHE COSA NE NASCE',
-    view: { yaw: -0.5 },
-    mode: closeUp(0.76, 0.13, 0, 1.8, 0.03, selector({
+    view: { yaw: -0.5, focus: FOCUS.spine },
+    mode: selector({
       base: [...SPINE, 'rib12', 'hip', 'psoasG', ...PLEXUS, ...COLLATERAL, 'femPelvic', 'obturator'],
       pick: { r1: 0, r2: 1, r3: 2, r4: 3, a1: 4, a2: 4, a3: 4 },
       idle: 'Giallo: rami anteriori. Blu: anse. I colori pieni sono i nervi che ne nascono.',
@@ -51,7 +54,7 @@ const spreads = [
         { label: 'Anse', lit: [...RAMI, ...ANSE], info: 'Tre anse a catena: L1-L2, L2-L3, L3-L4. Attraverso di esse ogni nervo riceve fibre da più livelli.' },
         { label: 'Psoas', show: ['psoas', 'ql', 'iliacus'], info: 'Con lo psoas opaco il plesso scompare: si vedono solo i nervi nei punti in cui emergono dal muscolo.' },
       ],
-    })),
+    }),
   },
   {
     title: 'I rami collaterali',
@@ -66,8 +69,8 @@ const spreads = [
     },
     caption: 'Psoas, iliaco e quadrato dei lombi reali: ogni nervo compare dove lascia lo psoas.',
     instruction: 'SCEGLI UN NERVO (ANCHE CLICCANDOLO) E RUOTA IL MODELLO',
-    view: { yaw: 0.5 },
-    mode: closeUp(0.32, 0, 0, 1.35, 0.04, selector({
+    view: { yaw: 0.5, focus: FOCUS.flank },
+    mode: selector({
       base: [...BONES, 'psoasG', 'iliacus', 'ql', 'inguinal', 'sub', 'r1', 'r2', 'a1', ...COLLATERAL],
       initial: 0,
       pick: { ih: 0, ii: 1, gf: 2, gfGenital: 2, gfFemoral: 2, lfcn: 3, lfcnProx: 3 },
@@ -79,7 +82,7 @@ const spreads = [
         { label: 'Cutaneo laterale', lit: [...LFCN, 'r2'], show: ['psoas'], info: 'Alla spina iliaca anterosuperiore perfora il legamento inguinale. Ramo gluteo e ramo femorale: cute antero-laterale della coscia fino al ginocchio.' },
         { label: 'Senza psoas', lit: [...COLLATERAL, 'sub', 'r1', 'r2', 'a1'], info: 'Tolto lo psoas si vede da dove vengono: ileoipogastrico e ileoinguinale da L1, genitofemorale e cutaneo laterale da L1 e L2.' },
       ],
-    })),
+    }),
   },
   {
     title: 'Femorale e otturatorio',
@@ -97,8 +100,8 @@ const spreads = [
     },
     caption: 'Oro: femorale. Verde: otturatorio. Psoas e iliaco in trasparenza.',
     instruction: 'RISALI UN NERVO DALLA COSCIA FINO ALLE RADICI',
-    view: { yaw: 0.45 },
-    mode: closeUp(0.033, -0.12, 0.3, 1.22, 0.05, selector({
+    view: { yaw: 0.45, focus: FOCUS.thigh },
+    mode: selector({
       base: [...BONES, 'psoasG', 'iliacusG', 'inguinal', 'obtMembrane', ...RAMI, ...ANSE, ...FEM_ALL, ...OBT_ALL],
       pick: { femoral: 2, femPelvic: 2, fr2: 2, fr3: 2, fr4: 2, obturator: 3, or2: 3, or3: 3, or4: 3 },
       idle: 'Due nervi, tre radici ciascuno, dagli stessi rami anteriori: L2, L3 e L4.',
@@ -127,7 +130,7 @@ const spreads = [
         { label: 'Otturatorio', lit: [...OBT_ALL, 'obtMembrane'], info: 'Ramo anteriore tra gli adduttori, per gracile, adduttore lungo e breve; ramo posteriore per adduttore grande e minimo.' },
         { label: 'Radici', lit: [...FR, ...OR, 'r2', 'r3', 'r4'], info: 'Le radici del femorale decorrono lateralmente a quelle dell’otturatorio e si uniscono nella parte bassa dello psoas.' },
       ],
-    })),
+    }),
   },
   {
     title: 'I passaggi verso la coscia',
@@ -145,8 +148,8 @@ const spreads = [
     },
     caption: 'I muscoli della coscia sono tagliati a metà. Un nervo interrotto e i suoi muscoli si scuriscono.',
     instruction: 'SCEGLI UN PASSAGGIO, POI TAGLIA UN NERVO',
-    view: { yaw: 0.3 },
-    mode: closeUp(0.033, -0.12, 0.3, 1.22, 0.05, selector({
+    view: { yaw: 0.3, focus: FOCUS.thigh },
+    mode: selector({
       base: [...BONES, 'psoas', 'iliacus', 'inguinal', 'obtMembrane', 'quadriceps', 'sartorius', 'pectineus', 'adductors',
         ...VESSELS, ...FEM, 'saphenous', 'femCut', 'obturator', 'obtAnt', 'obtPost', ...LFCN, ...GF],
       looks: { sartorius: { opacity: 0.55 }, pectineus: { opacity: 0.6 }, adductors: { opacity: 0.75 } },
@@ -160,7 +163,7 @@ const spreads = [
         { label: 'Taglia il femorale', dead: [...FEM, 'saphenous', 'femCut', 'quadriceps', 'sartorius', 'pectineus'], info: 'Restano senza innervazione quadricipite, sartorio e pettineo; con il safeno si perde la cute mediale di gamba e piede.' },
         { label: "Taglia l'otturatorio", dead: ['obturator', 'obtAnt', 'obtPost', 'adductors'], info: 'Restano senza innervazione gracile e adduttori; si perde la cute della metà inferiore della faccia mediale della coscia.' },
       ],
-    })),
+    }),
   },
 ];
 

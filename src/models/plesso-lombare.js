@@ -128,27 +128,7 @@ export class PlessoLombare extends AnatomyModel {
   constructor() {
     super({ tilt: -0.6 });
     this.addStand({ radius: 0.2, z: 0, rod: [-0.03, 0.02, 0.3, -0.118] });
-    this.rod = this.inner.children.at(-1);
     this.ready = this.#build();
-  }
-
-  // Primo piano della colonna lombare: il modello si ingrandisce, scende sotto
-  // la pagina e si inclina verso chi legge. `reset` lo riporta a posto.
-  focus(drop, back, lean, scale, side = 0) {
-    this.inner.position.set(-side, -drop, -back);
-    this.inner.scale.setScalar(scale);
-    this.inner.rotation.x = lean;
-    this.rod.visible = false;
-    this.flat.visible = false;
-  }
-
-  reset() {
-    super.reset();
-    this.inner.position.set(0, 0, 0);
-    this.inner.scale.setScalar(1);
-    this.inner.rotation.x = 0;
-    this.rod.visible = true;
-    this.flat.visible = true;
   }
 
   async #build() {
