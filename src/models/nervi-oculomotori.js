@@ -132,17 +132,7 @@ export class OculomotorModel extends AnatomyModel {
     // Questo modello ha già i lati scambiati a mano (vedi nota in testa): il
     // ribaltamento del motore lo riporterebbe speculare, quindi qui è spento.
     this.mirror.scale.x = 1;
-    this.addStand({ radius: 0.15, z: 0 });
-    // l'asta sta nel gruppo che ruota, non in quello che scorre (vedi setFocus)
-    const rod = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.007, 0.007, 0.28, 12),
-      new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: 1, roughness: 0.25 })
-    );
-    rod.position.set(0, 0.16, -0.03);
-    rod.castShadow = true;
-    this.spin.add(rod);
-    this.focus = new THREE.Vector3();
-    this.focusTarget = new THREE.Vector3();
+    this.addStand({ radius: 0.15, z: 0, rod: [0, 0.02, 0.3, -0.03] });
     this.ready = this.#build();
   }
 
@@ -247,15 +237,8 @@ export class OculomotorModel extends AnatomyModel {
     eye.target.set(-elev * RAD, s * abd * RAD, s * intor * RAD);
   }
 
-  // Fa scorrere il modello sull'asta (in avanti/indietro e in alto/basso), per portare
-  // sopra la base la regione di cui parla la pagina (dz > 0: il tronco viene al centro).
-  setFocus(dz = 0, dy = 0) {
-    this.focusTarget.set(0, dy, dz);
-  }
-
   reset() {
     super.reset();
-    this.setFocus(0);
     this.setGaze('R');
     this.setGaze('L');
   }
@@ -294,8 +277,6 @@ export class OculomotorModel extends AnatomyModel {
       if (eye.cur.distanceTo(eye.target) < 1e-4) eye.cur.copy(eye.target);
       if (eye.cur.distanceTo(eye.applied) > 1e-5) this.#apply(eye);
     }
-    this.focus.lerp(this.focusTarget, k);
-    this.inner.position.copy(this.focus);
     super.update(dt, camera, realDt);
   }
 }

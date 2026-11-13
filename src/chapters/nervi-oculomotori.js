@@ -22,11 +22,6 @@ const III_MUSCLES = ['rs', 'rm', 'ri', 'oi', 'lev'];
 
 // Come `selector` (opzioni statiche), ma ogni opzione può anche ruotare gli
 // occhi: gaze: { R: { abd, elev, intor }, L: { … } } in gradi.
-// Porta sopra la base la regione di cui parla la pagina (vedi setFocus nel modello).
-const focused = (dz, dy, mode) => async (ctx) => {
-  const api = await mode(ctx);
-  return { ...api, enter() { api.enter(); ctx.model.setFocus(dz, dy); } };
-};
 
 // il bulbo non si attenua mai: deve restare leggibile mentre ruota
 const KEEP = new Set(lr('sclera', 'cornea', 'iris', 'pupil', 'mark'));
@@ -114,8 +109,9 @@ const spreads = [
     },
     caption: 'Il tronco encefalico in trasparenza, visto da dietro e di lato, con i nuclei al suo interno.',
     instruction: "SCEGLI UN NERVO: DAL NUCLEO ALL'EMERGENZA",
-    view: { yaw: 2.55, zoom: 1.5 },
-    mode: focused(0.25, -0.1, selector({
+    // il tronco encefalico (dietro le orbite) viene sopra il centro della base
+    view: { yaw: 2.55, zoom: 1, focus: { at: [0, 0.34, -0.25], scale: 1.4, height: 0.28 } },
+    mode: selector({
       looks: { scoll: { opacity: 0.45 }, icoll: { opacity: 0.45 } },
       base: [...STEM, 'aqueduct', 'basilar', 'pca', 'sca', ...NUCLEI, ...lr('f3', 'n3', 'f4', 'n4c', 'n4', 'f6', 'n6')],
       idle: "Nuclei e fibre sono dentro il tronco; i nervi ne escono in tre punti diversi.",
@@ -124,7 +120,7 @@ const spreads = [
         { label: 'Trocleare (IV)', lit: ['nuc4L', 'f4R', 'n4cR', 'n4R', 'icoll', 'aqueduct'], info: 'Dal nucleo di sinistra al nervo di destra: le fibre decussano ed emergono sotto il collicolo inferiore.' },
         { label: 'Abducente (VI)', lit: lr('nuc6', 'f6', 'n6'), info: 'Dal ponte inferiore al solco bulbo-pontino, subito sopra le piramidi bulbari.' },
       ],
-    })),
+    }),
   },
   {
     title: "Dal seno cavernoso all'orbita",
