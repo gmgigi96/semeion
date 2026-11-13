@@ -205,6 +205,11 @@ bordi, sopra i pulsanti, e ciò che a schermo supererebbe il bordo alto del libr
   toglie il ritaglio; `tilt` cambia l'inclinazione del modello per quella vista (radianti);
   `stand: false` nasconde la base di legno (l'asta sparisce sempre nei primi piani).
 - La rotazione resta quella della pagina (`view.yaw`).
+- Materiali creati fuori da `addPart`/`addLink` non sono ritagliati: assegnare loro
+  `material.clippingPlanes = this.clipPlanes` (un `material.clone()` copia i piani per
+  valore: va riassegnato).
+- Il ritaglio in alto dipende dall'inclinazione del modello: dopo aver scelto `scale` e
+  `height` verificare con uno scatto che la struttura di cui si parla non sia amputata.
 - Da codice: `model.zoomTo({ at, scale })`, `model.zoomTo(null)`.
 
 Massimo 7 pulsanti (due righe) e commenti di una o due righe: lo spazio sotto il modello è poco.

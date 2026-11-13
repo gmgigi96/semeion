@@ -26,6 +26,7 @@ const PAGE_PLANES = [
   new THREE.Plane(new THREE.Vector3(0, -1, 1.5).normalize(), 0.58),
 ];
 const FAR_AWAY = 1000;
+const TOP_EDGE = new THREE.Vector3(0, 0, -0.715); // bordo alto della copertina
 // Punto, nel sistema del modello che ruota, su cui cade il centro di un primo piano.
 const LENS_ANCHOR = new THREE.Vector3(0, 0.36, 0);
 
@@ -258,7 +259,7 @@ export class AnatomyModel {
 
   // { id: testo }: etichette sempre rivolte a chi guarda.
   setLabels(map) {
-    for (const t of this.labels.values()) t.visible = false;
+    for (const t of this.labels.values()) t.visible = t.userData.on = false;
     for (const [id, text] of Object.entries(map)) {
       let t = this.labels.get(id);
       if (!t) {
@@ -276,7 +277,7 @@ export class AnatomyModel {
         this.labels.set(id, t);
       }
       t.text = text;
-      t.visible = true;
+      t.visible = t.userData.on = true;
     }
   }
 
@@ -343,6 +344,20 @@ export class AnatomyModel {
       plane.copy(PAGE_PLANES[i]);
       if (!z?.clip || this.freeView) plane.constant = FAR_AWAY;
     }
+    // bordo alto: il piano passa per la camera e per il bordo del libro, così a
+    // schermo nulla supera il libro, qualunque sia la prospettiva
+    if (z?.clip && !this.freeView) {
+      const d = camera.position.clone().sub(TOP_EDGE);
+      const n = new THREE.Vector3(0, -d.z, d.y).normalize();
+      this.clipPlanes[4].set(n, -n.dot(TOP_EDGE));
+    }
+    // gli indicatori di attività restano della stessa misura in primo piano
+    const ls = this.lens.scale.x;
+    for (const part of this.parts.values())
+      if (part.cone) {
+        part.cone.scale.setScalar(1 / ls);
+        part.cone.position.y = part.top + 0.026 / ls;
+      }
 
     const hovering = [...this.hover].some((id) => this.parts.has(id) && !this.parts.get(id).ghost);
     const col = new THREE.Color();
@@ -398,8 +413,10 @@ export class AnatomyModel {
     this.inner.updateWorldMatrix(true, false);
     this.overlay.updateWorldMatrix(true, false);
     for (const t of this.labels.values()) {
-      if (!t.visible) continue;
+      if (!t.userData.on) continue;
       t.position.copy(t.userData.anchor).applyMatrix4(this.inner.matrixWorld);
+      // l'etichetta di una parte tagliata via dal ritaglio non resta sospesa
+      t.visible = this.clipPlanes.every((pl) => pl.distanceToPoint(t.position) >= -0.02);
       this.overlay.worldToLocal(t.position);
       t.position.y += 0.012; // scarto fisso, anche se `inner` è ingrandito
       t.quaternion.copy(q);

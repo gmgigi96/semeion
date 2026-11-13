@@ -35,7 +35,11 @@ export function selector({ base, options, looks = {}, pick = {}, initial = null,
   return async ({ model, controls, def }) => {
     let sel = null;
     // primo piano: quello del passo, altrimenti dell'opzione, altrimenti della pagina
-    const focus = (...list) => model.zoomTo?.(list.find((f) => f !== undefined) ?? def?.view?.focus ?? null);
+    // (`null` esplicito torna all'insieme anche se la pagina ha un primo piano)
+    const focus = (...list) => {
+      const own = list.find((f) => f !== undefined);
+      model.zoomTo?.(own !== undefined ? own : def?.view?.focus ?? null);
+    };
     let t0 = 0;
     let shownStep = -1;
     const { chips, height } = await chipsInto(

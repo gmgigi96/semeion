@@ -376,6 +376,8 @@ function pick(e) {
     let hidden = false;
     for (let p = o; p; p = p.parent) if (!p.visible) hidden = true;
     if (hidden) continue;
+    // ciò che il ritaglio ha tolto dalla vista non si può nemmeno toccare
+    if (o.material?.clippingPlanes?.some((pl) => pl.distanceToPoint(hit.point) < 0)) continue;
     if (o.userData.ui) return { ui: o.userData.ui, object: o, hit };
     if (o.userData.blocker) break;
   }

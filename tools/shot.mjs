@@ -28,7 +28,7 @@ const page = await browser.newPage();
 await page.setViewport({ width: 1300, height: 780, deviceScaleFactor: 1 });
 page.on('console', (m) => m.type() === 'error' && console.log('[console.error]', m.text().slice(0, 400)));
 page.on('pageerror', (e) => console.log('[pageerror]', e.message));
-await page.goto(url, { waitUntil: 'load' });
+await page.goto(url, { waitUntil: 'load', timeout: 0 }); // sotto carico 30 s non bastano
 await sleep(6000);
 
 // posizione sullo schermo del primo oggetto visibile che soddisfa il predicato

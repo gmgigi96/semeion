@@ -352,16 +352,4 @@ export class ControlloVegetativo extends AnatomyModel {
     const p = mm(s.c);
     return g.translate(p.x, p.y, p.z);
   }
-
-  update(dt, camera, realDt = dt) {
-    super.update(dt, camera, realDt);
-    // gli indicatori di attività stanno dentro il modello ingrandito: restano
-    // della stessa misura a schermo qualunque sia il primo piano
-    const s = this.lens.scale.x;
-    for (const part of this.parts.values())
-      if (part.cone) {
-        part.cone.scale.setScalar(1 / s);
-        part.cone.position.y = part.top + 0.026 / s;
-      }
-  }
 }
