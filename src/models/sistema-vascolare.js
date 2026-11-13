@@ -109,25 +109,7 @@ export class SistemaVascolare extends AnatomyModel {
   constructor() {
     super({ tilt: -0.5 });
     this.addStand({ radius: 0.2, z: -0.03, rod: [0, 0.02, 0.125, -0.05] });
-    this.rod = this.inner.children.at(-1);
     this.ready = this.#build();
-  }
-
-  // Primo piano di una regione piccola (il poligono di Willis): il modello
-  // si ingrandisce sopra la base, arretra e si inclina verso chi legge. `reset` lo riporta a posto.
-  focus(drop, back, lean, scale) {
-    this.inner.position.set(0, -drop, -back);
-    this.inner.scale.setScalar(scale);
-    this.inner.rotation.x = lean;
-    this.rod.visible = false;
-  }
-
-  reset() {
-    super.reset();
-    this.inner.position.set(0, 0, 0);
-    this.inner.scale.setScalar(1);
-    this.inner.rotation.x = 0;
-    this.rod.visible = true;
   }
 
   async #build() {
