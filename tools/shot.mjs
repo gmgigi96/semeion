@@ -21,6 +21,9 @@ const browser = await puppeteer.launch({
   headless: 'new',
   args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'],
 });
+// qualunque cosa succeda il browser va chiuso: un Chrome orfano resta a consumare CPU
+const bail = setTimeout(async () => { console.log('[timeout] scatto abbandonato'); await browser.close(); process.exit(1); }, 240000);
+process.on('unhandledRejection', async (e) => { console.log('[errore]', e?.message); await browser.close(); process.exit(1); });
 const page = await browser.newPage();
 await page.setViewport({ width: 1300, height: 780, deviceScaleFactor: 1 });
 page.on('console', (m) => m.type() === 'error' && console.log('[console.error]', m.text().slice(0, 400)));
@@ -74,3 +77,4 @@ for (const action of actions) {
 await page.screenshot({ path: out });
 console.log(`salvato ${out}`);
 await browser.close();
+clearTimeout(bail);
