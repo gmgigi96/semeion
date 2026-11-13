@@ -7,7 +7,7 @@
 // Degli appunti restano fuori mezzo interno, fegato, sistema locomotore,
 // sistema renina-angiotensina e PLGF.
 import { chipsInto, infoText } from '../modes.js';
-import { ControlloVegetativo } from '../models/controllo-vegetativo.js';
+import { ControlloVegetativo, mm } from '../models/controllo-vegetativo.js';
 
 const STEM = ['midbrain', 'pons', 'medulla', 'v4', 'aqueduct'];
 const BODY = ['cortex', 'midbrain', 'pons', 'medulla', 'cordTop', 'cordMid', 'cordLumb', 'cordConus', 'cordTip', 'cauda', 'spineTop', 'spineLow', 'sacrum', 'hips', 'heart', 'atriumR', 'lungs', 'bladder', 'urethra'];
@@ -16,29 +16,32 @@ const VRG = ['rvrg', 'cvrg'];
 const RESP = ['pfrg', 'bot', 'prebot', ...VRG, ...PNEUMO, 'a2', 'nts'];
 const VASO = ['nts', 'a2', 'dmv', 'amb', 'a1'];
 
-// Regioni del modello: `focus` = [centro in mm della sorgente (verso destra,
-// verso dietro, quota), ingrandimento, altezza sulla base]; `show` = contesto
-// visibile; `yaw` = rotazione del modello.
+// Regioni del modello: `focus` = primo piano del motore (vedi `zoomTo`), dato
+// come centro in mm della sorgente (verso destra, verso dietro, quota),
+// ingrandimento e quota sulla base; `show` = contesto visibile; `yaw` =
+// rotazione del modello. Centro e ingrandimento sono scelti in modo che la
+// regione stia nel volume della pagina, oltre il quale il motore taglia.
+const zoom = (c, scale, height) => ({ at: mm(c).toArray(), scale, height });
 const VIEWS = {
-  whole: { focus: [], show: BODY, yaw: -0.75 },
-  stem: { focus: [[0, 14, 1580], 9, 0.34], show: STEM, yaw: -2.5 },
-  resp: { focus: [[4, 16, 1572], 12, 0.37], show: ['pons', 'medulla', 'v4'], yaw: -2.2 },
-  brain: { focus: [[0, 10, 1630], 4.2, 0.36], show: ['cortex', 'mpfc', 'area4', ...STEM], yaw: -1.15 },
-  limbic: { focus: [[12, 5, 1592], 6, 0.34], show: [...STEM, 'hypothalamus', 'amygdala'], yaw: -1.2 },
-  ear: { focus: [[16, 12, 1582], 8.5, 0.32], show: ['pons', 'medulla', 'v4', 'vestibule'], yaw: -2.6 },
-  conus: { focus: [[0, 32, 1114], 10, 0.37], show: ['cordConus', 'antConus', 'postConus', 'spn', 'onuf'], yaw: -0.9 },
-  lumbar: { focus: [[0, 60, 1198], 7, 0.4], show: ['cordLumb', 'antLumb', 'postLumb', 'imlLumb'], yaw: -0.9 },
-  pelvis: { focus: [[0, 28, 890], 3.2, 0.3], show: ['sacrum', 'hips', 'bladder', 'urethra', 'prostate', 'sphInt', 'sphExt', 'ihg', 'vesG'], yaw: -0.85 },
+  whole: { focus: null, show: BODY, yaw: -0.75 },
+  stem: { focus: zoom([0, 14, 1580], 9, 0.34), show: STEM, yaw: -2.5 },
+  resp: { focus: zoom([4, 16, 1572], 12, 0.31), show: ['pons', 'medulla', 'v4'], yaw: -2.2 },
+  brain: { focus: zoom([0, 10, 1630], 4.2, 0.36), show: ['cortex', 'mpfc', 'area4', ...STEM], yaw: -1.15 },
+  limbic: { focus: zoom([12, 5, 1592], 6, 0.3), show: [...STEM, 'hypothalamus', 'amygdala'], yaw: -1.2 },
+  ear: { focus: zoom([16, 12, 1582], 8.5, 0.32), show: ['pons', 'medulla', 'v4', 'vestibule'], yaw: -2.6 },
+  conus: { focus: zoom([0, 32, 1114], 10, 0.37), show: ['cordConus', 'antConus', 'postConus', 'spn', 'onuf'], yaw: -0.9 },
+  lumbar: { focus: zoom([0, 60, 1213], 7, 0.38), show: ['cordLumb', 'antLumb', 'postLumb', 'imlLumb'], yaw: -0.9 },
+  pelvis: { focus: zoom([0, 28, 890], 3.2, 0.3), show: ['sacrum', 'hips', 'bladder', 'urethra', 'prostate', 'sphInt', 'sphExt', 'ihg', 'vesG'], yaw: -0.85 },
   lower: {
-    focus: [[0, 20, 1010], 1.75, 0.4], yaw: -0.85,
+    focus: zoom([0, 20, 1025], 1.4, 0.33), yaw: -0.85,
     show: ['cordLumb', 'cordConus', 'cordTip', 'cauda', 'spineLow', 'sacrum', 'hips', 'bladder', 'urethra', 'sympLow', 'imlLumb', 'spn', 'onuf', 'img', 'lumbSpl', 'hypoUp', 'hypoN', 'ihg', 'pelvicN', 'pudendal', 'vesG', 'sphInt', 'sphExt'],
   },
   chest: {
-    focus: [[5, 5, 1392], 1.75, 0.39], yaw: -0.7,
+    focus: zoom([5, 5, 1435], 1.65, 0.33), yaw: -0.7,
     show: [...STEM, 'cordTop', 'cordMid', 'spineTop', 'heart', 'atriumR', 'svc', 'aorta', 'cca', 'ica', 'eca', 'trachea', 'lungs', 'vagR', 'vagLow', 'vagCard', 'ix', 'sympTop', 'imlHeart', 'cardN', 'san', 'sinus'],
   },
-  heart: { focus: [[5, -10, 1318], 3.4, 0.36], show: ['heart', 'atriumR', 'svc', 'ivc', 'aorta', 'san', 'vagCard', 'cardN'], yaw: -0.45 },
-  neck: { focus: [[22, 5, 1530], 4.6, 0.36], show: ['pons', 'medulla', 'ica', 'eca', 'ix', 'vagR', 'sinus', 'glomus', 'hering'], yaw: -1.25 },
+  heart: { focus: zoom([5, -10, 1318], 3.4, 0.36), show: ['heart', 'atriumR', 'svc', 'ivc', 'aorta', 'san', 'vagCard', 'cardN'], yaw: -0.45 },
+  neck: { focus: zoom([22, 5, 1530], 4.6, 0.36), show: ['pons', 'medulla', 'ica', 'eca', 'ix', 'vagR', 'sinus', 'glomus', 'hering'], yaw: -1.25 },
 };
 
 // Come `selector` di src/modes.js, ma ogni opzione e ogni passo sceglie anche
@@ -59,7 +62,7 @@ function stage({ home, options, idle = '', initial = null }) {
       state = s;
       const name = s.view ?? home.view;
       const v = VIEWS[name];
-      model.setFocus(...v.focus);
+      model.zoomTo(v.focus);
       model.show([...v.show, ...(s.show ?? []), ...(s.ids ?? []), ...(s.dead ?? [])]);
       model.showLinks(s.links ?? []);
       model.setActivity(s.activity ?? {});
@@ -87,9 +90,12 @@ function stage({ home, options, idle = '', initial = null }) {
         select(initial);
         model.lookFn = (part) => {
           if (state.dead?.includes(part.id)) return { dead: true };
-          if (state === home || !state.ids?.length) return {};
-          if (state.ids.includes(part.id)) return part.ghost ? { glow: 0.5 } : { glow: 0.45, opacity: 1 };
-          return { dim: true };
+          // il motore alleggerisce gli involucri in primo piano; qui tronco e midollo
+          // sono il contesto in cui si leggono i nuclei, e restano densi come nell'insieme
+          const look = part.ghost ? { opacity: part.opacity * Math.sqrt(model.lens.scale.x) } : {};
+          if (state === home || !state.ids?.length) return look;
+          if (state.ids.includes(part.id)) return part.ghost ? { ...look, glow: 0.5 } : { glow: 0.45, opacity: 1 };
+          return { ...look, dim: true };
         };
       },
       update() {

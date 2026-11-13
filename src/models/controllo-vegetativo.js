@@ -1,6 +1,6 @@
 // Modello del controllo vegetativo: dai centri del tronco encefalico alla
 // vescica e al cuore, in proporzioni reali (un solo corpo, dal vertice al
-// perineo; i primi piani si ottengono ingrandendo una regione con `setFocus`).
+// perineo; i primi piani sono quelli del motore, `zoomTo`).
 //
 // MESH REALI (Z-Anatomy, CC BY-SA 4.0, derivato da BodyParts3D; file
 // public/meshes/controllo-vegetativo.glb, manifesto meshes/controllo-vegetativo.json):
@@ -297,9 +297,6 @@ export class ControlloVegetativo extends AnatomyModel {
   constructor() {
     super({ tilt: -0.42 });
     this.addStand({ radius: 0.17, z: 0 });
-    this.focusScale = 1;
-    this.focus = new THREE.Vector3();
-    this.focusTarget = new THREE.Vector3();
     this.ready = this.#build();
   }
 
@@ -356,35 +353,15 @@ export class ControlloVegetativo extends AnatomyModel {
     return g.translate(p.x, p.y, p.z);
   }
 
-  // Primo piano: il punto `center` (in mm della sorgente) va sull'asse della
-  // base, all'altezza `height`; `scale` è l'ingrandimento. Senza argomenti:
-  // corpo intero.
-  setFocus(center = null, scale = 1, height = 0.3) {
-    this.focusScale = scale;
-    if (center) {
-      const p = mm(center);
-      this.focusTarget.set(-p.x * scale, height - p.y * scale, -p.z * scale);
-    } else this.focusTarget.set(0, 0, 0);
-  }
-
-  reset() {
-    super.reset();
-    this.setFocus();
-  }
-
   update(dt, camera, realDt = dt) {
-    const k = 1 - Math.exp(-Math.min(realDt, 0.5) * 5);
-    this.focus.lerp(this.focusTarget, k);
-    this.inner.position.copy(this.focus);
-    const s = this.inner.scale.x + (this.focusScale - this.inner.scale.x) * k;
-    this.inner.scale.setScalar(s);
-    // gli indicatori di attività stanno dentro `inner`: restano della stessa
-    // misura a schermo qualunque sia l'ingrandimento
+    super.update(dt, camera, realDt);
+    // gli indicatori di attività stanno dentro il modello ingrandito: restano
+    // della stessa misura a schermo qualunque sia il primo piano
+    const s = this.lens.scale.x;
     for (const part of this.parts.values())
       if (part.cone) {
         part.cone.scale.setScalar(1 / s);
         part.cone.position.y = part.top + 0.026 / s;
       }
-    super.update(dt, camera, realDt);
   }
 }
