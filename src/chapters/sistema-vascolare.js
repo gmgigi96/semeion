@@ -22,13 +22,23 @@ const SINUSES = [...VAULT, ...SKULL_BASE, 'ijv'];
 // tratto da cui nascono le lenticolo-striate (fino alla loro estensione laterale, letta sulla
 // mesh) toglie sangue anche a capsula interna e putamen; più in là solo alla faccia laterale.
 // Le chiavi del confronto sono le parti del modello che restano senza sangue.
+// DEDUZIONE, non scritta negli appunti: che la cerebrale media chiusa oltre l'origine delle
+// lenticolo-striate risparmi capsula e putamen. Gli appunti dicono che i rami perforanti
+// (lenticolo-striate, per capsula interna e putamen) nascono «prima però di tale scissura,
+// nel tratto laterale della sostanza perforata anteriore», e i rami corticali «nella
+// scissura del Silvio»: un'occlusione a valle dei primi lascia irrorato il loro territorio.
+// La PICA: gli appunti la danno come causa della sindrome bulbare laterale di Wallenberg
+// (e, con le circonflesse lunghe, della dorsale); nel confronto si scurisce la parte
+// laterale del bulbo da quel lato (bulboLatR/L nel modello), non tutto il bulbo. La chiave
+// del confronto resta il bulbo, la parte che si tocca per prevederlo.
 const ARTERIES = {
   aca: { site: 'Cerebrale anteriore', name: 'cerebrale anteriore', truth: ['terrACA'], dead: [...T_ACA, 'terrACA'], info: 'Senza sangue: faccia mediale di frontale e parietale, area motoria supplementare, aree 23 e 24, corpo calloso.' },
   striate: { site: 'Lenticolo-striate', name: 'arterie lenticolo-striate', truth: ['capsule', 'putamen'], dead: ['striate', 'capsule', 'putamen'], info: "Rami perforanti della cerebrale media: capsula interna, putamen, nucleo caudato. Qui si rompe l'arteria di Charcot." },
   pca: { site: 'Cerebrale posteriore', name: 'cerebrale posteriore', truth: ['terrPCA'], dead: [...T_PCA, 'terrPCA'], info: 'Senza sangue: faccia inferiore del temporale e faccia mediale dell’occipitale, con le aree visive.' },
-  pica: { site: 'PICA', name: 'PICA', truth: ['medulla'], dead: ['pica', 'medulla'], info: 'Sindrome di Wallenberg: è colpita la parte laterale del bulbo (nucleo ambiguo, fascio spino-talamico, fascio ipotalamo-spinale).' },
+  pica: { site: 'PICA', name: 'PICA', truth: ['medulla'], dead: ['pica'], info: 'Sindrome di Wallenberg: è colpita la parte laterale del bulbo (nucleo ambiguo, fascio spino-talamico, fascio ipotalamo-spinale).' },
 };
 ARTERIES.pcaP1 = ARTERIES.pca;
+const CLOSE_BASE = [...TERR, ...STEM, ...T_ACA, ...T_MCA, ...T_PCA, 'acom', 'icaCer', 'icaCav', 'basilar', 'va', 'pica', 'striate', 'capsule', 'putamen'];
 function closeArtery({ point, part }, model) {
   const side = point.x >= 0 ? 'destra' : 'sinistra';
   if (part === 'mca') {
@@ -46,7 +56,10 @@ function closeArtery({ point, part }, model) {
     };
   }
   const a = ARTERIES[part];
-  return a && { ...a, label: `${a.name} ${part === 'pica' || part === 'striate' ? 'di ' : ''}${side}` };
+  if (!a) return null;
+  // la PICA spegne solo la parte laterale del bulbo, dal suo lato
+  const lateral = part === 'pica' ? [point.x >= 0 ? 'bulboLatR' : 'bulboLatL'] : [];
+  return { ...a, dead: [...a.dead, ...lateral], show: lateral, label: `${a.name} ${part === 'pica' || part === 'striate' ? 'di ' : ''}${side}` };
 }
 
 const spreads = [
@@ -144,7 +157,7 @@ const spreads = [
     caption: "L'anello rosso segna l'arteria chiusa; nel confronto il suo territorio si scurisce.",
     instruction: "TOCCA UN'ARTERIA PER CHIUDERLA · TOCCA CIÒ CHE PREVEDI SENZA SANGUE · CONFRONTA",
     mode: cutter({
-      base: [...TERR, ...STEM, ...T_ACA, ...T_MCA, ...T_PCA, 'acom', 'icaCer', 'icaCav', 'basilar', 'va', 'pica', 'striate', 'capsule', 'putamen'],
+      base: CLOSE_BASE,
       looks: Object.fromEntries(TERR.map((id) => [id, { opacity: 0.3 }])),
       parts: ['aca', 'mca', 'striate', 'pcaP1', 'pca', 'pica'],
       radius: 0.01,
@@ -154,6 +167,8 @@ const spreads = [
       sites: ['Cerebrale anteriore', 'Cerebrale media', 'Lenticolo-striate', 'Cerebrale posteriore', 'PICA'],
       idle: "Nessuna occlusione. Tocca il tronco di un'arteria: cerebrale anteriore, media o posteriore, lenticolo-striate, PICA.",
       outcome: closeArtery,
+      // nel confronto compaiono le parti che servono solo all'esito (la parte laterale del bulbo)
+      onReveal: (model, o) => model.show([...CLOSE_BASE, ...(o?.show ?? [])]),
       miss: "Qui non c'è il tronco di un'arteria da chiudere: tocca la cerebrale anteriore, media o posteriore, le lenticolo-striate o la PICA.",
     }),
   },

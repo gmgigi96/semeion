@@ -29,6 +29,14 @@ const glass = (ids, opacity) => Object.fromEntries(ids.map((id) => [id, { opacit
 const GLASS = { ...glass([...NERVES, 'chiasm', ...TRACTS], 0.6), ...glass(RAD, 0.62) };
 
 // 4 — taglio della via in un punto qualsiasi, di qualunque lato, e difetto del campo visivo.
+// DEDUZIONE per la corteccia: che la lesione di un labbro della calcarina dia una
+// quadrantopsia. Gli appunti non nominano i difetti, ma dicono che le fibre del quadrante
+// retinico superiore vanno dirette al lobo occipitale, quelle del quadrante inferiore con
+// l'ansa di Meyer, e che «l'ansa di Meyer e le fibre retrolenticolari formano rispettivamente
+// il labbro inferiore e superiore» della scissura calcarina. Con l'incrocio delle fibre
+// nasali nel chiasma (anche negli appunti), un labbro porta un solo quadrante retinico di
+// entrambi gli occhi, e quindi un quadrante del campo opposto: il nome del difetto viene
+// dalle fonti in testa al modello.
 // Il difetto viene dalle fibre interrotte: ogni via animata del modello porta una parte nota
 // del campo. Chiavi "occhio:emicampo:metà" (R/L, R/L, S/I), come in VisualSystem.setFields.
 const both = (eye, half) => [`${eye}:${half}:S`, `${eye}:${half}:I`];

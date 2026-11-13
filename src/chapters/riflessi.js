@@ -24,6 +24,10 @@ const SOFT = { rectus: { opacity: 0.5, litOpacity: 0.7 }, vasti: { opacity: 0.4,
 // inverso (il primo piano passa al circuito nel midollo): il muscolo cede e la corda
 // sfugge di mano. L'esito resta finché non si torna a tirare (`low` ricorda il punto
 // più basso raggiunto dalla corda dopo il riflesso).
+// La soglia c'è negli appunti solo a parole: gli organi del Golgi «entrano in funzione
+// solamente quando la contrazione muscolare è incompatibile con l'integrità strutturale del
+// muscolo». La sua posizione sulla corda (0,82) è ARBITRARIA, scelta per lasciare spazio
+// alla contrazione normale: gli appunti non danno un valore.
 const SOGLIA = 0.82;
 const IB_ROUTE = ['ib1', 'aff2', 'aff3', 'cIb'];
 const tendonCord = {
@@ -42,7 +46,7 @@ const tendonCord = {
       return {
         lit: [...QUAD, 'quadTendon', ...GTO],
         activity: { rectus: 1 },
-        info: 'La contrazione stira il tendine e l’organo del Golgi, in serie; il muscolo non è a rischio.',
+        info: 'La contrazione stira il tendine e l’organo del Golgi, in serie; finché non è eccessiva il riflesso non interviene.',
       };
     }
     return {

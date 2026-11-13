@@ -23,6 +23,21 @@ const stem = (scale) => ({ at: [0, 0.363, 0.03], scale, height: 0.034 });
 // interrompe tutto ciò che passa nella metà del midollo toccata, a quella quota. Più in alto
 // è una lesione piccola (2,5 mm), che nel talamo e oltre si allarga a 4,5 mm: lì le due vie
 // sono riunite. Chiavi del deficit "lato:tipo", con il lato del corpo del paziente.
+// DEDUZIONI: gli appunti non descrivono gli effetti delle lesioni, solo il decorso delle due
+// vie. Ne seguono, e il capitolo li fa scoprire tagliando:
+//  - radice posteriore: entrambe le sensibilità dallo stesso lato, perché la radice posteriore
+//    è «sensitiva o afferente» (Nervi spinali) e porta le fibre del ganglio spinale, primo
+//    neurone dei cordoni posteriori, prima di ogni incrocio;
+//  - emisezione del midollo: tatto fine dallo stesso lato e dolore dal lato opposto, perché i
+//    cordoni posteriori salgono nel midollo senza incrociare (incrociano nel bulbo con le
+//    fibre arciformi interne), mentre il sistema antero-laterale incrocia subito nella
+//    commessura bianca anteriore e sale nei cordoni anteriore e laterale;
+//  - talamo e oltre: entrambe dal lato opposto, perché lemnisco mediale e tratto neo-spino-
+//    talamico terminano nel VPL, che proietta alla corteccia sensitiva primaria passando per
+//    il braccio posteriore della capsula interna.
+// Gli appunti dicono anche che nel mesencefalo il lemnisco mediale «si unisce ai lemnischi
+// spinale e trigeminale, formando il trigono dei lemnischi»: il modello lo segue nel decorso,
+// e l'esito di una lesione nel mesencefalo è quello delle vie che il taglio prende davvero.
 const PATHS = ['touchR', 'touchL', 'painR', 'painL'];
 const LOSS = { touchR: 'R:touch', touchL: 'L:touch', painR: 'R:pain', painL: 'L:pain' };
 const inCord = (p) => p.y > CORD.bottom && p.y < CORD.top && Math.abs(p.x) < CORD.half;
@@ -43,7 +58,7 @@ const SITES = [
   { site: 'Midollo spinale', name: 'emisezione del midollo', test: (p) => inCord(p), why: 'Nel midollo il tatto fine sale dallo stesso lato da cui entra; il dolore ha già incrociato nella commessura bianca anteriore.' },
   { site: 'Bulbo', name: 'bulbo', test: (p, u) => u < 1578, why: 'Nel bulbo il tatto fine incrocia con le fibre arciformi interne; il dolore sale già dal lato opposto.' },
   { site: 'Ponte', name: 'ponte', test: (p, u) => u < 1602, why: 'Dal bulbo in su le due vie decorrono dallo stesso lato, ma separate: il lemnisco mediale presso la linea mediana, il lemnisco spinale più lateralmente.' },
-  { site: 'Mesencefalo', name: 'mesencefalo', test: (p, u) => u < 1615, why: 'Nel mesencefalo le due vie decorrono ancora separate, dallo stesso lato.' },
+  { site: 'Mesencefalo', name: 'mesencefalo', test: (p, u) => u < 1615, why: 'Nel mesencefalo il lemnisco mediale si unisce ai lemnischi spinale e trigeminale: è il trigono dei lemnischi.' },
   { site: 'Talamo', name: 'talamo', test: (p, u) => u < 1633, why: 'Nel VPL le due vie si riuniscono.' },
   { site: 'Corteccia', name: 'via talamo-corticale', test: () => true, why: 'Dal VPL le due sensibilità raggiungono insieme la corteccia sensitiva primaria.' },
 ];
@@ -273,7 +288,7 @@ const spreads = [
   {
     title: 'Che cosa si perde, e da che lato',
     body:
-      "Le due grandi vie della sensibilità incrociano a livelli diversi. La {via dei cordoni posteriori|touch} sale nel midollo dallo stesso lato da cui entra e incrocia solo nel bulbo, con le {fibre arciformi interne|arc}. Il {sistema antero-laterale|pain} incrocia invece subito, nella {commessura bianca anteriore|cba}, e sale nel cordone del lato opposto. Dal bulbo in su le due vie decorrono dallo stesso lato, ma separate: il {lemnisco mediale|lm} presso la linea mediana, il lemnisco spinale più lateralmente. Si riuniscono nel {VPL|vpl}, prima di raggiungere la {corteccia sensitiva primaria|s1}.",
+      "Le due grandi vie della sensibilità incrociano a livelli diversi. La {via dei cordoni posteriori|touch} sale nel midollo dallo stesso lato da cui entra e incrocia solo nel bulbo, con le {fibre arciformi interne|arc}. Il {sistema antero-laterale|pain} incrocia invece subito, nella {commessura bianca anteriore|cba}, e sale nel cordone del lato opposto. Dal bulbo in su decorrono dallo stesso lato, separate: il {lemnisco mediale|lm} presso la linea mediana, il lemnisco spinale più lateralmente. Nel mesencefalo si accostano nel trigono dei lemnischi; terminano nel {VPL|vpl}, che proietta alla {corteccia sensitiva primaria|s1}.",
     terms: {
       touch: ['touchR', 'touchL'], pain: ['painR', 'painL'], arc: ['arcuate'], cba: ['cba'], lm: LM, vpl: ['vpl'], s1: ['postcentral'],
     },
