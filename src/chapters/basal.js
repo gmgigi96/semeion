@@ -1,4 +1,10 @@
 // Capitolo "Nuclei della base". Testi dagli appunti di neuroanatomia (Nuclei della base).
+// Corda della dopamina (pagina 4): gli appunti descrivono solo l'esito della perdita dei
+// neuroni dopaminergici (vie indiretta e iperdiretta iperattive, subtalamico, GPi e pars
+// reticolata iperattivi, talamo frenato) e le due vie dopaminergiche perse nel Parkinson
+// (nigro-striatale e nigro-subtalamica inibitoria). DEDOTTO, non negli appunti: che lo
+// squilibrio compaia già con una dopamina ridotta e non solo assente, e le soglie della
+// corda, che sono solo qualitative (normale, ridotta, quasi assente).
 import { selector } from '../modes.js';
 import { Brain } from '../brain.js';
 
@@ -10,6 +16,10 @@ const OUT = ['gpi', 'snr'];
 // Per i circuiti: veduta frontale ingrandita, con il putamen a rappresentare lo striato.
 const CIRCUIT = ['hemi', 'stem', 'putamen', 'gpe', 'gpi', 'stn', 'snc', 'snr', 'thalamus', 'cortex'];
 const FRONTAL = { yaw: 0.3, zoom: 1.3 };
+// Vie indiretta e iperdiretta, che prevalgono quando manca la dopamina.
+const INDIRECT = ['str-gpe', 'gpe-stn', 'ctx-stn', 'stn-gpi', 'gpi-thal'];
+const PARKINSON = { gpe: -1, stn: 1, gpi: 1, snr: 1, thalamus: -1 };
+const DA_LOW = 0.6, DA_NONE = 0.25; // soglie qualitative della corda
 
 const spreads = [
   {
@@ -127,11 +137,35 @@ const spreads = [
       reveal: 0,
     },
     caption: 'Il nucleo colpito si spegne; i coni mostrano come cambia l’attività degli altri.',
-    instruction: 'SCEGLI UNA MALATTIA (O CLICCA IL NUCLEO COLPITO)',
+    instruction: 'TIRA LA CORDA DELLA DOPAMINA · O SCEGLI UNA MALATTIA',
     view: FRONTAL,
     mode: selector({
       base: CIRCUIT,
       pick: { snc: 0, putamen: 1, caudHead: 1, caudBody: 1, caudTail: 1 },
+      // la dopamina della via nigro-striatale: abbassandola prevalgono le vie indiretta e iperdiretta
+      cord: {
+        label: 'DOPAMINA NIGRO-STRIATALE',
+        ends: ['assente', 'normale'],
+        min: 0, max: 1, value: 1,
+        marks: [{ at: DA_NONE, label: '' }, { at: DA_LOW, label: '' }],
+        format: (v) => (v >= DA_LOW ? 'normale' : v >= DA_NONE ? 'ridotta' : 'quasi assente'),
+        react(v) {
+          if (v >= DA_LOW)
+            return {
+              links: ['snc-str', 'snc-stn', 'ctx-str', 'str-gpi', 'gpi-thal'], lit: ['snc', 'putamen', 'stn'],
+              info: 'La pars compatta raggiunge lo striato e frena il nucleo subtalamico: le tre vie sono in equilibrio.',
+            };
+          if (v >= DA_NONE)
+            return {
+              links: ['snc-str', ...INDIRECT], activity: PARKINSON, lit: ['snc', 'gpe', 'stn', ...OUT, 'thalamus'],
+              info: 'Meno dopamina: prevalgono le vie indiretta e iperdiretta, il subtalamico spinge GPi e pars reticolata, il talamo è frenato.',
+            };
+          return {
+            links: INDIRECT, activity: PARKINSON, dead: ['snc'],
+            info: 'Come nel Parkinson: vie indiretta e iperdiretta iperattive, talamo frenato troppo. Rigidità, bradicinesia, acinesia.',
+          };
+        },
+      },
       idle: 'Nessuna lesione: le vie diretta, indiretta e iperdiretta sono in equilibrio.',
       options: [
         {

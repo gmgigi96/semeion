@@ -329,6 +329,8 @@ mode: selector({
   `release: true` strappa la corda di mano e la riporta a riposo (un muscolo che cede).
 - In `selector` scegliere un pulsante (anche con la `choose(i)` di una previsione) riporta la corda a riposo.
 - Esempi: `src/chapters/riflessi.js` (organo del Golgi, corda a molla con soglia),
+  `src/chapters/basal.js`, pagina 4 (la dopamina nigro-striatale: abbassandola compaiono i coni
+  delle vie indiretta e iperdiretta; la previsione con `reveal` continua a scegliere il pulsante),
   `src/chapters/orecchio-medio.js` (pressione da -1 a 1 nel comportamento su misura
   `earMode`), `src/chapters/sistema-uditivo.js` (altezza del suono e punto di massima
   risonanza, con `setTone` nel modello).

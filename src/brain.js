@@ -140,6 +140,8 @@ export class Brain extends AnatomyModel {
     this.addLink('thal-ctx', [thal.clone().add(V(0, 0.045, -0.02)), V(0.08, 0.6, -0.04), V(0.12, 0.715, -0.04)], { color: GLU });
     this.addLink('ctx-stn', [V(0.11, 0.725, 0.0), V(0.03, 0.6, 0.1), V(0.03, 0.44, 0.1), stn.clone().add(V(-0.005, 0.008, 0.012))], { color: GLU });
     this.addLink('snc-str', arc(snc, put.clone().add(V(0, -0.05, -0.03)), [0.02, -0.06, 0.02]), { color: DA });
+    // via nigro-subtalamica, inibitoria (appunti dei nuclei della base): persa nel Parkinson
+    this.addLink('snc-stn', arc(snc.clone().add(V(0.004, 0.004, 0.006)), stn.clone().add(V(0.002, -0.006, 0.006)), [0, 0.012, 0.03]), { color: DA, inhibit: true });
     // via mesolimbica
     const vta = c('vta'), acc = c('accumbens'), amy = c('amygdala');
     this.addLink('vta-acc', [vta.clone(), V(0.035, 0.365, 0.1), acc.clone().add(V(-0.005, -0.012, -0.01))], { color: DA });
